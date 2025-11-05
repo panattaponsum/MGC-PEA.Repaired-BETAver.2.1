@@ -342,9 +342,9 @@ h1,h2,h3,th {
 	<div class="sm:col-span-2 border-b border-white/10 pb-2 mb-2">
   <h4 class="text-sm font-semibold text-gray-400">ข้อมูลทะเบียนทรัพย์สิน (Asset Registration)</h4>
 </div>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"> 
-    <div>
+	
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+	 <div>
         <label>รหัสอุปกรณ์</label>
         <input type="text" id="assetId" class="w-full"/> </div>
     <div>
@@ -353,13 +353,10 @@ h1,h2,h3,th {
     <div>
         <label>โมเดล</label>
         <input type="text" id="model" class="w-full"/> </div>
-    <div>
-        <label>วันที่ติดตั้ง/เริ่มต้นใช้งาน</label>
+	<div>
+        <label>เริ่มต้นใช้งาน</label>
         <input type="date" id="installDate" class="w-full"/>
     </div>
-</div>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4"> 
     <div>
         <label>วันเริ่มต้นรับประกัน</label>
         <input type="date" id="warrantyStartDate" class="w-full"/> </div>
@@ -367,12 +364,6 @@ h1,h2,h3,th {
         <label>ระยะเวลารับประกัน (ปี)</label>
         <input type="number" id="warrantyYears" value="2" min="0" class="w-full"/> 
     </div>
-    <div class="lg:col-span-2">
-        <label>อายุการใช้งานที่คาดการณ์ (EOL ปี)</label>
-        <input type="number" id="eolYears" value="10" min="0" class="w-full"/>
-    </div>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
   <div>
     <label>ชื่อผู้บันทึก</label>
     <input type="text" id="userName" class="w-full"/>
@@ -418,6 +409,7 @@ h1,h2,h3,th {
 </body>
 
 </html>
+
 
 
 
