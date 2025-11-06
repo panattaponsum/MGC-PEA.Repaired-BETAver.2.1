@@ -15,8 +15,6 @@ const db = firebase.firestore();
 db.settings({
   // บังคับให้ใช้ Long Polling แทน QUIC เพื่อหลีกเลี่ยงปัญหาเครือข่าย/ไฟร์วอลล์
   experimentalForceLongPolling: true,
-  // ตั้งค่า WebChannel เป็น false เพื่อให้แน่ใจว่าใช้ XHR polling
-  experimentalAutoDetectLongPolling: true 
 });
 const devicesCol = db.collection("devices"); // 💡 Not used globally in this structure, but kept for context
 
@@ -207,7 +205,7 @@ window.openForm = async function(deviceName) {
     document.getElementById('overlay').style.display = 'block';
     document.getElementById('formModal').style.display = 'block';
     document.getElementById('editHint').classList.add('hidden');
-    
+   
     // 1. ล้างฟอร์มทั้งหมดก่อน
     clearForm(); 
 
@@ -215,10 +213,16 @@ window.openForm = async function(deviceName) {
     const assetData = await loadAssetData(deviceName);
     
     // 3. ตั้งค่าฟิลด์ Asset Registration
+	document.getElementById('assetId').value = assetData.assetId || ''; // NEW
+    document.getElementById('manufacturer').value = assetData.manufacturer || ''; // NEW
+    document.getElementById('model').value = assetData.model || ''; // NEW
     // ข้อมูลเหล่านี้ถูกดึงจาก Firestore และตั้งค่าเฉพาะฟิลด์ใหม่เท่านั้น
     document.getElementById('installDate').value = assetData.installDate || '';
-    document.getElementById('warrantyYears').value = assetData.warrantyYears || '';
-    document.getElementById('eolYears').value = assetData.eolYears || '';
+    document.getElementById('warrantyStartDate').value = assetData.warrantyStartDate || ''; // NEW
+    
+    // ตั้งค่า warrantyYears ให้เป็น 0 หากไม่มีข้อมูล เพื่อแก้ Warning
+    document.getElementById('warrantyYears').value = assetData.warrantyYears !== undefined ? assetData.warrantyYears : 0;
+    
     
     // 4. โหลดประวัติการชำรุด (โค้ดเดิม)
     await loadHistory();
@@ -1265,6 +1269,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
