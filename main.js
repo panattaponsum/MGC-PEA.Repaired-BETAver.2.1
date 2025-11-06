@@ -176,9 +176,13 @@ function formatDuration(days) {
 }
 
 
-// =========================================================================
-// UI and Form Functions (Global Scope for HTML interaction)
-// =========================================================================
+// Firebase config (สมมติว่าคุณมีโค้ด Firebase Initialization อยู่แล้ว)
+// ...
+// const db = firebase.firestore();
+// const sites = { ... };
+// let currentSiteKey = '...';
+// ...
+
 async function loadAssetData(deviceName) {
     try {
         const assetDocRef = db.collection('asset_registration').doc(currentSiteKey);
@@ -196,6 +200,48 @@ async function loadAssetData(deviceName) {
     }
 }
 
+// =================================================================================
+// **ฟังก์ชันเสริมสำหรับแปลงวันที่ (กำหนดบน window เพื่อแก้ ReferenceError)**
+// =================================================================================
+
+// ฟังก์ชันเสริมสำหรับแปลง Timestamp หรือ Object วันที่เป็น yyyy-MM-dd
+window.formatDateToInput = function(dateInput) {
+    if (!dateInput) return '';
+
+    let date;
+    if (typeof firebase !== 'undefined' && dateInput instanceof firebase.firestore.Timestamp) {
+        date = dateInput.toDate();
+    } else if (dateInput instanceof Date) {
+        date = dateInput;
+    } else {
+        date = new Date(dateInput);
+    }
+    
+    if (isNaN(date.getTime())) return ''; 
+
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+// ฟังก์ชันสำหรับแปลง Timestamp เป็น YYYY-MM-DD HH:mm:ss
+window.convertTimestampToDateTime = function(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const y = date.getFullYear();
+    const mo = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const mi = String(date.getMinutes()).padStart(2, '0');
+    const s = String(date.getSeconds()).padStart(2, '0');
+    return `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+}
+
+// =================================================================================
+// **ฟังก์ชันหลักที่เหลือ (Open, Close, Clear, Save)**
+// =================================================================================
+
 window.openForm = async function(deviceName) {
     currentDevice = deviceName; 
     editIndex = -1;
@@ -205,23 +251,19 @@ window.openForm = async function(deviceName) {
     document.getElementById('formModal').style.display = 'block';
     document.getElementById('editHint').classList.add('hidden');
     
-    // 1. ล้างฟอร์มทั้งหมดก่อน
     clearForm(); 
 
-    // 2. โหลดข้อมูลทะเบียนทรัพย์สิน
     const assetData = await loadAssetData(deviceName);
     
-    // 3. ตั้งค่าฟิลด์ Asset Registration (แก้ไข: นำ ?. ออกจากการกำหนดค่า)
     document.getElementById('assetId').value = assetData.assetId || ''; 
     document.getElementById('manufacturer').value = assetData.manufacturer || ''; 
     document.getElementById('model').value = assetData.model || ''; 
-    document.getElementById('warrantyStartDate').value = assetData.warrantyStartDate || '';
-
-    document.getElementById('installDate').value = assetData.installDate || '';
-    // ตั้งค่า warrantyYears ให้เป็น 0 หากไม่มีข้อมูล เพื่อแก้ Warning
+    
+    // **เรียกใช้ window.formatDateToInput**
+    document.getElementById('warrantyStartDate').value = window.formatDateToInput(assetData.warrantyStartDate);
+    document.getElementById('installDate').value = window.formatDateToInput(assetData.installDate);
     document.getElementById('warrantyYears').value = assetData.warrantyYears !== undefined ? assetData.warrantyYears : 0;
         
-    // 4. โหลดประวัติการชำรุด
     await loadHistory();
 }
 
@@ -234,17 +276,17 @@ function clearForm() {
     // History Fields
     document.getElementById('userName').value = '';
     document.getElementById('status').value = 'ok';
-    document.getElementById('brokenDate').value = '';
-    document.getElementById('fixedDate').value = '';
+    document.getElementById('brokenDate').value = ''; 
+    document.getElementById('fixedDate').value = ''; 
     document.getElementById('description').value = '';
 
-    // Asset Fields (แก้ไข: นำ ?. ออกจากการกำหนดค่า)
+    // Asset Fields
     document.getElementById('assetId').value = ''; 
     document.getElementById('manufacturer').value = '';
     document.getElementById('model').value = '';
 	document.getElementById('installDate').value = '';
     document.getElementById('warrantyStartDate').value = '';
-    document.getElementById('warrantyYears').value = '0'; // ตั้งค่าเป็น 0 เพื่อแก้ Warning
+    document.getElementById('warrantyYears').value = '0'; 
 }
 
 function isValidDate(str) {
@@ -267,14 +309,15 @@ window.saveData = async function() {
     const description = document.getElementById('description').value.trim();
 
     // --- 2. Asset Registration Data ---
-    // ใช้ ?. ในการอ่านค่า (reading) สามารถทำได้
     const assetId = document.getElementById('assetId')?.value || '';
     const manufacturer = document.getElementById('manufacturer')?.value || '';
     const model = document.getElementById('model')?.value || '';
     const warrantyStartDate = document.getElementById('warrantyStartDate')?.value || '';
 
     const installDate = document.getElementById('installDate')?.value || '';
-    const warrantyYears = parseInt(document.getElementById('warrantyYears')?.value || 0) || 0; 
+    let warrantyYears = parseInt(document.getElementById('warrantyYears')?.value || 0) || 0;
+    if (isNaN(warrantyYears)) warrantyYears = 0; 
+
 
     // --- 3. Validation ---
     const now = new Date();
@@ -332,7 +375,6 @@ window.saveData = async function() {
          return false;
     }
 
-    // VALIDATION: บล็อกการบันทึก 'ชำรุด' ซ้ำซ้อน
     let records = await getDeviceRecords(currentSiteKey, currentDevice);
 
     if (editIndex < 0 && statusVal === 'down') {
@@ -353,7 +395,7 @@ window.saveData = async function() {
         model: model,
         installDate: installDate,
         warrantyStartDate: warrantyStartDate,
-        warrantyYears: warrantyYears,
+        warrantyYears: warrantyYears, 
     };
 
     try {
@@ -362,8 +404,6 @@ window.saveData = async function() {
         const allAssets = doc.exists ? doc.data() : {};
         
         allAssets[currentDevice] = newAssetData;
-
-        // บันทึกกลับไปใน Document
         await assetDocRef.set(allAssets); 
         console.log(`Asset registration data saved for ${currentDevice}`);
     } catch (error) {
@@ -385,7 +425,6 @@ window.saveData = async function() {
     };
 
     if (editIndex >= 0) {
-        // การแก้ไข: นำข้อมูลเดิมมาทับข้อมูลใหม่
         const originalRecord = records[editIndex];
 
         records[editIndex] = {
@@ -393,7 +432,6 @@ window.saveData = async function() {
             ...baseRec,
             ts: originalRecord.ts
         };
-        // ตรรกะ counted เมื่อแก้ไข
         if (statusVal === 'ok') {
             records[editIndex].counted = originalRecord.counted || false; 
         } else {
@@ -403,13 +441,11 @@ window.saveData = async function() {
         editIndex = -1;
         document.getElementById('editHint').classList.add('hidden');
     } else {
-        // การเพิ่มรายการใหม่:
         records.push(baseRec);
     }
     
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
     
-    // อัปเดต UI
     window.closeForm(); 
     clearForm();
     await loadHistory();
@@ -418,6 +454,308 @@ window.saveData = async function() {
     alert("บันทึกเรียบร้อย");
     return true;
 };
+
+
+// =================================================================================
+// **ฟังก์ชันสำหรับ Export (ส่งออก) ข้อมูล**
+// =================================================================================
+
+async function getAssetDataForExport(siteKey) {
+    try {
+        const assetDocRef = db.collection('asset_registration').doc(siteKey);
+        const doc = await assetDocRef.get();
+        return doc.exists ? doc.data() : {}; 
+    } catch (error) {
+        console.error("Error loading all asset registration data for export:", error);
+        return {};
+    }
+}
+
+window.exportAllDataExcel = async function() {
+    if (typeof XLSX === 'undefined') {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบไลบรารี SheetJS (XLSX) กรุณาตรวจสอบการนำเข้าไฟล์ script', 'error');
+        return;
+    }
+    if (!currentSiteKey || !sites[currentSiteKey]) {
+        Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกไซต์ที่ต้องการส่งออกข้อมูล', 'error');
+        return;
+    }
+    
+    const siteName = sites[currentSiteKey].name;
+    const devices = sites[currentSiteKey].devices;
+    
+    Swal.fire({
+        title: 'กำลังส่งออกข้อมูล',
+        html: `กำลังรวบรวมข้อมูล ${siteName} (${devices.length} อุปกรณ์)...`,
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    const workbook = XLSX.utils.book_new();
+    let allHistoryRecords = [];
+    let allAssetRecords = [];
+
+    const assetData = await getAssetDataForExport(currentSiteKey);
+
+    // 1. Fetch History Data (Device by Device)
+    for (const deviceName of devices) {
+        try {
+            const history = await getDeviceRecords(currentSiteKey, deviceName); 
+            
+            const formattedHistory = history.map(rec => ({
+                'Device': deviceName,
+                'User': rec.user || '',
+                'Status': rec.status === 'ok' ? 'ใช้งานได้' : 'ชำรุด',
+                'Broken Date': rec.brokenDate || '',
+                'Fixed Date': rec.fixedDate || '',
+                'Description': rec.description || '',
+                // **เรียกใช้ window.convertTimestampToDateTime**
+                'Timestamp (บันทึก)': window.convertTimestampToDateTime(rec.ts),
+                'TS (Unix)': rec.ts 
+            }));
+            allHistoryRecords = allHistoryRecords.concat(formattedHistory);
+            
+            // 2. Prepare Asset Data (for the Asset Registration Sheet)
+            const deviceAsset = assetData[deviceName] || {};
+            allAssetRecords.push({
+                'Device': deviceName,
+                'Asset ID': deviceAsset.assetId || '',
+                'Manufacturer': deviceAsset.manufacturer || '',
+                'Model': deviceAsset.model || '',
+                'Install Date': deviceAsset.installDate || '', 
+                'Warranty Start Date': deviceAsset.warrantyStartDate || '',
+                'Warranty Years': deviceAsset.warrantyYears || 0
+            });
+            
+        } catch (e) {
+            console.error(`Error fetching data for device ${deviceName}:`, e);
+        }
+    }
+
+    // 3. Create Worksheets
+    if (allHistoryRecords.length > 0) {
+        const wsHistory = XLSX.utils.json_to_sheet(allHistoryRecords);
+        XLSX.utils.book_append_sheet(workbook, wsHistory, 'History_All');
+    } 
+    
+    if (allAssetRecords.length > 0) {
+        const wsAsset = XLSX.utils.json_to_sheet(allAssetRecords);
+        XLSX.utils.book_append_sheet(workbook, wsAsset, 'Asset_Registration');
+    }
+
+    // 4. Download File
+    const filename = `${currentSiteKey}_Data_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+    
+    Swal.fire('ส่งออกข้อมูลสำเร็จ', `ไฟล์ ${filename} ถูกดาวน์โหลดแล้ว`, 'success');
+};
+
+
+// =================================================================================
+// **ฟังก์ชันสำหรับ Import (นำเข้า) ข้อมูล**
+// =================================================================================
+
+window.importData = function() {
+    if (typeof XLSX === 'undefined') {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบไลบรารี SheetJS (XLSX) กรุณาตรวจสอบการนำเข้าไฟล์ script', 'error');
+        return;
+    }
+    if (!currentSiteKey) {
+        Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกไซต์ที่ต้องการนำเข้าข้อมูล', 'error');
+        return;
+    }
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx';
+
+    fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        Swal.fire({
+            title: 'กำลังนำเข้าข้อมูล...',
+            html: `กำลังอ่านไฟล์: ${file.name}<br>โปรดรอสักครู่`,
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array', dateNF: "yyyy-mm-dd" }); 
+
+                let assetImportCount = 0;
+                let historyImportCount = 0;
+
+                // --- A. Process Asset Registration Sheet ---
+                const assetSheetName = 'Asset_Registration';
+                if (workbook.SheetNames.includes(assetSheetName)) {
+                    const worksheet = workbook.Sheets[assetSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    const header = json[0];
+                    const rows = json.slice(1);
+                    
+                    const assetDataToSave = {};
+
+                    const deviceCol = header.indexOf('Device');
+                    const assetIdCol = header.indexOf('Asset ID');
+                    const manufacturerCol = header.indexOf('Manufacturer');
+                    const modelCol = header.indexOf('Model');
+                    const installDateCol = header.indexOf('Install Date');
+                    const warrantyStartCol = header.indexOf('Warranty Start Date');
+                    const warrantyYearsCol = header.indexOf('Warranty Years');
+                    
+                    if (deviceCol === -1) {
+                         throw new Error(`Sheet ${assetSheetName}: ไม่พบคอลัมน์ 'Device'`);
+                    }
+
+                    rows.forEach(row => {
+                        const deviceName = row[deviceCol];
+                        if (deviceName) {
+                            assetDataToSave[deviceName] = {
+                                assetId: row[assetIdCol] || '',
+                                manufacturer: row[manufacturerCol] || '',
+                                model: row[modelCol] || '',
+                                // ใช้ window.formatDateToInput เพื่อจัดการ Date String จาก Excel
+                                installDate: window.formatDateToInput(row[installDateCol]) || '', 
+                                warrantyStartDate: window.formatDateToInput(row[warrantyStartCol]) || '',
+                                warrantyYears: parseInt(row[warrantyYearsCol]) || 0,
+                            };
+                            assetImportCount++;
+                        }
+                    });
+
+                    const assetDocRef = db.collection('asset_registration').doc(currentSiteKey);
+                    await assetDocRef.set(assetDataToSave, { merge: true }); 
+                }
+
+                // --- B. Process History Records Sheet ---
+                const historySheetName = 'History_All';
+                if (workbook.SheetNames.includes(historySheetName)) {
+                    const worksheet = workbook.Sheets[historySheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    const header = json[0];
+                    const rows = json.slice(1);
+                    
+                    const historyByDevice = {};
+                    
+                    const deviceCol = header.indexOf('Device');
+                    const userCol = header.indexOf('User');
+                    const statusCol = header.indexOf('Status');
+                    const brokenDateCol = header.indexOf('Broken Date');
+                    const fixedDateCol = header.indexOf('Fixed Date');
+                    const descriptionCol = header.indexOf('Description');
+                    const tsCol = header.indexOf('TS (Unix)'); 
+
+                    if (deviceCol === -1) {
+                         throw new Error(`Sheet ${historySheetName}: ไม่พบคอลัมน์ 'Device'`);
+                    }
+
+                    rows.forEach(row => {
+                        const deviceName = row[deviceCol];
+                        if (!deviceName) return;
+                        
+                        const statusText = String(row[statusCol] || 'ใช้งานได้').toLowerCase();
+                        const statusValue = (statusText.includes('ชำรุด') || statusText.includes('down')) ? 'down' : 'ok';
+                        
+                        // ใช้ window.formatDateToInput เพื่อจัดการ Date String จาก Excel
+                        const brokenDateStr = row[brokenDateCol] ? window.formatDateToInput(row[brokenDateCol]) : '';
+                        const fixedDateStr = row[fixedDateCol] ? window.formatDateToInput(row[fixedDateCol]) : '';
+
+                        const record = {
+                            user: row[userCol] || 'ไม่ระบุ',
+                            status: statusValue,
+                            brokenDate: brokenDateStr, 
+                            fixedDate: fixedDateStr,
+                            description: row[descriptionCol] || '',
+                            ts: row[tsCol] || Date.now(),
+                            counted: (statusValue === 'down')
+                        };
+
+                        if (!historyByDevice[deviceName]) {
+                            historyByDevice[deviceName] = [];
+                        }
+                        historyByDevice[deviceName].push(record);
+                        historyImportCount++;
+                    });
+                    
+                    for (const deviceName in historyByDevice) {
+                        historyByDevice[deviceName].sort((a, b) => a.ts - b.ts);
+                        await saveDeviceRecords(currentSiteKey, deviceName, historyByDevice[deviceName]);
+                    }
+                }
+
+                Swal.fire('นำเข้าสำเร็จ', 
+                    `นำเข้าข้อมูลทะเบียนทรัพย์สิน ${assetImportCount} รายการ<br>` + 
+                    `นำเข้าประวัติการชำรุด ${historyImportCount} รายการ`, 
+                    'success'
+                );
+                
+                window.updateDeviceSummary();
+                window.updateDeviceStatusOverlays(currentSiteKey);
+
+            } catch (error) {
+                console.error("Import Error:", error);
+                Swal.fire('ข้อผิดพลาดในการนำเข้า', 
+                    `เกิดข้อผิดพลาดขณะประมวลผลไฟล์: ${error.message}`, 
+                    'error'
+                );
+            }
+        };
+        reader.onerror = (error) => {
+            console.error("File Read Error:", error);
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ได้', 'error');
+        };
+        
+        fileInput.readAsArrayBuffer(file);
+    };
+
+    fileInput.click();
+};
+
+// **ฟังก์ชันเสริมที่จำเป็นเพื่อป้องกัน ReferenceError (จากปุ่มใน HTML)**
+window.clearCurrentDevice = async function() {
+    if (!currentDevice) return;
+    
+    const confirmed = await Swal.fire({
+        title: 'ยืนยันการล้างข้อมูล',
+        text: `คุณแน่ใจหรือไม่ที่จะล้างข้อมูลทะเบียนทรัพย์สินและประวัติทั้งหมดของ ${currentDevice} ?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่, ล้างเลย!',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (confirmed.isConfirmed) {
+        try {
+            // ล้าง Asset Registration
+            const assetDocRef = db.collection('asset_registration').doc(currentSiteKey);
+            const doc = await assetDocRef.get();
+            if (doc.exists) {
+                const allAssets = doc.data();
+                delete allAssets[currentDevice];
+                await assetDocRef.set(allAssets); 
+            }
+            
+            // ล้าง History (สมมติว่าคุณมีฟังก์ชันล้าง History)
+            await saveDeviceRecords(currentSiteKey, currentDevice, []); 
+
+            Swal.fire('ล้างข้อมูลสำเร็จ', `ข้อมูลของอุปกรณ์ ${currentDevice} ถูกล้างเรียบร้อยแล้ว`, 'success');
+            clearForm();
+            window.closeForm();
+            window.updateDeviceSummary();
+            window.updateDeviceStatusOverlays(currentSiteKey);
+
+        } catch (error) {
+             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถล้างข้อมูลได้: ' + error.message, 'error');
+        }
+    }
+};
+
 
 async function loadHistory() {
     const container = document.getElementById('historySection');
@@ -876,315 +1214,7 @@ function calculateAssetStatus(deviceName, assetData) {
     
     return { status: 'OK', message: 'ปกติ' };
 }
-async function getAssetDataForExport(siteKey) {
-    try {
-        const assetDocRef = db.collection('asset_registration').doc(siteKey);
-        const doc = await assetDocRef.get();
-        return doc.exists ? doc.data() : {}; 
-    } catch (error) {
-        console.error("Error loading all asset registration data for export:", error);
-        return {};
-    }
-}
 
-window.exportAllDataExcel = async function() {
-    if (typeof XLSX === 'undefined') {
-        Swal.fire('ข้อผิดพลาด', 'ไม่พบไลบรารี SheetJS (XLSX) กรุณาตรวจสอบการนำเข้าไฟล์ script', 'error');
-        return;
-    }
-    if (!currentSiteKey || !sites[currentSiteKey]) {
-        Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกไซต์ที่ต้องการส่งออกข้อมูล', 'error');
-        return;
-    }
-    
-    const siteName = sites[currentSiteKey].name;
-    const devices = sites[currentSiteKey].devices;
-    
-    Swal.fire({
-        title: 'กำลังส่งออกข้อมูล',
-        html: `กำลังรวบรวมข้อมูล ${siteName} (${devices.length} อุปกรณ์)...`,
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    const workbook = XLSX.utils.book_new();
-    let allHistoryRecords = [];
-    let allAssetRecords = [];
-
-    const assetData = await getAssetDataForExport(currentSiteKey);
-
-    // 1. Fetch History Data (Device by Device)
-    for (const deviceName of devices) {
-        try {
-            const history = await getDeviceRecords(currentSiteKey, deviceName); 
-            
-            const formattedHistory = history.map(rec => ({
-                'Device': deviceName,
-                'User': rec.user || '',
-                'Status': rec.status === 'ok' ? 'ใช้งานได้' : 'ชำรุด',
-                'Broken Date': rec.brokenDate || '',
-                'Fixed Date': rec.fixedDate || '',
-                'Description': rec.description || '',
-                'Timestamp (บันทึก)': convertTimestampToDateTime(rec.ts),
-                'TS (Unix)': rec.ts 
-            }));
-            allHistoryRecords = allHistoryRecords.concat(formattedHistory);
-            
-            // 2. Prepare Asset Data (for the Asset Registration Sheet)
-            const deviceAsset = assetData[deviceName] || {};
-            allAssetRecords.push({
-                'Device': deviceName,
-                'Asset ID': deviceAsset.assetId || '',
-                'Manufacturer': deviceAsset.manufacturer || '',
-                'Model': deviceAsset.model || '',
-                'Install Date': deviceAsset.installDate || '', 
-                'Warranty Start Date': deviceAsset.warrantyStartDate || '',
-                'Warranty Years': deviceAsset.warrantyYears || 0
-            });
-            
-        } catch (e) {
-            console.error(`Error fetching data for device ${deviceName}:`, e);
-        }
-    }
-
-    // 3. Create Worksheets
-    if (allHistoryRecords.length > 0) {
-        const wsHistory = XLSX.utils.json_to_sheet(allHistoryRecords);
-        XLSX.utils.book_append_sheet(workbook, wsHistory, 'History_All');
-    } 
-    
-    if (allAssetRecords.length > 0) {
-        const wsAsset = XLSX.utils.json_to_sheet(allAssetRecords);
-        XLSX.utils.book_append_sheet(workbook, wsAsset, 'Asset_Registration');
-    }
-
-    // 4. Download File
-    const filename = `${currentSiteKey}_Data_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    XLSX.writeFile(workbook, filename);
-    
-    Swal.fire('ส่งออกข้อมูลสำเร็จ', `ไฟล์ ${filename} ถูกดาวน์โหลดแล้ว`, 'success');
-};
-
-
-// **ฟังก์ชันใหม่สำหรับ Import (นำเข้า) ข้อมูล**
-window.importData = function() {
-    if (typeof XLSX === 'undefined') {
-        Swal.fire('ข้อผิดพลาด', 'ไม่พบไลบรารี SheetJS (XLSX) กรุณาตรวจสอบการนำเข้าไฟล์ script', 'error');
-        return;
-    }
-    if (!currentSiteKey) {
-        Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกไซต์ที่ต้องการนำเข้าข้อมูล', 'error');
-        return;
-    }
-
-    // 1. สร้างองค์ประกอบ Input File ชั่วคราว
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx';
-
-    fileInput.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        Swal.fire({
-            title: 'กำลังนำเข้าข้อมูล...',
-            html: `กำลังอ่านไฟล์: ${file.name}<br>โปรดรอสักครู่`,
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
-
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            try {
-                const data = new Uint8Array(event.target.result);
-                // ใช้ { dateNF: "yyyy-mm-dd" } เพื่อช่วยในการอ่านวันที่ 
-                const workbook = XLSX.read(data, { type: 'array', dateNF: "yyyy-mm-dd" }); 
-
-                let assetImportCount = 0;
-                let historyImportCount = 0;
-
-                // --- A. Process Asset Registration Sheet ---
-                const assetSheetName = 'Asset_Registration';
-                if (workbook.SheetNames.includes(assetSheetName)) {
-                    const worksheet = workbook.Sheets[assetSheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    const header = json[0];
-                    const rows = json.slice(1);
-                    
-                    const assetDataToSave = {};
-
-                    // Map columns based on the exported headers
-                    const deviceCol = header.indexOf('Device');
-                    const assetIdCol = header.indexOf('Asset ID');
-                    const manufacturerCol = header.indexOf('Manufacturer');
-                    const modelCol = header.indexOf('Model');
-                    const installDateCol = header.indexOf('Install Date');
-                    const warrantyStartCol = header.indexOf('Warranty Start Date');
-                    const warrantyYearsCol = header.indexOf('Warranty Years');
-                    
-                    if (deviceCol === -1) {
-                         throw new Error(`Sheet ${assetSheetName}: ไม่พบคอลัมน์ 'Device'`);
-                    }
-
-                    rows.forEach(row => {
-                        const deviceName = row[deviceCol];
-                        if (deviceName) {
-                            assetDataToSave[deviceName] = {
-                                assetId: row[assetIdCol] || '',
-                                manufacturer: row[manufacturerCol] || '',
-                                model: row[modelCol] || '',
-                                // Date strings should be in yyyy-MM-dd format from XLSX
-                                installDate: row[installDateCol] || '', 
-                                warrantyStartDate: row[warrantyStartCol] || '',
-                                // ป้องกัน NaN โดยใช้ parseInt
-                                warrantyYears: parseInt(row[warrantyYearsCol]) || 0,
-                            };
-                            assetImportCount++;
-                        }
-                    });
-
-                    // Save Asset Data (Merging with existing document)
-                    const assetDocRef = db.collection('asset_registration').doc(currentSiteKey);
-                    // ใช้ { merge: true } เพื่อไม่ให้ล้างข้อมูลของอุปกรณ์อื่นที่ไม่ได้อยู่ในไฟล์
-                    await assetDocRef.set(assetDataToSave, { merge: true }); 
-                }
-
-                // --- B. Process History Records Sheet ---
-                const historySheetName = 'History_All';
-                if (workbook.SheetNames.includes(historySheetName)) {
-                    const worksheet = workbook.Sheets[historySheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    const header = json[0];
-                    const rows = json.slice(1);
-                    
-                    // Group records by device
-                    const historyByDevice = {};
-                    
-                    const deviceCol = header.indexOf('Device');
-                    const userCol = header.indexOf('User');
-                    const statusCol = header.indexOf('Status');
-                    const brokenDateCol = header.indexOf('Broken Date');
-                    const fixedDateCol = header.indexOf('Fixed Date');
-                    const descriptionCol = header.indexOf('Description');
-                    const tsCol = header.indexOf('TS (Unix)'); 
-
-                    if (deviceCol === -1) {
-                         throw new Error(`Sheet ${historySheetName}: ไม่พบคอลัมน์ 'Device'`);
-                    }
-
-                    rows.forEach(row => {
-                        const deviceName = row[deviceCol];
-                        if (!deviceName) return;
-                        
-                        // Status conversion: 'ใช้งานได้' -> 'ok', 'ชำรุด' -> 'down'
-                        const statusText = String(row[statusCol] || 'ใช้งานได้').toLowerCase();
-                        const statusValue = (statusText.includes('ชำรุด') || statusText.includes('down')) ? 'down' : 'ok';
-                        
-                        // การนำเข้า วันที่จาก XLSX จะเป็น String หรือ Date Object
-                        const brokenDateStr = row[brokenDateCol] ? formatDateToInput(row[brokenDateCol]) : '';
-                        const fixedDateStr = row[fixedDateCol] ? formatDateToInput(row[fixedDateCol]) : '';
-
-
-                        const record = {
-                            user: row[userCol] || 'ไม่ระบุ',
-                            status: statusValue,
-                            brokenDate: brokenDateStr, 
-                            fixedDate: fixedDateStr,
-                            description: row[descriptionCol] || '',
-                            ts: row[tsCol] || Date.now(), // ใช้ TS เดิม หรือ Timestamp ปัจจุบันหากไม่มี
-                            counted: (statusValue === 'down')
-                        };
-
-                        if (!historyByDevice[deviceName]) {
-                            historyByDevice[deviceName] = [];
-                        }
-                        historyByDevice[deviceName].push(record);
-                        historyImportCount++;
-                    });
-                    
-                    // Sort history records within each device by TS (สำคัญมากเพื่อให้ลำดับถูกต้อง)
-                    for (const deviceName in historyByDevice) {
-                        historyByDevice[deviceName].sort((a, b) => a.ts - b.ts);
-                        
-                        // Overwrite/Set ALL history records for this device
-                        // ต้องมั่นใจว่าฟังก์ชัน saveDeviceRecords จะอัปเดต Document ใน Firestore
-                        await saveDeviceRecords(currentSiteKey, deviceName, historyByDevice[deviceName]);
-                    }
-                }
-
-                // 3. Finalize
-                Swal.fire('นำเข้าสำเร็จ', 
-                    `นำเข้าข้อมูลทะเบียนทรัพย์สิน ${assetImportCount} รายการ<br>` + 
-                    `นำเข้าประวัติการชำรุด ${historyImportCount} รายการ`, 
-                    'success'
-                );
-                
-                // Refresh UI after successful import
-                window.updateDeviceSummary();
-                window.updateDeviceStatusOverlays(currentSiteKey);
-
-            } catch (error) {
-                console.error("Import Error:", error);
-                Swal.fire('ข้อผิดพลาดในการนำเข้า', 
-                    `เกิดข้อผิดพลาดขณะประมวลผลไฟล์: ${error.message}`, 
-                    'error'
-                );
-            }
-        };
-        reader.onerror = (error) => {
-            console.error("File Read Error:", error);
-            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ได้', 'error');
-        };
-        
-        // 2. Trigger the file selection dialog
-        reader.readAsArrayBuffer(file);
-    };
-
-    // 3. คลิกเปิดกล่องโต้ตอบการเลือกไฟล์
-    fileInput.click();
-};
-
-// **ฟังก์ชันเสริมที่จำเป็นเพื่อป้องกัน ReferenceError (จากปุ่มใน HTML)**
-window.clearCurrentDevice = async function() {
-    if (!currentDevice) return;
-    
-    // ตรงนี้อาจเป็น SweetAlert2 เพื่อยืนยันการล้างข้อมูล
-    const confirmed = await Swal.fire({
-        title: 'ยืนยันการล้างข้อมูล',
-        text: `คุณแน่ใจหรือไม่ที่จะล้างข้อมูลทะเบียนทรัพย์สินและประวัติทั้งหมดของ ${currentDevice} ?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'ใช่, ล้างเลย!',
-        cancelButtonText: 'ยกเลิก'
-    });
-
-    if (confirmed.isConfirmed) {
-        try {
-            // ล้าง Asset Registration
-            const assetDocRef = db.collection('asset_registration').doc(currentSiteKey);
-            const doc = await assetDocRef.get();
-            if (doc.exists) {
-                const allAssets = doc.data();
-                delete allAssets[currentDevice];
-                await assetDocRef.set(allAssets); 
-            }
-            
-            // ล้าง History (สมมติว่าคุณมีฟังก์ชันล้าง History)
-            await saveDeviceRecords(currentSiteKey, currentDevice, []); 
-
-            Swal.fire('ล้างข้อมูลสำเร็จ', `ข้อมูลของอุปกรณ์ ${currentDevice} ถูกล้างเรียบร้อยแล้ว`, 'success');
-            clearForm();
-            window.closeForm();
-            window.updateDeviceSummary();
-            window.updateDeviceStatusOverlays(currentSiteKey);
-
-        } catch (error) {
-             Swal.fire('ข้อผิดพลาด', 'ไม่สามารถล้างข้อมูลได้: ' + error.message, 'error');
-        }
-    }
-};
 function resetFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('sortOrder').value = 'desc';
@@ -1282,6 +1312,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
