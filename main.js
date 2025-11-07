@@ -1006,11 +1006,11 @@ window.updateDeviceSummary = async function() {
     if (!siteData) return;
 
     // Filter/Sort Parameters
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const sortOrder = document.getElementById('sortOrder').value;
-    const filterStatus = document.getElementById('filterStatus').value;
-    const from = document.getElementById('fromDate').value;
-    const to = document.getElementById('toDate').value;
+   const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+    const sortOrder = document.getElementById('sortOrder')?.value || 'desc';
+    const filterStatus = document.getElementById('filterStatus')?.value || 'all';
+    const from = document.getElementById('fromDate')?.value || '';
+    const to = document.getElementById('toDate')?.value || '';
 
     // Fetch all documents for the current site
     const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' }); 
@@ -1131,15 +1131,21 @@ window.updateDeviceSummary = async function() {
     }
     
     // Pagination controls
-    document.getElementById('pagination').innerHTML = `
+   const paginationDiv = document.getElementById('pagination');
+
+if (paginationDiv) {
+    paginationDiv.innerHTML = `
         <div class="flex justify-center items-center gap-2 mt-2">
             <button class="btn" onclick="changePage(-1)" ${currentPage===1?'disabled':''}>⬅️ ก่อนหน้า</button>
             <span>หน้า ${currentPage} / ${totalPages}</span>
             <button class="btn" onclick="changePage(1)" ${currentPage===totalPages?'disabled':''}>ถัดไป ➡️</button>
         </div>
     `;
+} else {
+    console.error("Error: Element 'pagination' not found.");
+}
 
-    updateChart(summary);
+updateChart(summary); // เรียก updateChart ที่แก้ไขแล้ว
 };
 
 window.updateAllAffectedDevicesSummary = async function(deviceNames) {
@@ -1198,8 +1204,21 @@ function updateChart(summary) {
     const top10 = sorted.slice(0, 10);
     const labels = top10.map(s => s.device);
     const data = top10.map(s => s.count);
+    
+    // ***************************************************************
+    // ✅ FIX 1: ป้องกัน Error เมื่อ Chart Element เป็น null
+    // ***************************************************************
+    const chartElement = document.getElementById('chart'); 
+    if (!chartElement) {
+        console.error("Error: Chart element with ID 'chart' not found. Skipping chart rendering.");
+        return; 
+    }
+
     if (chartInstance) chartInstance.destroy();
-    const ctx = document.getElementById('chart').getContext('2d');
+    
+    // ใช้ chartElement ที่ตรวจสอบแล้ว
+    const ctx = chartElement.getContext('2d'); 
+    
     // Assume Chart.js is loaded
     chartInstance = new Chart(ctx, {
         type: 'bar',
@@ -1436,6 +1455,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
