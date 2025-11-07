@@ -11,6 +11,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig); 
 const db = firebase.firestore();
+const auth = firebase.auth();
 db.settings({
   // บังคับให้ใช้ Long Polling แทน QUIC เพื่อหลีกเลี่ยงปัญหาเครือข่าย/ไฟร์วอลล์
   experimentalForceLongPolling: true,
@@ -74,8 +75,8 @@ function updateUIForAuthState(user) {
         authButton.classList.remove('btn-brand');
         authButton.classList.add('btn-ghost');
         
-        userNameDisplay.textContent = `ยินดีต้อนรับ: ${email}`;
-        userNameDisplay.classList.remove('hidden');
+        Display.textContent = `ยินดีต้อนรับ: ${email}`;
+        Display.classList.remove('hidden');
 
         // แสดงปุ่มฟังก์ชันทั้งหมดเมื่อล็อคอินแล้ว
         summaryButton.classList.remove('hidden');
@@ -96,7 +97,7 @@ function updateUIForAuthState(user) {
         authButton.classList.add('btn-brand');
         authButton.classList.remove('btn-ghost');
         
-        userNameDisplay.classList.add('hidden');
+        Display.classList.add('hidden');
 
         // ซ่อนปุ่มฟังก์ชันทั้งหมดเมื่อยังไม่ล็อคอิน
         summaryButton.classList.add('hidden');
@@ -336,8 +337,6 @@ window.closeForm = function() {
 }
 
 function clearForm() {
-    // History Fields
-    // 💡 REMOVED: document.getElementById('userName').value = '';
     document.getElementById('status').value = 'ok';
     document.getElementById('brokenDate').value = ''; 
     document.getElementById('fixedDate').value = ''; 
@@ -373,7 +372,6 @@ window.saveData = async function() {
         return false;
     }
     // --- 1. History Data ---
-    const userName = document.getElementById('userName').value.trim();
     const statusVal = document.getElementById('status').value;
     const brokenDate = document.getElementById('brokenDate').value;
     const fixedDate = document.getElementById('fixedDate').value;
@@ -957,7 +955,6 @@ window.editRecord = async function(ts) {
     const idx = records.findIndex(r => String(r.ts) === String(ts));
     if (idx < 0) return;
     const r = records[idx];
-    document.getElementById('userName').value = r.user || '';
     document.getElementById('status').value = r.status || 'ok';
     document.getElementById('brokenDate').value = r.brokenDate || '';
     document.getElementById('fixedDate').value = r.fixedDate || '';
@@ -1401,6 +1398,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
