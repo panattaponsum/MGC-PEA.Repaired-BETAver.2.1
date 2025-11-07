@@ -1388,20 +1388,24 @@ window.clearAllDevices = async function() {
 
 // สลับหน้า
 window.showSummary = function() {
-    document.getElementById('topologyPage').classList.add('hidden');
-    document.getElementById('summaryPage').classList.remove('hidden');
+    // 🌟 เปลี่ยน .getElementById('ID').classList.add เป็น .getElementById('ID')?.classList.add
+    document.getElementById('topologyPage')?.classList.add('hidden');
+    document.getElementById('summaryPage')?.classList.remove('hidden');
+    
+    // บรรทัดนี้จะถูกเรียกต่อ ไม่ว่าการสลับหน้าจะสมบูรณ์หรือไม่
     window.updateDeviceSummary(); 
 };
 
 window.showTopology = function() {
-    document.getElementById('summaryPage').classList.add('hidden');
-    document.getElementById('topologyPage').classList.remove('hidden');
+    // 🌟 เปลี่ยน .getElementById('ID').classList.add เป็น .getElementById('ID')?.classList.add
+    document.getElementById('summaryPage')?.classList.add('hidden');
+    document.getElementById('topologyPage')?.classList.remove('hidden');
+    
     if (typeof imageMapResize === 'function') {
         imageMapResize();
     }
 	window.updateDeviceStatusOverlays(currentSiteKey);
 };
-
 function switchSite(siteKey) {
     const siteData = sites[siteKey];
     if (!siteData) return;
@@ -1455,6 +1459,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
