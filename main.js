@@ -11,23 +11,30 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig); 
 const db = firebase.firestore();
+db.settings({
+  experimentalForceLongPolling: true,
+});
 const auth = firebase.auth();
 auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
 auth.getRedirectResult()
     .then((result) => {
-        // หากไม่มี result หรือไม่มี user แปลว่าไม่ใช่การกลับมาจากการล็อคอินด้วย Redirect 
+        // ไม่ต้องทำอะไรหากไม่ใช่การกลับมาจากการ Redirect
         if (!result || !result.user) {
             return;
         }
 
-        // หากล็อคอินสำเร็จ: auth.onAuthStateChanged จะจัดการ UI ต่อไป
+        // หากล็อคอินสำเร็จ: onAuthStateChanged จะจัดการ UI ต่อไป
         console.log("Redirect login successful:", result.user.email);
+        
+        // 💡 ตรวจสอบ: หากท่านมี Swal.fire ที่ทำให้เกิด Error ให้เปลี่ยนเป็น console.log
+        // แต่ถ้าไม่มี Error อะไรแล้ว ก็ไม่ต้องทำอะไรนอกจากปล่อยให้ onAuthStateChanged ทำงานต่อ
     })
     .catch((error) => {
-        // หากเกิดข้อผิดพลาดระหว่างการ Redirect
         console.error("Redirect login failed:", error);
-        // แสดงข้อความแจ้งเตือน
-        Swal.fire('ข้อผิดพลาดการล็อคอิน', 'กรุณาลองอีกครั้ง: ' + error.message, 'error');
+        // แสดงข้อความแจ้งเตือนเมื่อ Login ล้มเหลว
+        if (typeof Swal !== 'undefined') {
+             Swal.fire('ข้อผิดพลาดการล็อคอิน', 'กรุณาลองอีกครั้ง: ' + error.message, 'error');
+        }
     });
 auth.onAuthStateChanged(function(user) {
  
@@ -37,10 +44,7 @@ auth.onAuthStateChanged(function(user) {
     } else {       
     }
 });
-db.settings({
-  // บังคับให้ใช้ Long Polling แทน QUIC เพื่อหลีกเลี่ยงปัญหาเครือข่าย/ไฟร์วอลล์
-  experimentalForceLongPolling: true,
-});
+
 const devicesCol = db.collection("devices"); // 💡 Not used globally in this structure, but kept for context
 
 const sites = {
@@ -227,13 +231,9 @@ function updateUIForAuthState(user) {
 
 window.handleAuthAction = function() {
     if (!auth.currentUser) {
-        // สร้าง Provider
         const provider = new firebase.auth.GoogleAuthProvider();
-        
-        // 🎯 FIX 1: ลบ ; และ .then/.catch ออก
         auth.signInWithRedirect(provider);
-        // เมื่อใช้ Redirect การทำงานจะสิ้นสุดที่บรรทัดนี้ และหน้าเว็บจะโหลดใหม่
-        
+              
     } else {
         // โค้ดสำหรับ Logout
         auth.signOut().then(() => {
@@ -1520,6 +1520,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
