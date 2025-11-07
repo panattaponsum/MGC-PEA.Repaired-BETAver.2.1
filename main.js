@@ -58,6 +58,44 @@ const pageSize = 7;
 let isAuthenticated = false;
 let currentUser = null; // Store user object
 
+function initializeSiteSelection() {
+    const locationSelect = document.getElementById("location-select");
+    
+    if (!locationSelect) {
+        console.error("Error: Element with ID 'location-select' not found.");
+        return; 
+    }
+
+    // (A) เพิ่ม Event Listener (ถ้ายังไม่ได้ทำใน DOMContentLoaded)
+    // ถ้าเคยทำแล้วใน DOMContentLoaded ให้ลบออกจาก DOMContentLoaded และใส่ไว้ตรงนี้แทน
+    locationSelect.addEventListener("change", function() {
+        switchSite(this.value);
+    });
+    
+    try {
+        let initialSiteKey = locationSelect.value;
+        const siteKeys = Object.keys(sites); 
+        
+        // ตรวจสอบและตั้งค่า Site Key เริ่มต้น
+        if (!initialSiteKey || !sites[initialSiteKey]) {
+            if (siteKeys.length > 0) {
+                 initialSiteKey = siteKeys[0];
+                 locationSelect.value = initialSiteKey; 
+            } else {
+                 console.warn("No sites defined in the 'sites' object.");
+                 return;
+            }
+        }
+        
+        // (B) เรียก switchSite เพื่อโหลดแผนผังและข้อมูล (รวมถึง setupRealtimeListener)
+        // การเรียกนี้จะเกิดขึ้นต่อเมื่อ Firebase Auth พร้อมแล้วเท่านั้น
+        window.switchSite(initialSiteKey); 
+        
+    } catch (error) {
+         console.error("Initial Site Switch Error:", error);
+    }
+}
+
 function updateUIForAuthState(user) {
     const authButton = document.getElementById('authButton');
     
@@ -123,10 +161,7 @@ function updateUIForAuthState(user) {
         // ปิดฟอร์มบันทึกหากเปิดอยู่เมื่อออกจากระบบ
         window.closeForm(); 
     }
-    // อัปเดตข้อมูลสรุป (อาจจะแสดงข้อมูลว่างถ้าไม่มีสิทธิ์)
-    if (typeof window.updateDeviceSummary === 'function') {
-        window.updateDeviceSummary();
-    }
+   
 }
 window.handleAuthAction = function() {
     if (!auth.currentUser) {
@@ -160,9 +195,28 @@ function requireAuth() {
     return true;
 }
 
-// ฟังการเปลี่ยนแปลงสถานะ Authentication
-auth.onAuthStateChanged(updateUIForAuthState);
-// 💥 END: NEW AUTHENTICATION STATE MANAGEMENT 💥
+auth.onAuthStateChanged(function(user) {
+    // ... โค้ดเดิม: ประกาศตัวแปร และเรียก updateUIForAuthState ...
+    updateUIForAuthState(user); // โค้ดนี้จะจัดการซ่อน/แสดงปุ่ม
+
+    if (user) {
+        // ✅ FIX 2: เมื่อล็อคอินสำเร็จ ให้เริ่มต้นโหลดข้อมูลไซต์
+        initializeSiteSelection(); 
+        
+        // 💡 OPTIONAL: ถ้ามีหน้าล็อคอินเฉพาะ ให้ซ่อนมันตรงนี้
+        // document.getElementById('loginPage')?.classList.add('hidden');
+        
+    } else {
+        // 💡 OPTIONAL: ถ้าออกจากระบบ ให้ไปหน้าหลัก/ซ่อน Summary
+        document.getElementById('summaryPage')?.classList.add('hidden');
+        document.getElementById('topologyPage')?.classList.remove('hidden');
+        
+        // ✅ FIX 3: เมื่อ Logout ให้เคลียร์ข้อมูลสรุปที่ค้างอยู่ (ถ้ามี)
+        if (typeof window.updateDeviceSummary === 'function') {
+            window.updateDeviceSummary(); // เรียกเพื่อแสดงตารางว่าง/ข้อความ 'กรุณาล็อคอิน'
+        }
+    }
+});
 
 function escapeHtml(text) {
     return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>');
@@ -1428,37 +1482,12 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error("Error: Element with ID 'location-select' not found.");
         return; 
     }
-    
-    locationSelect.addEventListener("change", function() {
-        switchSite(this.value);
-    });
-    
-    try {
-        let initialSiteKey = locationSelect.value;
-        const siteKeys = Object.keys(sites);
-        
-        if (!initialSiteKey || !sites[initialSiteKey]) {
-            if (siteKeys.length > 0) {
-                 initialSiteKey = siteKeys[0];
-                 locationSelect.value = initialSiteKey; 
-            } else {
-                 console.warn("No sites defined in the 'sites' object.");
-                 return;
-            }
-        }
-        
-        switchSite(initialSiteKey); 
-        
-    } catch (error) {
-         console.error("Initial Site Switch Error:", error);
-          // 💡 หากมี SweetAlert2 ให้ใช้ Swal.fire
-         // Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message, 'error');
-    }
 });
 
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
