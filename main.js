@@ -80,7 +80,7 @@ function updateUIForAuthState(user) {
         
         // 💥 FIX: ใช้ userNameDisplay ที่ถูกต้องและมีการตรวจสอบ 💥
         if (userNameDisplay) {
-             userNameDisplay.textContent = `ยินดีต้อนรับ: ${email}`;
+             userNameDisplay.textContent = `${email}`;
              userNameDisplay.classList.remove('hidden');
         }
 
@@ -572,91 +572,111 @@ async function getAssetDataForExport(siteKey) {
 }
 
 window.exportAllDataExcel = async function() {
-	// 💡 MODIFICATION 5: บังคับล็อคอินก่อนส่งออก
-    if (!requireAuth()) {
-        return;
-    }
-    if (typeof XLSX === 'undefined') {
-        Swal.fire('ข้อผิดพลาด', 'ไม่พบไลบรารี SheetJS (XLSX) กรุณาตรวจสอบการนำเข้าไฟล์ script', 'error');
-        return;
-    }
-    if (!currentSiteKey || !sites[currentSiteKey]) {
-        Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกไซต์ที่ต้องการส่งออกข้อมูล', 'error');
-        return;
-    }
-    
-    const siteName = sites[currentSiteKey].name;
-    const devices = sites[currentSiteKey].devices;
-    
-    Swal.fire({
-        title: 'กำลังส่งออกข้อมูล',
-        html: `กำลังรวบรวมข้อมูล ${siteName} (${devices.length} อุปกรณ์)...`,
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
+    // 💡 FIX 1: ประกาศตัวแปร dataMap เพื่อเก็บข้อมูลที่ดึงมา และแก้ ReferenceError
+    const dataMap = {}; 
 
-    const workbook = XLSX.utils.book_new();
-    let allHistoryRecords = [];
-    let allAssetRecords = [];
+    // 💡 MODIFICATION 5: บังคับล็อคอินก่อนส่งออก
+    if (!requireAuth()) {
+        return;
+    }
+    if (typeof XLSX === 'undefined') {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบไลบรารี SheetJS (XLSX) กรุณาตรวจสอบการนำเข้าไฟล์ script', 'error');
+        return;
+    }
+    if (!currentSiteKey || !sites[currentSiteKey]) {
+        Swal.fire('ข้อผิดพลาด', 'กรุณาเลือกไซต์ที่ต้องการส่งออกข้อมูล', 'error');
+        return;
+    }
+    
+    const siteName = sites[currentSiteKey].name;
+    const devices = sites[currentSiteKey].devices;
+    
+    Swal.fire({
+        title: 'กำลังส่งออกข้อมูล',
+        html: `กำลังรวบรวมข้อมูล ${siteName} (${devices.length} อุปกรณ์)...`,
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
 
-    const assetData = await getAssetDataForExport(currentSiteKey);
+    const workbook = XLSX.utils.book_new();
+    let allHistoryRecords = [];
+    let allAssetRecords = [];
 
-    // 1. Fetch History Data (Device by Device)
-    for (const deviceName of devices) {
-        try {
-            const docData = dataMap[deviceName] || {};
-            const records = docData?.records || [];
-            const assetData = await loadAssetData(deviceName);
+    // ดึงข้อมูล Asset Registration สำหรับทุกอุปกรณ์ในไซต์
+    const assetData = await getAssetDataForExport(currentSiteKey);
+
+    // 1. Fetch History Data (Device by Device)
+    for (const deviceName of devices) {
+        try {
+            // 💡 FIX 2: ดึงประวัติ (History Records) จริง ๆ จาก Firebase
+            // นี่คือส่วนที่ขาดหายไปและทำให้ records ว่าง
+            const records = await getDeviceRecords(currentSiteKey, deviceName); 
             
-            // 💡 MODIFICATION 6: เพิ่ม Editor UID ในการ Export
-            const formattedHistory = records.map(rec => ({
-                'Device': deviceName,
-                'User': rec.user || 'ไม่ระบุ',
-                'Editor UID': rec.editorUID || 'ไม่ระบุ', // NEW FIELD: สำหรับระบุตัวตนผู้แก้ไขที่ไม่ซ้ำ
-                'Status': rec.status === 'ok' ? 'ใช้งานได้' : 'ชำรุด',
-                'Broken Date': rec.brokenDate || '',
-                'Fixed Date': rec.fixedDate || '',
-                'Description': rec.description || '',
-                // **เรียกใช้ window.convertTimestampToDateTime**
-                'Timestamp (บันทึก)': window.convertTimestampToDateTime(rec.ts),
-                'TS (Unix)': rec.ts
-            }));
+            // 💡 FIX 3: เก็บ records ที่ดึงมาไว้ใน dataMap เพื่อให้โค้ดส่วนถัดไปทำงานได้
+            dataMap[deviceName] = { records: records };
 
-            allHistoryRecords = allHistoryRecords.concat(formattedHistory);
-            
-            // 2. Prepare Asset Data (for the Asset Registration Sheet)
-            const deviceAsset = assetData[deviceName] || {};
-            allAssetRecords.push({
-                'Device': deviceName,
-                'Asset ID': deviceAsset.assetId || '',
-                'Manufacturer': deviceAsset.manufacturer || '',
-                'Model': deviceAsset.model || '',
-                'Install Date': deviceAsset.installDate || '', 
-                'Warranty Start Date': deviceAsset.warrantyStartDate || '',
-                'Warranty Years': deviceAsset.warrantyYears || 0
+            // ดึง Asset Data ของอุปกรณ์ปัจจุบัน (ใช้ loadAssetData หรือ assetData[deviceName])
+            const assetDeviceData = await loadAssetData(deviceName); // ใช้ loadAssetData เพื่อความแน่นอน
+            
+            // 💡 ใช้ records ที่ถูกดึงมาใหม่เพื่อ format
+            const formattedHistory = records.map(rec => ({ 
+                'Device': deviceName,
+                'User': rec.user || 'ไม่ระบุ',
+                'Editor UID': rec.editorUID || 'ไม่ระบุ',
+                'Status': rec.status === 'ok' ? 'ใช้งานได้' : 'ชำรุด',
+                'Broken Date': rec.brokenDate || '',
+                'Fixed Date': rec.fixedDate || '',
+                'Description': rec.description || '',
+                'Timestamp (บันทึก)': window.convertTimestampToDateTime(rec.ts),
+                'TS (Unix)': rec.ts
+            }));
+
+            allHistoryRecords = allHistoryRecords.concat(formattedHistory);
+            
+            // 2. Prepare Asset Data (for the Asset Registration Sheet)
+            const deviceAsset = assetDeviceData || {};
+            allAssetRecords.push({
+                'Device': deviceName,
+                'Asset ID': deviceAsset.assetId || '',
+                'Manufacturer': deviceAsset.manufacturer || '',
+                'Model': deviceAsset.model || '',
+                'Install Date': deviceAsset.installDate || '', 
+                'Warranty Start Date': deviceAsset.warrantyStartDate || '',
+                'Warranty Years': deviceAsset.warrantyYears || 0
+            });
+            
+        } catch (e) {
+            console.error(`Error fetching data for device ${deviceName}:`, e);
+            // แสดงข้อผิดพลาดเล็กน้อยโดยไม่หยุดการ Export ทั้งหมด
+            Swal.update({
+                title: 'ข้อผิดพลาดบางส่วน',
+                html: `เกิดข้อผิดพลาดในการดึงข้อมูล ${deviceName} แต่จะดำเนินการต่อ`
             });
-            
-        } catch (e) {
-            console.error(`Error fetching data for device ${deviceName}:`, e);
-        }
+        }
+    }
+
+    // 3. Create Worksheets
+    if (allHistoryRecords.length > 0) {
+        const wsHistory = XLSX.utils.json_to_sheet(allHistoryRecords);
+        XLSX.utils.book_append_sheet(workbook, wsHistory, 'History_All');
+    } 
+    
+    if (allAssetRecords.length > 0) {
+        const wsAsset = XLSX.utils.json_to_sheet(allAssetRecords);
+        XLSX.utils.book_append_sheet(workbook, wsAsset, 'Asset_Registration');
+    }
+
+    // ตรวจสอบว่ามีข้อมูลใน workbook หรือไม่ก่อน Download
+    if (workbook.SheetNames.length === 0) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลสำหรับส่งออก', 'warning');
+        return;
     }
 
-    // 3. Create Worksheets
-    if (allHistoryRecords.length > 0) {
-        const wsHistory = XLSX.utils.json_to_sheet(allHistoryRecords);
-        XLSX.utils.book_append_sheet(workbook, wsHistory, 'History_All');
-    } 
-    
-    if (allAssetRecords.length > 0) {
-        const wsAsset = XLSX.utils.json_to_sheet(allAssetRecords);
-        XLSX.utils.book_append_sheet(workbook, wsAsset, 'Asset_Registration');
-    }
-
-    // 4. Download File
-    const filename = `${currentSiteKey}_Data_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    XLSX.writeFile(workbook, filename);
-    
-    Swal.fire('ส่งออกข้อมูลสำเร็จ', `ไฟล์ ${filename} ถูกดาวน์โหลดแล้ว`, 'success');
+    // 4. Download File
+    const filename = `${currentSiteKey}_Data_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+    
+    Swal.fire('ส่งออกข้อมูลสำเร็จ', `ไฟล์ ${filename} ถูกดาวน์โหลดแล้ว`, 'success');
 };
 
 window.importData = function() {
@@ -1426,6 +1446,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
