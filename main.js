@@ -1091,170 +1091,129 @@ window.editRecord = async function(ts) {
     document.getElementById('editHint').classList.remove('hidden');
 };
 
-window.updateDeviceSummary = async function() {
+window.updateDeviceSummary = async function () {
   console.log("📊 updateDeviceSummary() เริ่มทำงาน...");
 
   const siteData = sites[currentSiteKey];
   if (!siteData) {
-    console.warn("⚠️ siteData not found for key:", currentSiteKey);
+    console.warn("⚠️ ไม่มี siteData");
     return;
   }
 
+  const search = document.getElementById("searchInput")?.value?.toLowerCase() || "";
+  const sortOrder = document.getElementById("sortOrder")?.value || "desc";
+  const filterStatus = document.getElementById("filterStatus")?.value || "all";
+  const from = document.getElementById("fromDate")?.value || "";
+  const to = document.getElementById("toDate")?.value || "";
+
   console.log("✅ currentSiteKey:", currentSiteKey, "siteData:", siteData);
-
-  // อ่านค่าจาก Filter / Sort
-  const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
-  const sortOrder = document.getElementById('sortOrder')?.value?.trim() || 'desc';
-  const filterStatus = (document.getElementById('filterStatus')?.value || 'all').trim();
-  const from = document.getElementById('fromDate')?.value || '';
-  const to = document.getElementById('toDate')?.value || '';
-
   console.log("🔍 Filters:", { search, sortOrder, filterStatus, from, to });
 
-  // ดึงข้อมูล Firestore
-  const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' });
-  const dataMap = {};
-  docsSnap.forEach(d => (dataMap[d.id] = d.data()));
+  const siteRef = collection(db, "sites", currentSiteKey, "devices");
+  const docsSnap = await getDocs(siteRef);
   console.log("📦 docsSnap loaded:", docsSnap.size, "documents");
 
-  let summary = [];
+  const allDevices = siteData.devices || [];
+  const summaryList = [];
 
-  for (const dev of siteData.devices) {
-    const docData = dataMap[dev];
-    const records = docData?.records || [];
+  for (const deviceName of allDevices) {
+    const docRef = doc(db, "sites", currentSiteKey, "devices", deviceName);
+    const historyRef = collection(docRef, "history");
+    const historySnap = await getDocs(historyRef);
 
-    let latestRecord = null;
-    if (records.length > 0) {
-      records.sort((a, b) => a.ts - b.ts);
-      latestRecord = records[records.length - 1];
+    let downCount = 0;
+    let latestDownDate = "-";
+    let latestFixDate = "-";
+    let latestDesc = "-";
+    let currentStatus = "✅ ใช้งานได้";
+    let duration = "-";
+
+    const historyData = [];
+    historySnap.forEach((h) => historyData.push(h.data()));
+
+    if (historyData.length > 0) {
+      // เรียงวันที่ใหม่สุดก่อน
+      historyData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      // คำนวณสถานะล่าสุด
+      const last = historyData[0];
+      if (last.status === "down") {
+        currentStatus = "❎ ชำรุด";
+        if (last.brokenDate && !last.fixedDate) {
+          const diff = Math.floor((Date.now() - new Date(last.brokenDate)) / (1000 * 60 * 60 * 24));
+          duration = `${diff} วัน (ชำรุด)`;
+        }
+      }
+
+      // นับจำนวนครั้งชำรุด
+      downCount = historyData.filter((x) => x.status === "down").length;
+      latestDownDate = historyData.find((x) => x.status === "down")?.brokenDate || "-";
+      latestFixDate = historyData.find((x) => x.status === "ok")?.fixedDate || "-";
+      latestDesc = last.description || "-";
     }
 
-    const downCount = docData?.downCount || 0;
-    const currentDeviceStatus = docData?.currentStatus || 'ok';
-    const isCurrentlyDown = currentDeviceStatus === 'down';
-
-    // --- คำนวณระยะเวลาชำรุด ---
-    let latestBrokenDuration = '-';
-    let latestBrokenDays = 0;
-
-    try {
-      if (isCurrentlyDown && latestRecord?.brokenDate) {
-        latestBrokenDays = calculateDaysDifference(latestRecord.brokenDate, null);
-        latestBrokenDuration = formatDuration(latestBrokenDays) + ' (ชำรุด)';
-      } else if (
-        latestRecord?.status === 'ok' &&
-        latestRecord?.brokenDate &&
-        latestRecord?.fixedDate
-      ) {
-        latestBrokenDays = calculateDaysDifference(latestRecord.brokenDate, latestRecord.fixedDate);
-        latestBrokenDuration = formatDuration(latestBrokenDays);
-      }
-    } catch (e) {
-      console.warn("⚠️ Error calculating duration for", dev, e);
-    }
-
-    // --- การกรองวันที่ ---
-    const latestDateStr = latestRecord?.brokenDate || null;
-    if (latestDateStr) {
-      const latestTs = new Date(latestDateStr).getTime();
-      if (from) {
-        const fromTs = new Date(from).getTime();
-        if (latestTs < fromTs) continue;
-      }
-      if (to) {
-        const toTs = new Date(to).getTime() + 86400000;
-        if (latestTs >= toTs) continue;
-      }
-    }
-
-    // --- การกรองสถานะ ---
-    if (filterStatus === 'currently-down' && !isCurrentlyDown) continue;
-    if (filterStatus === 'down' && downCount === 0) continue;
-    if (filterStatus === 'clean' && downCount > 0) continue;
-    if (search && !dev.toLowerCase().includes(search)) continue;
-
-    summary.push({
-      device: dev,
+    summaryList.push({
+      device: deviceName,
+      status: currentStatus,
       count: downCount,
-      brokenDate: latestRecord?.brokenDate || '-',
-      fixedDate: latestRecord?.fixedDate || '-',
-      status: isCurrentlyDown ? '❎ ชำรุด' : '✅ ใช้งานได้',
-      latestDescription: latestRecord?.description || '-',
-      latestBrokenDuration,
-      latestBrokenDays,
+      downDate: latestDownDate,
+      fixDate: latestFixDate,
+      duration,
+      desc: latestDesc,
     });
   }
 
-  // --- เรียงลำดับ ---
-  summary.sort((a, b) => {
-    const countSort = sortOrder === 'desc' ? b.count - a.count : a.count - b.count;
-    if (countSort !== 0) return countSort;
-    return b.latestBrokenDays - a.latestBrokenDays;
-  });
-
-  // --- แสดงข้อมูล ---
-  console.log(`📊 Summary devices: ${summary.length} entries`);
+  console.log("📊 Summary devices:", summaryList.length, "entries");
   console.table(
-    summary.map((s) => ({
-      Device: s.device,
-      Status: s.status,
-      Count: s.count,
-      Duration: s.latestBrokenDuration,
+    summaryList.map((x, i) => ({
+      index: i,
+      Device: x.device,
+      Status: x.status,
+      Count: x.count,
+      Duration: x.duration,
     }))
   );
 
-  const tbody = document.getElementById('summaryBody');
+  // กรอง
+  let filtered = summaryList.filter((x) =>
+    x.device.toLowerCase().includes(search)
+  );
+
+  if (filterStatus === "down") {
+    filtered = filtered.filter((x) => x.status === "❎ ชำรุด");
+  } else if (filterStatus === "clean") {
+    filtered = filtered.filter((x) => x.count === 0);
+  } else if (filterStatus === "currently-down") {
+    filtered = filtered.filter((x) => x.duration.includes("ชำรุด"));
+  }
+
+  // เรียง
+  filtered.sort((a, b) => sortOrder === "asc" ? a.count - b.count : b.count - a.count);
+
+  // === เขียนข้อมูลลงตาราง ===
+  const tbody = document.getElementById("summaryBody");
   if (!tbody) {
-    console.error("❌ summaryBody element not found in DOM");
+    console.error("❌ ไม่พบ #summaryBody ใน DOM");
     return;
   }
 
-  tbody.innerHTML = '';
-
-  if (summary.length === 0) {
-    tbody.innerHTML =
-      '<tr><td colspan="7" class="text-center py-4 text-gray-400">ไม่พบข้อมูลอุปกรณ์ตามเงื่อนไขที่เลือก</td></tr>';
+  tbody.innerHTML = "";
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-gray-500 py-3">ไม่พบข้อมูล</td></tr>`;
   } else {
-    summary.forEach((s) => {
-      const tr = document.createElement('tr');
-      tr.className = 'border-t border-white/10 hover:bg-white/5 cursor-pointer';
+    filtered.forEach((d) => {
+      const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td class="text-left font-medium">${escapeHtml(s.device)}</td>
-        <td><span class="${s.count > 0 ? 'tag tag-bad' : 'tag tag-ok'}">${s.count}</span></td>
-        <td>${s.brokenDate}</td>
-        <td>${s.fixedDate}</td>
-        <td><span class="${s.status.includes('ชำรุด') ? 'tag tag-bad' : 'tag tag-ok'}">${s.status}</span></td>
-        <td class="font-semibold text-center">${s.latestBrokenDuration}</td>
-        <td class="text-left text-sm text-gray-300 max-w-[200px] whitespace-normal">${escapeHtml(
-          s.latestDescription || '-'
-        )}</td>
+        <td>${d.device}</td>
+        <td>${d.count}</td>
+        <td>${d.downDate}</td>
+        <td>${d.fixDate}</td>
+        <td>${d.status}</td>
+        <td>${d.duration}</td>
+        <td>${d.desc}</td>
       `;
-      tr.addEventListener('click', () => window.openForm(s.device));
       tbody.appendChild(tr);
     });
-  }
-
-  // --- Pagination ---
-  const paginationDiv = document.getElementById('pagination');
-  const pageSize = 10;
-  const totalPages = Math.max(1, Math.ceil(summary.length / pageSize));
-  if (paginationDiv) {
-    paginationDiv.innerHTML = `
-      <div class="flex justify-center items-center gap-2 mt-2">
-        <button class="btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>⬅️ ก่อนหน้า</button>
-        <span>หน้า ${currentPage} / ${totalPages}</span>
-        <button class="btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>ถัดไป ➡️</button>
-      </div>
-    `;
-  } else {
-    console.error("❌ Element 'pagination' not found.");
-  }
-
-  // --- อัปเดตกราฟ ---
-  try {
-    updateChart(summary);
-  } catch (err) {
-    console.warn("⚠️ updateChart failed:", err);
   }
 
   console.log("✅ updateDeviceSummary() เสร็จสิ้น");
@@ -1514,9 +1473,10 @@ window.showSummary = function() {
   topo?.classList.add('hidden');
   summary.classList.remove('hidden');
 
-  // อัปเดตตาราง Summary
+  // โหลดข้อมูล summary
   window.updateDeviceSummary();
 };
+
 window.showTopology = function() {
   console.log("🟢 showTopology() called");
 
@@ -1556,6 +1516,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
