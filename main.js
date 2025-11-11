@@ -225,13 +225,6 @@ function updateUIForAuthState(user) {
         // 🎯 FIX C: บังคับให้หน้ากลับไปที่ Topology เมื่อ Logout
         document.getElementById('summaryPage')?.classList.add('hidden');
         document.getElementById('topologyPage')?.classList.remove('hidden');
-
-        // 💡 เรียก updateDeviceSummary เพื่อเคลียร์ข้อมูลที่อาจค้างอยู่
-        if (typeof window.updateDeviceSummary === 'function') {
-             window.updateDeviceSummary(); 
-        }
-
-        // --- 💡 MODIFICATION (Load data for Read-Only) ---
         // 🎯 เรียก Logic การเริ่มต้นไซต์ แม้จะยังไม่ล็อคอิน (เพื่อดูข้อมูล)
         initializeSiteSelection();
         // --- 💡 END MODIFICATION ---
@@ -1438,12 +1431,19 @@ function setupRealtimeListener(siteKey) {
         unsubscribe(); // Stop the previous listener
     }
     
-    // Listener ชี้ไปที่ Collection ของไซต์งานปัจจุบัน
+   // Listener ชี้ไปที่ Collection ของไซต์งานปัจจุบัน
     const currentDeviceCollection = db.collection(`sites`).doc(siteKey).collection(`devices`); 
 
     unsubscribe = currentDeviceCollection.onSnapshot(snapshot => { 
-        // เมื่อข้อมูลเปลี่ยนแปลงในไซต์ปัจจุบัน จะเรียกฟังก์ชันสรุปผล
-        window.updateDeviceSummary(); 
+        // 💡 1. ตรวจสอบว่าหน้า Summary แสดงอยู่หรือไม่
+        const summaryPage = document.getElementById('summaryPage');
+        if (summaryPage && !summaryPage.classList.contains('hidden')) {
+            // 💡 2. ถ้าแสดงอยู่ ค่อยอัปเดต
+            window.updateDeviceSummary(); 
+        }
+
+        // 💡 3. อัปเดต Overlay (ไฟกระพริบ) ที่หน้าแผนที่เสมอ
+        window.updateDeviceStatusOverlays(currentSiteKey);
 
     }, (error) => {
         console.error("Firestore Realtime Listener Error:", error);
@@ -1570,6 +1570,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
