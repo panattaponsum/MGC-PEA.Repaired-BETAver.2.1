@@ -38,7 +38,7 @@ auth.getRedirectResult()
     });
 auth.onAuthStateChanged(function(user) {
  
-    updateUIForAuthState(user); 
+    (user); 
 
     if (user) {
     } else {       
@@ -169,26 +169,26 @@ function updateUIForAuthState(user) {
         authButton.textContent = 'Logout';
         authButton.classList.remove('btn-brand');
         authButton.classList.add('btn-ghost');
-        
+
         if (userNameDisplay) {
              userNameDisplay.textContent = `${email}`;
              userNameDisplay.classList.remove('hidden');
         }
 
         // แสดงปุ่มฟังก์ชันทั้งหมดเมื่อล็อคอินแล้ว
-        summaryButton.classList.remove('hidden');
-        exportButton.classList.remove('hidden');
-        importButton.classList.remove('hidden');
-        clearButton.classList.remove('hidden');
-        
+        if(summaryButton) summaryButton.classList.remove('hidden');
+        if(exportButton) exportButton.classList.remove('hidden');
+        if(importButton) importButton.classList.remove('hidden');
+        if(clearButton) clearButton.classList.remove('hidden');
+
         // อัปเดตอีเมลผู้บันทึกในฟอร์ม (หากเปิดอยู่)
         if (document.getElementById('editorEmailDisplay')) {
             document.getElementById('editorEmailDisplay').value = email;
         }
-        
+
         // 🎯 FIX A: เรียก Logic การเริ่มต้นไซต์เมื่อล็อคอินสำเร็จแล้ว
         initializeSiteSelection(); 
-        
+
     } else {
         isAuthenticated = false;
         currentUser = null;
@@ -196,10 +196,21 @@ function updateUIForAuthState(user) {
         authButton.textContent = 'Login Google';
         authButton.classList.add('btn-brand');
         authButton.classList.remove('btn-ghost');
-        
+
         if (userNameDisplay) {
             userNameDisplay.classList.add('hidden');
         }
+
+        // --- 💡 MODIFICATION (Allow Read-Only) ---
+        // แสดงปุ่ม Summary เสมอ
+        if(summaryButton) summaryButton.classList.remove('hidden');
+
+        // ซ่อนปุ่มที่ต้องใช้สิทธิ์
+        if(exportButton) exportButton.classList.add('hidden');
+        if(importButton) importButton.classList.add('hidden');
+        if(clearButton) clearButton.classList.add('hidden');
+        // --- 💡 END MODIFICATION ---
+
         // อัปเดตอีเมลผู้บันทึกในฟอร์ม
         if (document.getElementById('editorEmailDisplay')) {
             document.getElementById('editorEmailDisplay').value = 'กรุณาล็อคอิน';
@@ -207,18 +218,23 @@ function updateUIForAuthState(user) {
 
         // ปิดฟอร์มบันทึกหากเปิดอยู่เมื่อออกจากระบบ
         window.closeForm(); 
-        
+
         // 🎯 FIX B: รีเซ็ต Flag เมื่อผู้ใช้ออกจากระบบ
         siteInitialized = false;
-        
+
         // 🎯 FIX C: บังคับให้หน้ากลับไปที่ Topology เมื่อ Logout
         document.getElementById('summaryPage')?.classList.add('hidden');
         document.getElementById('topologyPage')?.classList.remove('hidden');
-        
+
         // 💡 เรียก updateDeviceSummary เพื่อเคลียร์ข้อมูลที่อาจค้างอยู่
         if (typeof window.updateDeviceSummary === 'function') {
              window.updateDeviceSummary(); 
         }
+
+        // --- 💡 MODIFICATION (Load data for Read-Only) ---
+        // 🎯 เรียก Logic การเริ่มต้นไซต์ แม้จะยังไม่ล็อคอิน (เพื่อดูข้อมูล)
+        initializeSiteSelection();
+        // --- 💡 END MODIFICATION ---
     }
 }
 
@@ -1468,6 +1484,12 @@ function resetFilters() {
 window.resetFilters = resetFilters;
 
 window.clearAllDevices = async function() {
+    // 💡 MODIFICATION: บังคับล็อคอินก่อน
+    if (!requireAuth()) {
+        return;
+    }
+    // 💡 END MODIFICATION
+
     if (confirm("ลบข้อมูลทุกอุปกรณ์?")) {
         const docs = await getAllDevicesDocs(currentSiteKey);
         const batch = db.batch(); 
@@ -1482,7 +1504,6 @@ window.clearAllDevices = async function() {
         window.updateDeviceStatusOverlays(currentSiteKey); 
     }
 }
-
 // สลับหน้า
 window.showSummary = function() {
     // 🌟 เปลี่ยน .getElementById('ID').classList.add เป็น .getElementById('ID')?.classList.add
@@ -1530,6 +1551,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
