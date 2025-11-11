@@ -1439,22 +1439,28 @@ function setupRealtimeListener(siteKey) {
    // Listener ชี้ไปที่ Collection ของไซต์งานปัจจุบัน
     const currentDeviceCollection = db.collection(`sites`).doc(siteKey).collection(`devices`); 
 
-    unsubscribe = currentDeviceCollection.onSnapshot(snapshot => { 
-        // 💡 1. ตรวจสอบว่าหน้า Summary แสดงอยู่หรือไม่
-        const summaryPage = document.getElementById('summaryPage');
-        if (summaryPage && !summaryPage.classList.contains('hidden')) {
-            // 💡 2. ถ้าแสดงอยู่ ค่อยอัปเดต
-            window.updateDeviceSummary(); 
-        }
+    try { // 👈 1. เพิ่ม TRY
+        unsubscribe = currentDeviceCollection.onSnapshot(snapshot => { 
+            // 💡 1. ตรวจสอบว่าหน้า Summary แสดงอยู่หรือไม่
+            const summaryPage = document.getElementById('summaryPage');
+            if (summaryPage && !summaryPage.classList.contains('hidden')) {
+                // 💡 2. ถ้าแสดงอยู่ ค่อยอัปเดต
+                window.updateDeviceSummary(); 
+            }
 
-        // 💡 3. อัปเดต Overlay (ไฟกระพริบ) ที่หน้าแผนที่เสมอ
-        window.updateDeviceStatusOverlays(currentSiteKey);
+            // 💡 3. อัปเดต Overlay (ไฟกระพริบ) ที่หน้าแผนที่เสมอ
+            window.updateDeviceStatusOverlays(currentSiteKey);
 
-    }, (error) => {
-        console.error("Firestore Realtime Listener Error:", error);
-        // 💡 หากมี SweetAlert2 ให้ใช้ Swal.fire
-        // Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลแบบเรียลไทม์ได้: ' + error.message, 'error');
-    });
+        }, (error) => {
+            console.error("Firestore Realtime Listener Error:", error);
+            // 💡 หากมี SweetAlert2 ให้ใช้ Swal.fire
+            // Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลแบบเรียลไทม์ได้: ' + error.message, 'error');
+        });
+    } catch (error) { // 👈 2. เพิ่ม CATCH
+        // 💡 นี่คือ CATCH ที่สำคัญที่สุด: ป้องกันไม่ให้แครชหากยังไม่ล็อคอิน
+        console.warn("Failed to attach realtime listener (Permission Denied?):", error.message);
+        // ไม่ต้องทำอะไร ปล่อยให้แอปทำงานต่อโดยไม่มี realtime
+    }
 }
 function calculateAssetStatus(deviceName, assetData) {
     // ... (ใช้ตรรกะคำนวณเดิมที่เคยแนะนำไป)
@@ -1575,6 +1581,7 @@ document.addEventListener("DOMContentLoaded", function() {
 window.onload = function() {
     try { imageMapResize(); } catch (e) {}
 };
+
 
 
 
