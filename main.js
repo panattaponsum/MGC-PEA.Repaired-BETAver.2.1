@@ -1203,13 +1203,16 @@ window.importData = function(event) {
                         const deviceName = row[headerMap['ชื่ออุปกรณ์']];
                         if (!deviceName) continue;
 
+                        // 💥 FIX: อ่านวันที่ (ที่อาจจะเป็น /) แล้วแปลงกลับเป็น - 💥
+                        const rawWarrantyStart = (row[headerMap['วันที่เริ่มประกัน']] || '').toString().slice(0, 10);
+                        const rawWarrantyEnd = (row[headerMap['วันที่หมดประกัน']] || '').toString().slice(0, 10);
+
                         const assetInfo = {
                             serial: row[headerMap['Serial Number']] || '',
                             model: row[headerMap['Model']] || '',
                             manufacturer: row[headerMap['Manufacturer']] || '',
-                            // 💡 ต้องแปลงวันที่จาก Excel (ถ้ามี)
-                            warrantyStart: (row[headerMap['วันที่เริ่มประกัน']] || '').toString().slice(0, 10) || null,
-                            warrantyEnd: (row[headerMap['วันที่หมดประกัน']] || '').toString().slice(0, 10) || null,
+                            warrantyStart: rawWarrantyStart.replace(/\//g, '-') || null, // แปลง / เป็น -
+                            warrantyEnd: rawWarrantyEnd.replace(/\//g, '-') || null,     // แปลง / เป็น -
                         };
 
                         const docRef = getSiteCollection(currentSiteKey).doc(deviceName);
@@ -1250,8 +1253,14 @@ window.importData = function(event) {
                         devicesToUpdateSummary[deviceName] = true; // 💥 เพิ่มอุปกรณ์นี้ในรายการที่ต้องอัปเดตสรุป
 
                         const statusValue = (row[headerMap['สถานะ']] || '').toString();
-                        const importedBrokenDate = (row[headerMap['วันที่ชำรุด']] || '').toString().slice(0, 10);
-                        const importedFixedDate = (row[headerMap['วันที่ซ่อมแซม']] || '').toString().slice(0, 10);
+                        
+                        // 💥 FIX: อ่านวันที่ (ที่อาจจะเป็น /) แล้วแปลงกลับเป็น - 💥
+                        const rawBrokenDate = (row[headerMap['วันที่ชำรุด']] || '').toString().slice(0, 10);
+                        const rawFixedDate = (row[headerMap['วันที่ซ่อมแซม']] || '').toString().slice(0, 10);
+
+                        const importedBrokenDate = rawBrokenDate.replace(/\//g, '-'); // แปลง / เป็น -
+                        const importedFixedDate = rawFixedDate.replace(/\//g, '-');  // แปลง / เป็น -
+
                         const fixedDateValue = importedFixedDate.length > 0 ? importedFixedDate : null;
 
                         const record = {
@@ -1317,7 +1326,6 @@ window.importData = function(event) {
     reader.readAsArrayBuffer(file);
     event.target.value = null; // เคลียร์ไฟล์ที่เลือก
 };
-
 
 window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey];
@@ -1594,5 +1602,6 @@ window.onload = function() {
     try { imageMapResize(); } catch (e) {}
     
 };
+
 
 
