@@ -194,7 +194,7 @@ function getWarrantyStatus(warrantyEnd) {
     } else if (diffDays <= 180) {
         return 'warn'; // ใกล้หมดประกัน (180 วัน)
     } else {
-        return 'ok'; // ยังรับประกัน
+        return 'ok'; // รับประกัน
     }
 }
 
@@ -770,9 +770,9 @@ function updateAssetWarrantyStatusField() {
     const field = document.getElementById('assetWarrantyStatus');
     
     switch (status) {
-        case 'ok': field.value = 'ยังรับประกัน'; break;
+        case 'ok': field.value = 'รับประกัน'; break;
         case 'warn': field.value = 'ใกล้หมดประกัน'; break;
-        case 'bad': field.value = 'หมดประกันแล้ว'; break;
+        case 'bad': field.value = 'หมดประกัน'; break;
         default: field.value = 'N/A (ข้อมูลไม่ครบ)';
     }
 }
@@ -1378,9 +1378,9 @@ window.exportAllDataExcel = async function() {
         const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
         let warrantyStatusText = 'N/A (ไม่ระบุ)';
         switch(warrantyStatus) {
-            case 'ok': warrantyStatusText = 'ยังรับประกัน'; break;
+            case 'ok': warrantyStatusText = 'รับประกัน'; break;
             case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break;
-            case 'bad': warrantyStatusText = 'หมดประกันแล้ว'; break;
+            case 'bad': warrantyStatusText = 'หมดประกัน'; break;
         }
 
         // เพิ่ม 1 แถวสำหรับอุปกรณ์นี้ลงใน assetData
@@ -1609,5 +1609,6 @@ window.onload = function() {
     try { imageMapResize(); } catch (e) {}
     
 };
+
 
 
