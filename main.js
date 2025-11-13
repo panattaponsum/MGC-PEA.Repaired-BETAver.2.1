@@ -1551,7 +1551,7 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('userInfo').classList.remove('hidden');
             document.getElementById('loginButton').classList.add('hidden');
             // 💥 FIX 1.3: ใช้ email
-            document.getElementById('userNameDisplay').textContent = `สวัสดี, ${user.email}`; 
+            document.getElementById('userNameDisplay').textContent = `${user.email}`; 
             toggleWriteAccess(true);
         } else {
             // ผู้ใช้ออกจากระบบ
@@ -1609,3 +1609,4 @@ window.onload = function() {
     try { imageMapResize(); } catch (e) {}
     
 };
+
