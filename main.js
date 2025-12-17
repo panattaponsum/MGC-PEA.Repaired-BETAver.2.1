@@ -1727,14 +1727,12 @@ Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพ�
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
-    // แสดง Loading ระหว่างดึงข้อมูล
     Swal.fire({
-        title: 'กำลังสร้างรายงาน...',
+        title: 'กำลังจัดเตรียมรูปแบบรายงาน...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
     });
 
-    // ดึงข้อมูลล่าสุดมาคำนวณ
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {};
     docsSnap.forEach(d => dataMap[d.id] = d.data());
@@ -1742,129 +1740,128 @@ window.printReport = async function() {
     let reportRows = '';
     let itemNo = 1;
 
-    // สร้างตารางข้อมูล
     for (const dev of siteData.devices) {
         const docData = dataMap[dev] || {};
         const records = docData.records || [];
-        // เรียงจาก ใหม่ -> เก่า
         records.sort((a, b) => b.ts - a.ts);
-        
         const assetInfo = docData.assetInfo || {};
         
-        // คำนวณสถานะภาพรวม
-        const isUnresolved = (r) => r.status === 'down' && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-');
-        const remainingDownRecords = records.filter(r => isUnresolved(r));
-        const currentStatusText = remainingDownRecords.length > 0 
-            ? '<span style="color:red; font-weight:bold;">❎ ชำรุด</span>' 
-            : '<span style="color:green;">✅ ใช้งานได้</span>';
+        const isUnresolved = (r) => r.status === 'down' && (!r.fixedDate || r.fixedDate === '');
+        const currentStatus = records.some(isUnresolved) 
+            ? '<span class="badge badge-danger">❎ ชำรุด</span>' 
+            : '<span class="badge badge-success">✅ ปกติ</span>';
 
-        // --- สร้าง HTML สำหรับตารางประวัติย่อย (Nested Table) ---
         let historyHtml = '';
         if (records.length > 0) {
             historyHtml = `<table class="sub-table">
                 <thead>
                     <tr>
-                        <th style="width: 25%;">วันที่ชำรุด</th>
-                        <th style="width: 25%;">วันที่ซ่อมแซม</th>
-                        <th style="width: 35%;">อาการ/สาเหตุ</th>
-                        <th style="width: 15%;">สถานะ</th>
+                        <th style="width: 20%">วันที่ชำรุด</th>
+                        <th style="width: 20%">วันที่ซ่อมเสร็จ</th>
+                        <th>รายละเอียด/อาการ</th>
+                        <th style="width: 15%; text-align:center;">ระยะเวลา</th>
                     </tr>
                 </thead>
                 <tbody>`;
             
             records.forEach(r => {
                 const isDown = isUnresolved(r);
-                const rowColor = isDown ? 'color: #d32f2f; font-weight: bold;' : 'color: #333;';
-                const statusLabel = isDown ? 'ค้างซ่อม' : 'เรียบร้อย';
+                const days = r.brokenDate ? calculateDaysDifference(r.brokenDate, r.fixedDate || null) : 0;
                 
-                // คำนวณระยะเวลาคร่าวๆ
-                let durationText = '';
-                if (r.brokenDate) {
-                    const days = calculateDaysDifference(r.brokenDate, r.fixedDate || null);
-                    durationText = `(${days} วัน)`;
-                }
-
                 historyHtml += `
-                    <tr style="${rowColor}">
+                    <tr class="${isDown ? 'row-down' : ''}">
                         <td>${r.brokenDate || '-'}</td>
-                        <td>${r.fixedDate || '-'}</td>
+                        <td>${r.fixedDate || '<span style="color:#aaa">รอดำเนินการ</span>'}</td>
                         <td>${r.description || '-'}</td>
-                        <td>${statusLabel} <span style="font-size:10px; color:#888;">${durationText}</span></td>
+                        <td style="text-align:center;">${days} วัน</td>
                     </tr>
                 `;
             });
             historyHtml += `</tbody></table>`;
         } else {
-            historyHtml = '<div style="text-align:center; color:#999; font-style:italic; padding:5px;">- ไม่พบประวัติการชำรุด -</div>';
+            historyHtml = '<div class="no-data">- ไม่พบประวัติการซ่อมบำรุง -</div>';
         }
 
         reportRows += `
-            <tr class="main-row">
-                <td style="text-align: center; vertical-align: top;">${itemNo++}</td>
-                <td style="vertical-align: top;">
-                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">${dev}</div>
-                    <div style="font-size: 11px; color: #555;">
-                        Model: ${assetInfo.model || '-'} <br> 
-                        S/N: ${assetInfo.serial || '-'}
-                    </div>
-                    <div style="margin-top: 8px;">สถานะปัจจุบัน: ${currentStatusText}</div>
-                    <div style="font-size: 11px;">(ชำรุดสะสม: ${docData.downCount || 0} ครั้ง)</div>
+            <tr>
+                <td style="text-align: center;">${itemNo++}</td>
+                <td>
+                    <div class="device-name">${dev}</div>
+                    <div class="device-meta">Model: ${assetInfo.model || '-'}<br>S/N: ${assetInfo.serial || '-'}</div>
+                    <div style="margin-top:10px">${currentStatus}</div>
                 </td>
-                <td style="padding: 0;">
-                    ${historyHtml}
-                </td>
+                <td style="padding: 0;">${historyHtml}</td>
             </tr>
         `;
     }
 
-    Swal.close(); // ปิด Loading
+    Swal.close();
 
-    // สร้างหน้า HTML สำหรับพิมพ์
-    const printWindow = window.open('', '', 'height=900,width=1200');
+    const printWindow = window.open('', '', 'height=900,width=1100');
     printWindow.document.write(`
         <html>
         <head>
-            <title>รายงานประวัติอุปกรณ์ - ${siteData.name}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+            <title>Maintenance Report - ${siteData.name}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
             <style>
-                body { font-family: 'Sarabun', sans-serif; padding: 20px; font-size: 12px; }
-                h1 { text-align: center; margin-bottom: 5px; font-size: 18px; }
-                h3 { text-align: center; color: #555; margin-top: 0; font-size: 14px; }
+                @page { size: A4 landscape; margin: 15mm; }
+                body { font-family: 'Sarabun', sans-serif; color: #333; line-height: 1.5; margin: 0; padding: 0; }
                 
-                /* Main Table */
-                table.main-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                table.main-table th { background-color: #eee; border: 1px solid #999; padding: 8px; text-align: center; font-weight: bold; }
-                table.main-table td { border: 1px solid #999; padding: 5px; }
+                /* Header Section */
+                .header-container { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+                .header-title h1 { margin: 0; font-size: 22px; color: #1a365d; }
+                .header-title p { margin: 5px 0 0 0; font-size: 14px; color: #666; }
                 
-                /* Sub Table (History) */
-                table.sub-table { width: 100%; border-collapse: collapse; border: none; font-size: 11px; }
-                table.sub-table th { background-color: #f9f9f9; border-bottom: 1px solid #ddd; padding: 4px; text-align: left; color: #555; font-weight: normal; }
-                table.sub-table td { border-bottom: 1px solid #eee; padding: 4px; vertical-align: top; }
-                table.sub-table tr:last-child td { border-bottom: none; }
+                /* Table Styles */
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                .main-table thead th { background-color: #1a365d; color: white; border: 1px solid #1a365d; padding: 12px 8px; font-size: 14px; }
+                .main-table tbody td { border: 1px solid #ddd; padding: 10px; vertical-align: top; font-size: 13px; }
                 
-                .footer { margin-top: 20px; text-align: right; font-size: 10px; color: #888; border-top: 1px solid #ccc; pt: 10px; }
+                /* Device Info */
+                .device-name { font-weight: bold; font-size: 15px; color: #2d3748; }
+                .device-meta { font-size: 11px; color: #718096; margin-top: 4px; }
                 
-                /* Print Settings */
+                /* Sub Table History */
+                .sub-table { border: none; margin: 0; }
+                .sub-table thead th { background-color: #edf2f7; color: #4a5568; border: none; border-bottom: 2px solid #cbd5e0; padding: 6px; font-size: 11px; text-transform: uppercase; }
+                .sub-table tbody td { border: none; border-bottom: 1px solid #f0f0f0; padding: 6px; font-size: 12px; }
+                .sub-table tr:last-child td { border-bottom: none; }
+                .row-down { background-color: #fff5f5; color: #c53030; }
+                
+                /* Badges */
+                .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block; }
+                .badge-success { background-color: #c6f6d5; color: #22543d; }
+                .badge-danger { background-color: #fed7d7; color: #822727; }
+                
+                .no-data { text-align: center; padding: 20px; color: #a0aec0; font-style: italic; }
+                .footer { position: fixed; bottom: 0; width: 100%; text-align: right; font-size: 10px; color: #aaa; border-top: 1px solid #eee; padding-top: 5px; }
+                
                 @media print {
-                    .no-print { display: none; }
                     body { -webkit-print-color-adjust: exact; }
-                    tr.main-row { page-break-inside: avoid; } /* พยายามไม่ให้ตัดบรรทัดกลางตาราง */
+                    .main-table thead th { background-color: #1a365d !important; color: white !important; }
+                    .badge-success { background-color: #c6f6d5 !important; }
+                    .badge-danger { background-color: #fed7d7 !important; }
                 }
             </style>
         </head>
         <body>
-            <h1>📄 รายงานประวัติและการบำรุงรักษาอุปกรณ์</h1>
-            <h3>โครงการ: ${siteData.name}</h3>
-            <div style="text-align: right; font-size: 11px; margin-bottom: 5px;">
-                <strong>วันที่ออกรายงาน:</strong> ${new Date().toLocaleString('th-TH')}
+            <div class="header-container">
+                <div class="header-title">
+                    <h1>รายงานสรุปการซ่อมบำรุงอุปกรณ์ (Maintenance Log)</h1>
+                    <p>โครงการ: ${siteData.name}</p>
+                </div>
+                <div style="text-align: right; font-size: 12px;">
+                    <strong>วันที่ออกรายงาน:</strong> ${new Date().toLocaleDateString('th-TH', {year:'numeric', month:'long', day:'numeric'})}<br>
+                    <strong>เจ้าหน้าที่:</strong> ${currentUser ? currentUser.email.split('@')[0] : 'Guest'}
+                </div>
             </div>
             
             <table class="main-table">
                 <thead>
                     <tr>
-                        <th style="width: 5%;">ลำดับ</th>
-                        <th style="width: 30%;">ข้อมูลอุปกรณ์</th>
-                        <th style="width: 65%;">ประวัติการชำรุดและซ่อมแซม</th>
+                        <th style="width: 40px;">#</th>
+                        <th style="width: 250px;">ข้อมูลอุปกรณ์</th>
+                        <th>รายละเอียดประวัติการชำรุดและซ่อมแซม</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1873,15 +1870,15 @@ window.printReport = async function() {
             </table>
 
             <div class="footer">
-                ออกรายงานโดยระบบ Microgrid Maintenance Tracking | ผู้พิมพ์: ${currentUser ? currentUser.email : 'Guest'}
+                พิมพ์โดยระบบ Microgrid Asset Management System | หน้า 1 จาก 1
             </div>
 
             <script>
-                window.onload = function() { 
-                    setTimeout(function() {
-                        window.print(); 
+                window.onload = () => {
+                    setTimeout(() => {
+                        window.print();
                         window.close();
-                    }, 500); // หน่วงเวลาเล็กน้อยให้ Render เสร็จ
+                    }, 800);
                 }
             </script>
         </body>
@@ -1937,6 +1934,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
