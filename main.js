@@ -318,13 +318,19 @@ function clearForm() {
     }
 
     const statusSelect = document.getElementById('status');
-    
-    // 💥 FIX: รีเซ็ตค่าเป็น 'down' (ชำรุด) เสมอ และสั่ง ล็อค (disabled) ทันที
+    const fixedDateInput = document.getElementById('fixedDate'); // 💥 ประกาศตัวแปร
+
+    // รีเซ็ตค่าเป็น 'down' (ชำรุด) เสมอ และล็อคปุ่มเลือกสถานะ
     statusSelect.value = 'down'; 
     statusSelect.disabled = true; 
 
+    // 💥 NEW: ล็อคช่องวันที่ซ่อมแซม สำหรับการบันทึกครั้งแรก
+    fixedDateInput.value = '';
+    fixedDateInput.disabled = true; 
+    fixedDateInput.placeholder = "บันทึกข้อมูลชำรุดก่อน จึงจะระบุวันซ่อมได้";
+    fixedDateInput.classList.add('bg-gray-600', 'cursor-not-allowed'); // เพิ่มสีเทาให้รู้ว่ากรอกไม่ได้
+
     document.getElementById('brokenDate').value = '';
-    document.getElementById('fixedDate').value = '';
     document.getElementById('description').value = '';
     
     // รีเซ็ต index การแก้ไข
@@ -339,7 +345,7 @@ return d instanceof Date && !isNaN(d);
 }
 
 window.saveData = async function() {
-    // --- 1. ส่วนตรวจสอบสิทธิ์และข้อมูล (เหมือนเดิม) ---
+    // --- 1. ส่วนตรวจสอบสิทธิ์และข้อมูล ---
     if (!currentUser) {
         Swal.fire('ไม่ได้รับอนุญาต', 'กรุณาลงชื่อเข้าใช้ก่อนบันทึกข้อมูล', 'warning');
         return false;
@@ -349,19 +355,28 @@ window.saveData = async function() {
         return false;
     }
 
-    const statusVal = document.getElementById('status').value;
+    // 💥 CHANGE: เปลี่ยนจาก const เป็น let เพื่อให้เปลี่ยนค่าได้
+    let statusVal = document.getElementById('status').value;
     const brokenDate = document.getElementById('brokenDate').value;
     const fixedDate = document.getElementById('fixedDate').value;
 
-    // --- 2. ส่วน Validation วันที่ (เหมือนเดิม) ---
-    if (editIndex < 0 && statusVal === 'ok') {
+    // 💥 NEW CONDITION: ถ้ามีทั้ง "วันที่ชำรุด" และ "วันที่ซ่อมแซม" ให้เปลี่ยนสถานะเป็น "ใช้งานได้" (ok) ทันที
+    if (isValidDate(brokenDate) && isValidDate(fixedDate)) {
+        statusVal = 'ok';
+    }
+
+    // --- 2. ส่วน Validation วันที่ ---
+    // ตรวจสอบ: ถ้าเป็นการเพิ่มใหม่ (editIndex < 0) และสถานะเป็น ok (โดยไม่มีวันที่ครบ) จะไม่อนุญาต
+    // (แต่ถ้า logic ข้างบนทำงาน สถานะจะเป็น ok และมีวันที่ครบ จะผ่านเงื่อนไขนี้ไปเช็ควันที่แทน)
+    if (editIndex < 0 && statusVal === 'ok' && (!brokenDate || !fixedDate)) {
         Swal.fire({
             title: "ไม่อนุญาต", 
-            text: "การเพิ่มรายการใหม่ต้องเป็นสถานะ 'ชำรุด' เท่านั้น...", 
+            text: "การเพิ่มรายการใหม่ต้องเป็นสถานะ 'ชำรุด' เท่านั้น (ยกเว้นลงประวัติย้อนหลังที่ซ่อมแล้ว)", 
             icon: "warning"
         });
         return false;
     }
+
     const now = new Date();
     now.setHours(0, 0, 0, 0); 
     if (brokenDate && isValidDate(brokenDate)) {
@@ -380,13 +395,16 @@ window.saveData = async function() {
             return false;
         }
     }
-    // (Validation อื่นๆ คงเดิม...)
+    
+    // Validation สำหรับสถานะ 'down'
     if (statusVal === 'down' && !isValidDate(brokenDate)) {
         Swal.fire("ข้อมูลไม่ครบ", "กรุณาเลือกวันที่ชำรุด", "warning"); return false;
     }
+    
+    // Validation สำหรับสถานะ 'ok'
     if (statusVal === 'ok') {
         if (!isValidDate(brokenDate) || !isValidDate(fixedDate)) {
-            Swal.fire("ข้อมูลไม่ครบ", "กรุณากรอกวันที่ให้ครบ", "warning"); return false;
+            Swal.fire("ข้อมูลไม่ครบ", "กรุณากรอกวันที่ให้ครบ (ทั้งชำรุดและซ่อมแซม)", "warning"); return false;
         }
         if (new Date(brokenDate) > new Date(fixedDate)) {
             Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมต้องหลังวันที่ชำรุด", "warning"); return false;
@@ -394,13 +412,14 @@ window.saveData = async function() {
     }
 
     // --- 3. เตรียมข้อมูล (Base Record) ---
-    let records = await getDeviceRecords(currentSiteKey, currentDevice); // 👈 ดึงประวัติ "เฉพาะอุปกรณ์นี้"
+    let records = await getDeviceRecords(currentSiteKey, currentDevice); 
 
-    // เช็คเงื่อนไขการบันทึกซ้ำ
+    // เช็คเงื่อนไขการบันทึกซ้ำ (กรณีเพิ่มใหม่)
     if (editIndex < 0) { 
         const latestRecord = records.length > 0 ? records[records.length - 1] : null;
         const currentStatus = latestRecord ? latestRecord.status : 'ok';
-        if (currentStatus === 'ok' && statusVal === 'ok' && (brokenDate || fixedDate)) {
+        // ถ้าสถานะล่าสุด ok อยู่แล้ว และจะบันทึก ok อีก (โดยไม่มีวันที่)
+        if (currentStatus === 'ok' && statusVal === 'ok' && (!brokenDate || !fixedDate)) {
              Swal.fire({title: 'ข้อมูลขัดแย้ง', text: 'อุปกรณ์ใช้งานได้อยู่แล้ว...', icon: 'warning'});
             return false;
         }
@@ -408,11 +427,12 @@ window.saveData = async function() {
 
     const baseRec = {
         user: document.getElementById('userName').value || "ไม่ระบุ (ล็อคอิน)",
-        status: statusVal,
+        status: statusVal, // ใช้ค่าใหม่ที่ถูกปรับแล้ว
         brokenDate,
         fixedDate,
         description: document.getElementById('description').value,
         ts: Date.now(),
+        // ถ้า status เป็น down ให้ counted=true, ถ้าเป็น ok ให้ดู logic ด้านล่าง
         counted: (statusVal === 'down') 
     };
 
@@ -420,14 +440,28 @@ window.saveData = async function() {
     if (editIndex >= 0) {
         const originalRecord = records[editIndex];
         records[editIndex] = { ...originalRecord, ...baseRec, ts: originalRecord.ts };
+        
+        // ถ้าเปลี่ยนเป็น ok แล้ว ของเดิมเคยถูกนับไว้ไหม?
         if (statusVal === 'ok') {
+            // ถ้าเป็นการแก้ไข ให้คงสถานะ counted ของเดิมไว้ (ถ้าเคยนับก็ต้องนับต่อไป แค่สถานะเปลี่ยน)
             records[editIndex].counted = originalRecord.counted || false; 
+            
+            // 💥 เพิ่มเติม: ถ้าเดิมเป็น down แล้วมาใส่ fixedDate เปลี่ยนเป็น ok 
+            // เราต้องมั่นใจว่ามันยังถูกนับเป็นสถิติการเสียอยู่ (counted = true)
+            if (originalRecord.status === 'down') {
+                records[editIndex].counted = true;
+            }
         } else {
             records[editIndex].counted = true;
         }
+        
         editIndex = -1;
         document.getElementById('editHint').classList.add('hidden');
     } else {
+        // กรณีเพิ่มใหม่ ถ้าใส่ ok เลย (ประวัติย้อนหลัง) ก็ต้องนับสถิติด้วย
+        if (statusVal === 'ok' && brokenDate && fixedDate) {
+             baseRec.counted = true;
+        }
         records.push(baseRec);
     }
 
@@ -435,36 +469,31 @@ window.saveData = async function() {
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
     
     // --- 6. ล้างหน้าจอและอัปเดตผล ---
-    clearForm(); // 🧹 ล้างหน้าจอตรงนี้ (แต่เรามี baseRec เก็บค่าไว้แล้ว)
+    clearForm(); 
     await loadHistory();
     window.updateDeviceSummary(); 
     window.updateDeviceStatusOverlays(currentSiteKey); 
 
     // ======================================================================
-    // 💥 ส่วนแจ้งเตือน Discord (วางไว้หลังสุด เพื่อให้มั่นใจว่าบันทึกเสร็จแล้ว)
+    // 💥 ส่วนแจ้งเตือน Discord
     // ======================================================================
     
-    // นับจำนวนครั้งที่ชำรุด (ของอุปกรณ์ตัวนี้เท่านั้น)
     const currentCount = records.filter(r => r.counted).length;
 
-    // กรณี 1: แจ้งเตือน "ชำรุด" (รายการใหม่)
-    if (statusVal === 'down' && editIndex < 0) { // เช็คว่าเป็น 'down' และ 'รายการใหม่'
-        // ตรงนี้ currentCount จะรวมรายการล่าสุดที่เราเพิ่ง push เข้าไปแล้ว
+    // แจ้งเตือน "ชำรุด"
+    if (statusVal === 'down' && editIndex < 0) { 
         sendDiscordNotify(
             'down',              
             currentDevice,       
-            baseRec.description, // ใช้ baseRec เพราะหน้าจอถูกล้างไปแล้ว
+            baseRec.description, 
             baseRec.user,        
             baseRec.brokenDate,  
-            currentCount         // ส่งลำดับครั้งที่ X
+            currentCount         
         );
     }
 
-    // กรณี 2: แจ้งเตือน "ใช้งานได้" (แก้ไขรายการเดิม)
-    // เราเช็คว่า records[editIndex] เดิมเคยเป็นอะไรไม่ได้แล้ว เพราะ records ถูกอัปเดตไปแล้ว
-    // แต่เราเช็คได้ว่า statusVal ตอนนี้คือ 'ok' และเป็นการแก้ไข
+    // แจ้งเตือน "ซ่อมเสร็จ" (สถานะ ok)
     if (statusVal === 'ok') { 
-        // ส่งแจ้งเตือนว่าซ่อมเสร็จ (ไม่ต้องใส่ลำดับก็ได้ หรือจะใส่ก็ได้)
         sendDiscordNotify(
             'fixed',             
             currentDevice,       
@@ -678,10 +707,17 @@ window.editRecord = async function(ts) {
     const r = records[idx];
     
     const statusSelect = document.getElementById('status');
+    const fixedDateInput = document.getElementById('fixedDate'); // 💥 ประกาศตัวแปร
+
     statusSelect.value = r.status || 'down';
     
-    // 💥 UNLOCK: ปลดล็อคเฉพาะตอนกดแก้ไขเท่านั้น
+    // 💥 UNLOCK: ปลดล็อคสถานะ
     statusSelect.disabled = false; 
+
+    // 💥 NEW: ปลดล็อคช่องวันที่ซ่อมแซม ให้แก้ไขได้
+    fixedDateInput.disabled = false;
+    fixedDateInput.classList.remove('bg-gray-600', 'cursor-not-allowed'); // เอาสีเทาออก
+    fixedDateInput.placeholder = "";
 
     document.getElementById('brokenDate').value = r.brokenDate || '';
     document.getElementById('fixedDate').value = r.fixedDate || '';
@@ -1838,6 +1874,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
