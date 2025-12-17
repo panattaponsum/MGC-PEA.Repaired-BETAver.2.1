@@ -1723,9 +1723,17 @@ Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพ�
 });
 
 // 💥💥💥 PDF REPORT FUNCTION (Print Mode) 💥💥💥
+// 💥💥💥 PDF REPORT FUNCTION (ฉบับปรับปรุง: แสดงรายละเอียดประวัติครบถ้วน) 💥💥💥
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
+    // แสดง Loading ระหว่างดึงข้อมูล
+    Swal.fire({
+        title: 'กำลังสร้างรายงาน...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
     // ดึงข้อมูลล่าสุดมาคำนวณ
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {};
@@ -1738,74 +1746,125 @@ window.printReport = async function() {
     for (const dev of siteData.devices) {
         const docData = dataMap[dev] || {};
         const records = docData.records || [];
-        records.sort((a, b) => a.ts - b.ts);
-        
-        // คำนวณสถานะ (Logic เดียวกับ updateDeviceSummary)
-        const isUnresolved = (r) => r.status === 'down' && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-');
-        const remainingDownRecords = records.filter(r => isUnresolved(r));
-        const remaining = remainingDownRecords.length;
+        // เรียงจาก ใหม่ -> เก่า
+        records.sort((a, b) => b.ts - a.ts);
         
         const assetInfo = docData.assetInfo || {};
-        const statusText = remaining > 0 ? '<span style="color:red; font-weight:bold;">❎ ชำรุด</span>' : '<span style="color:green;">✅ ใช้งานได้</span>';
         
-        // หาวันที่ชำรุดล่าสุด/เก่าสุดตาม Logic
-        let dateInfo = '-';
-        if (remaining > 0) {
-            const oldest = remainingDownRecords[0]; // ตัวเก่าสุดที่ค้าง
-            dateInfo = `ชำรุดเมื่อ: ${oldest.brokenDate} (ค้าง ${remaining} รายการ)`;
-        } else if (records.length > 0) {
-            const last = records[records.length-1];
-            if (last.fixedDate) dateInfo = `ซ่อมล่าสุด: ${last.fixedDate}`;
+        // คำนวณสถานะภาพรวม
+        const isUnresolved = (r) => r.status === 'down' && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-');
+        const remainingDownRecords = records.filter(r => isUnresolved(r));
+        const currentStatusText = remainingDownRecords.length > 0 
+            ? '<span style="color:red; font-weight:bold;">❎ ชำรุด</span>' 
+            : '<span style="color:green;">✅ ใช้งานได้</span>';
+
+        // --- สร้าง HTML สำหรับตารางประวัติย่อย (Nested Table) ---
+        let historyHtml = '';
+        if (records.length > 0) {
+            historyHtml = `<table class="sub-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">วันที่ชำรุด</th>
+                        <th style="width: 25%;">วันที่ซ่อมแซม</th>
+                        <th style="width: 35%;">อาการ/สาเหตุ</th>
+                        <th style="width: 15%;">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            records.forEach(r => {
+                const isDown = isUnresolved(r);
+                const rowColor = isDown ? 'color: #d32f2f; font-weight: bold;' : 'color: #333;';
+                const statusLabel = isDown ? 'ค้างซ่อม' : 'เรียบร้อย';
+                
+                // คำนวณระยะเวลาคร่าวๆ
+                let durationText = '';
+                if (r.brokenDate) {
+                    const days = calculateDaysDifference(r.brokenDate, r.fixedDate || null);
+                    durationText = `(${days} วัน)`;
+                }
+
+                historyHtml += `
+                    <tr style="${rowColor}">
+                        <td>${r.brokenDate || '-'}</td>
+                        <td>${r.fixedDate || '-'}</td>
+                        <td>${r.description || '-'}</td>
+                        <td>${statusLabel} <span style="font-size:10px; color:#888;">${durationText}</span></td>
+                    </tr>
+                `;
+            });
+            historyHtml += `</tbody></table>`;
+        } else {
+            historyHtml = '<div style="text-align:center; color:#999; font-style:italic; padding:5px;">- ไม่พบประวัติการชำรุด -</div>';
         }
 
         reportRows += `
-            <tr style="border-bottom: 1px solid #ddd;">
-                <td style="padding: 8px; text-align: center;">${itemNo++}</td>
-                <td style="padding: 8px;">
-                    <strong>${dev}</strong><br>
-                    <span style="font-size: 12px; color: #666;">Model: ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'}</span>
+            <tr class="main-row">
+                <td style="text-align: center; vertical-align: top;">${itemNo++}</td>
+                <td style="vertical-align: top;">
+                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">${dev}</div>
+                    <div style="font-size: 11px; color: #555;">
+                        Model: ${assetInfo.model || '-'} <br> 
+                        S/N: ${assetInfo.serial || '-'}
+                    </div>
+                    <div style="margin-top: 8px;">สถานะปัจจุบัน: ${currentStatusText}</div>
+                    <div style="font-size: 11px;">(ชำรุดสะสม: ${docData.downCount || 0} ครั้ง)</div>
                 </td>
-                <td style="padding: 8px; text-align: center;">${statusText}</td>
-                <td style="padding: 8px; text-align: center;">${docData.downCount || 0}</td>
-                <td style="padding: 8px;">${dateInfo}</td>
+                <td style="padding: 0;">
+                    ${historyHtml}
+                </td>
             </tr>
         `;
     }
 
+    Swal.close(); // ปิด Loading
+
     // สร้างหน้า HTML สำหรับพิมพ์
-    const printWindow = window.open('', '', 'height=800,width=1000');
+    const printWindow = window.open('', '', 'height=900,width=1200');
     printWindow.document.write(`
         <html>
         <head>
-            <title>รายงานสถานะอุปกรณ์ - ${siteData.name}</title>
+            <title>รายงานประวัติอุปกรณ์ - ${siteData.name}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
             <style>
-                body { font-family: 'Sarabun', sans-serif; padding: 20px; }
-                h1 { text-align: center; margin-bottom: 5px; }
-                h3 { text-align: center; color: #555; margin-top: 0; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th { background-color: #f2f2f2; border: 1px solid #ddd; padding: 10px; text-align: left; }
-                td { border: 1px solid #ddd; }
-                .footer { margin-top: 30px; text-align: right; font-size: 12px; color: #888; }
+                body { font-family: 'Sarabun', sans-serif; padding: 20px; font-size: 12px; }
+                h1 { text-align: center; margin-bottom: 5px; font-size: 18px; }
+                h3 { text-align: center; color: #555; margin-top: 0; font-size: 14px; }
+                
+                /* Main Table */
+                table.main-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                table.main-table th { background-color: #eee; border: 1px solid #999; padding: 8px; text-align: center; font-weight: bold; }
+                table.main-table td { border: 1px solid #999; padding: 5px; }
+                
+                /* Sub Table (History) */
+                table.sub-table { width: 100%; border-collapse: collapse; border: none; font-size: 11px; }
+                table.sub-table th { background-color: #f9f9f9; border-bottom: 1px solid #ddd; padding: 4px; text-align: left; color: #555; font-weight: normal; }
+                table.sub-table td { border-bottom: 1px solid #eee; padding: 4px; vertical-align: top; }
+                table.sub-table tr:last-child td { border-bottom: none; }
+                
+                .footer { margin-top: 20px; text-align: right; font-size: 10px; color: #888; border-top: 1px solid #ccc; pt: 10px; }
+                
+                /* Print Settings */
                 @media print {
                     .no-print { display: none; }
                     body { -webkit-print-color-adjust: exact; }
+                    tr.main-row { page-break-inside: avoid; } /* พยายามไม่ให้ตัดบรรทัดกลางตาราง */
                 }
             </style>
-            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
         </head>
         <body>
-            <h1>📄 รายงานสรุปสถานะอุปกรณ์</h1>
+            <h1>📄 รายงานประวัติและการบำรุงรักษาอุปกรณ์</h1>
             <h3>โครงการ: ${siteData.name}</h3>
-            <p><strong>วันที่ออกรายงาน:</strong> ${new Date().toLocaleString('th-TH')}</p>
+            <div style="text-align: right; font-size: 11px; margin-bottom: 5px;">
+                <strong>วันที่ออกรายงาน:</strong> ${new Date().toLocaleString('th-TH')}
+            </div>
             
-            <table>
+            <table class="main-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px; text-align: center;">ลำดับ</th>
-                        <th>ชื่ออุปกรณ์ / รายละเอียดทรัพย์สิน</th>
-                        <th style="width: 100px; text-align: center;">สถานะ</th>
-                        <th style="width: 80px; text-align: center;">ครั้งที่ชำรุด</th>
-                        <th>รายละเอียดวันที่</th>
+                        <th style="width: 5%;">ลำดับ</th>
+                        <th style="width: 30%;">ข้อมูลอุปกรณ์</th>
+                        <th style="width: 65%;">ประวัติการชำรุดและซ่อมแซม</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1814,19 +1873,23 @@ window.printReport = async function() {
             </table>
 
             <div class="footer">
-                ออกรายงานโดยระบบ Microgrid Maintenance Tracking<br>
-                ผู้พิมพ์: ${currentUser ? currentUser.email : 'Guest'}
+                ออกรายงานโดยระบบ Microgrid Maintenance Tracking | ผู้พิมพ์: ${currentUser ? currentUser.email : 'Guest'}
             </div>
 
             <script>
-                // สั่งพิมพ์อัตโนมัติเมื่อโหลดเสร็จ
-                window.onload = function() { window.print(); window.close(); }
+                window.onload = function() { 
+                    setTimeout(function() {
+                        window.print(); 
+                        window.close();
+                    }, 500); // หน่วงเวลาเล็กน้อยให้ Render เสร็จ
+                }
             </script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
+
 // 💥💥💥 DISCORD NOTIFY FUNCTION (อัปเกรดแล้ว) 💥💥💥
 async function sendDiscordNotify(type, deviceName, description, user, dateVal, count) {
     // URL เดิมจาก Google Apps Script ของคุณ
@@ -1874,6 +1937,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
