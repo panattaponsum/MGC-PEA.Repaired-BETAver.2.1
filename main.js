@@ -1725,7 +1725,7 @@ window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
     Swal.fire({
-        title: 'กำลังสร้างรายงานรูปแบบทันสมัย...',
+        title: 'กำลังจัดรูปแบบรายงาน...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
     });
@@ -1734,9 +1734,12 @@ window.printReport = async function() {
     const dataMap = {};
     docsSnap.forEach(d => dataMap[d.id] = d.data());
 
-    // --- จัดรูปแบบวันที่ yyyy-mm-dd และเวลา AM/PM ---
+    // --- Format Date (yyyy-mm-dd) & Time (AM/PM) ---
     const now = new Date();
-    const printDate = now.toISOString().split('T')[0]; 
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const printDate = `${yyyy}-${mm}-${dd}`;
     const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     let tableRows = '';
@@ -1757,11 +1760,11 @@ window.printReport = async function() {
             const r = records[i];
             const isFirst = (i === 0);
             const occurrenceNo = r ? (totalRecords - i) : '-';
-            
-            // แถวที่ยังไม่ซ่อม ให้ไฮไลท์สีอ่อนๆ
-            const rowStyle = (r && r.status === 'down' && !r.fixedDate) ? 'background-color: #fff1f2;' : '';
 
-            tableRows += `<tr style="${rowStyle}">`;
+            // เพิ่ม class 'first-row' เพื่อตีเส้นขอบบนให้หนาขึ้นในแต่ละอุปกรณ์
+            const rowClass = isFirst ? 'device-row-start' : '';
+
+            tableRows += `<tr class="${rowClass}">`;
             
             if (isFirst) {
                 const isCurrentlyDown = records.length > 0 && records[0].status === 'down' && !records[0].fixedDate;
@@ -1770,12 +1773,12 @@ window.printReport = async function() {
                     : '<span class="badge badge-green">ปกติ</span>';
 
                 tableRows += `
-                    <td rowspan="${rowSpanCount}" class="text-center font-bold" style="vertical-align: top;">${itemNo++}</td>
-                    <td rowspan="${rowSpanCount}" style="vertical-align: top;">
+                    <td rowspan="${rowSpanCount}" class="text-center font-bold" style="vertical-align: top; background: #fafafa;">${itemNo++}</td>
+                    <td rowspan="${rowSpanCount}" style="vertical-align: top; background: #fafafa;">
                         <div class="dev-name">${dev}</div>
-                        <div class="dev-info"><b>Manufacturer:</b> ${assetInfo.manufacturer || '-'}</div>
-                        <div class="dev-info"><b>Model:</b> ${assetInfo.model || '-'}</div>
-                        <div class="dev-info"><b>S/N:</b> ${assetInfo.serial || '-'}</div>
+                        <div class="dev-meta"><b>Manufacturer:</b> ${assetInfo.manufacturer || '-'}</div>
+                        <div class="dev-meta"><b>Model:</b> ${assetInfo.model || '-'}</div>
+                        <div class="dev-meta"><b>S/N:</b> ${assetInfo.serial || '-'}</div>
                         <div style="margin-top: 10px;">${statusBadge}</div>
                     </td>
                 `;
@@ -1783,11 +1786,11 @@ window.printReport = async function() {
 
             if (r) {
                 tableRows += `
-                    <td class="text-center font-bold">${occurrenceNo}</td>
-                    <td class="text-center">${r.brokenDate || '-'}</td>
-                    <td class="text-center">${r.fixedDate || '<b style="color:#e11d48">รอดำเนินการ</b>'}</td>
-                    <td class="text-left">${r.description || '-'}</td>
-                    <td class="text-left" style="font-size: 10px; color: #64748b;">${r.user || '-'}</td>
+                    <td class="text-center detail-font font-bold">${occurrenceNo}</td>
+                    <td class="text-center detail-font">${r.brokenDate || '-'}</td>
+                    <td class="text-center detail-font">${r.fixedDate || '<b style="color:#e11d48">รอดำเนินการ</b>'}</td>
+                    <td class="text-left detail-font">${r.description || '-'}</td>
+                    <td class="text-left detail-font" style="color: #475569;">${r.user || '-'}</td>
                 `;
             } else {
                 tableRows += `<td colspan="5" class="empty-msg">ไม่พบประวัติการชำรุด</td>`;
@@ -1798,81 +1801,101 @@ window.printReport = async function() {
 
     Swal.close();
 
-    const printWindow = window.open('', '', 'height=900,width=1200');
+    const printWindow = window.open('', '', 'height=900,width=1300');
     printWindow.document.write(`
         <html>
         <head>
-            <title>Report-${printDate}</title>
+            <title>Report_${siteData.name}_${printDate}</title>
             <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { size: A4 landscape; margin: 12mm; }
-                body { font-family: 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 0; font-size: 13px; }
+                @page { size: A4 landscape; margin: 10mm; }
+                body { font-family: 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 0; }
                 
-                /* Header */
-                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 4px solid #0f172a; padding-bottom: 15px; }
-                .header h1 { margin: 0; font-size: 24px; color: #0f172a; font-weight: 700; }
-                .meta-box { text-align: right; line-height: 1.6; font-size: 12px; }
+                .container { padding: 20px; }
+                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; border-bottom: 3px solid #0f172a; padding-bottom: 10px; }
+                .header h1 { margin: 0; font-size: 20px; color: #0f172a; }
+                .meta-text { text-align: right; font-size: 12px; line-height: 1.5; }
 
-                /* Table Structure */
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-                th { background-color: #0f172a; color: #ffffff; padding: 12px 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #0f172a; }
-                td { padding: 10px 8px; border: 1px solid #e2e8f0; line-height: 1.5; word-wrap: break-word; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; background: white; }
                 
-                /* Alignment & Styles */
-                .text-center { text-align: center; }
-                .text-left { text-align: left; }
-                .font-bold { font-weight: 600; }
+                /* หัวข้อตาราง */
+                th { 
+                    background-color: #0f172a; 
+                    color: white; 
+                    padding: 12px 5px; 
+                    font-size: 13px; /* ขนาดฟ้อนต์หัวข้อ */
+                    border: 1px solid #0f172a;
+                    text-align: center;
+                }
+
+                /* รายละเอียดประวัติ (ใช้ขนาดเดียวกับหัวข้อ) */
+                .detail-font { font-size: 13px; }
+
+                td { 
+                    padding: 8px; 
+                    border: 1px solid #cbd5e1; 
+                    word-wrap: break-word; 
+                    vertical-align: middle;
+                }
+
+                /* จัดการเรื่องการขึ้นหน้าใหม่ */
+                tr { page-break-inside: avoid; }
+                .device-row-start td { border-top: 2px solid #64748b; }
+
+                .dev-name { font-size: 14px; font-weight: 700; color: #1e40af; }
+                .dev-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
                 
-                /* Device Info Style */
-                .dev-name { font-size: 15px; font-weight: 700; color: #1e40af; margin-bottom: 4px; }
-                .dev-info { font-size: 11px; color: #475569; }
-                
-                /* Badges */
-                .badge { padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; display: inline-block; }
+                .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; display: inline-block; }
                 .badge-green { background-color: #dcfce7; color: #166534; }
                 .badge-red { background-color: #ffe4e6; color: #9f1239; }
                 
-                .empty-msg { text-align: center; color: #94a3b8; font-style: italic; padding: 20px; }
-                .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 10px; color: #94a3b8; padding: 10px 0; border-top: 1px solid #f1f5f9; }
+                .text-center { text-align: center; }
+                .text-left { text-align: left; }
+                .font-bold { font-weight: 600; }
+                .empty-msg { text-align: center; color: #94a3b8; font-style: italic; padding: 15px; }
+
+                .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 10px; color: #94a3b8; padding: 10px 0; border-top: 1px solid #f1f5f9; background: white; }
 
                 @media print {
                     body { -webkit-print-color-adjust: exact; }
-                    th { background-color: #0f172a !important; color: white !important; }
+                    thead { display: table-header-group; } /* ให้หัวตารางแสดงทุกหน้า */
                 }
             </style>
         </head>
         <body>
-            <div class="header">
-                <div>
-                    <h1>รายงานประวัติบำรุงรักษาอุปกรณ์</h1>
-                    <div style="font-size: 16px; color: #475569; margin-top: 5px;">โครงการ: ${siteData.name}</div>
+            <div class="container">
+                <div class="header">
+                    <div>
+                        <h1>รายงานประวัติการซ่อมบำรุงรักษาอุปกรณ์ประจำปี</h1>
+                        <div style="font-size: 14px; font-weight: 600; color: #475569; margin-top: 4px;">📍 โครงการ: ${siteData.name}</div>
+                    </div>
+                    <div class="meta-text">
+                        <strong>วันที่พิมพ์:</strong> ${printDate}<br>
+                        <strong>เวลาพิมพ์:</strong> ${printTime}<br>
+                        <strong>ผู้ออกรายงาน:</strong> ${currentUser ? currentUser.email : 'System'}
+                    </div>
                 </div>
-                <div class="meta-box">
-                    <strong>วันที่พิมพ์:</strong> ${printDate}<br>
-                    <strong>เวลาพิมพ์:</strong> ${printTime}<br>
-                    <strong>เจ้าหน้าที่:</strong> ${currentUser ? currentUser.email : 'Guest User'}
-                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 35px;">#</th>
+                            <th style="width: 180px;">ข้อมูลอุปกรณ์</th>
+                            <th style="width: 50px;">ครั้งที่</th>
+                            <th style="width: 90px;">วันที่ชำรุด</th>
+                            <th style="width: 90px;">วันที่ซ่อมเสร็จ</th>
+                            <th>รายละเอียดอาการและการแก้ไข</th>
+                            <th style="width: 150px;">ผู้บันทึก</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
             </div>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 40px;">#</th>
-                        <th style="width: 200px;">ข้อมูลอุปกรณ์ / ผู้ผลิต</th>
-                        <th style="width: 55px;">ครั้งที่</th>
-                        <th style="width: 95px;">วันที่ชำรุด</th>
-                        <th style="width: 95px;">วันที่ซ่อมเสร็จ</th>
-                        <th>รายละเอียดอาการและการแก้ไข</th>
-                        <th style="width: 130px;">ผู้บันทึก</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRows}
-                </tbody>
-            </table>
 
             <div class="footer">
-                ระบบจัดการสินทรัพย์ไมโครกริด (Microgrid Asset Management) | พิมพ์เมื่อ ${printDate} ${printTime}
+                Microgrid Asset Management System | พิมพ์เมื่อ ${printDate} ${printTime}
             </div>
 
             <script>
@@ -1885,7 +1908,6 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
-
 window.sendEmailNotify = async function(type, deviceName, description, user, dateVal, count) {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzLRfWeTwhZN_kU_8RD_eXiy30Mtt1duleN1Vxmw4RV7wB_mmTFhDPXObWCVoaUzF0GgQ/exec"; 
 
@@ -1923,6 +1945,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
