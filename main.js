@@ -19,7 +19,7 @@ const devicesCol = db.collection("devices");
 
 const sites = {
 "ko-phaluay": {
-name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎานี",
+name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี",
 devices: [
 "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC",
 "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "Switch 8",
@@ -1869,7 +1869,7 @@ window.printReport = async function() {
             <div class="page-wrapper">
                 <div class="report-header">
                     <div>
-                        <h1>Asset Maintenance Logbook</h1>
+                        <h1>Asset Maintenance Report</h1>
                         <div class="site-name">PROJECT: ${siteData.name}</div>
                     </div>
                     <div class="header-meta">
@@ -1882,12 +1882,12 @@ window.printReport = async function() {
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 40px;">#</th>
+                            <th style="width: 40px;">No.</th>
                             <th style="width: 220px;">Device & Specs</th>
                             <th style="width: 50px;">Occ.</th>
                             <th style="width: 100px;">Down Date</th>
                             <th style="width: 100px;">Fixed Date</th>
-                            <th>Technical Description & Action Taken</th>
+                            <th>Description</th>
                             <th style="width: 120px;">Recorded By</th>
                         </tr>
                     </thead>
@@ -1948,6 +1948,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
