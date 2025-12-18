@@ -482,7 +482,7 @@ window.saveData = async function() {
 
     // แจ้งเตือน "ชำรุด"
     if (statusVal === 'down' && editIndex < 0) { 
-        sendDiscordNotify(
+        sendEmailNotify(
             'down',              
             currentDevice,       
             baseRec.description, 
@@ -494,7 +494,7 @@ window.saveData = async function() {
 
     // แจ้งเตือน "ซ่อมเสร็จ" (สถานะ ok)
     if (statusVal === 'ok') { 
-        sendDiscordNotify(
+        sendEmailNotify(
             'fixed',             
             currentDevice,       
             baseRec.description, 
@@ -1870,7 +1870,7 @@ window.printReport = async function() {
             </table>
 
             <div class="footer">
-                พิมพ์โดยระบบ Microgrid Asset Management System | หน้า 1 จาก 1
+                พิมพ์โดยระบบ Microgrid Asset Management System 
             </div>
 
             <script>
@@ -1887,53 +1887,44 @@ window.printReport = async function() {
     printWindow.document.close();
 };
 
-// 💥💥💥 DISCORD NOTIFY FUNCTION (อัปเกรดแล้ว) 💥💥💥
-async function sendDiscordNotify(type, deviceName, description, user, dateVal, count) {
-    // URL เดิมจาก Google Apps Script ของคุณ
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwMMbSEA1SI3m4WRe1bkwh7gxFbIHdqfdnk2ENVUEohVKyl1eiNXZwCWWs6tBw48f9G9A/exec"; 
+window.sendEmailNotify = async function(type, deviceName, description, user, dateVal, count) {
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzLRfWeTwhZN_kU_8RD_eXiy30Mtt1duleN1Vxmw4RV7wB_mmTFhDPXObWCVoaUzF0GgQ/exec"; 
 
-    let title = "";
-    let colorBar = ""; // เพิ่มลูกเล่นสีขีดข้างล่าง (ใน Discord)
-    let dateLabel = "";
+    let title = (type === 'down') 
+        ? `🚨 แจ้งเตือนอุปกรณ์ชำรุด (ครั้งที่ ${count})` 
+        : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
 
-    // แยกกรณี "ชำรุด" กับ "ซ่อมเสร็จ"
-    if (type === 'down') {
-        title = `🚨 **แจ้งเตือนอุปกรณ์ชำรุด (ครั้งที่ ${count})**`;
-        dateLabel = `📅 **วันที่ชำรุด:** ${dateVal}`;
-        colorBar = "------------------------------------------"; 
-    } else if (type === 'fixed') {
-        title = `✅ **แจ้งเตือนซ่อมแซมเสร็จสิ้น**`;
-        dateLabel = `📅 **วันที่ซ่อมแซม:** ${dateVal}`;
-        colorBar = "==========================================";
-    }
-
+    // ปรับข้อความให้อ่านง่ายในเมล
     const message = `
-${title}
-📍 **สถานที่:** ${sites[currentSiteKey].name}
-🛠️ **อุปกรณ์:** ${deviceName}
-📝 **อาการ:** ${description || '-'}
-${dateLabel}
-👤 **ผู้แจ้ง:** ${user}
-🕒 **เวลาบันทึก:** ${new Date().toLocaleString('th-TH')}
-${colorBar}
+หัวข้อ: ${title}
+------------------------------------------
+📍 สถานที่: ${sites[currentSiteKey].name}
+🛠️ อุปกรณ์: ${deviceName}
+📝 รายละเอียด: ${description || '-'}
+📅 วันที่ทำรายการ: ${dateVal}
+👤 ผู้บันทึก: ${user}
+🕒 เวลาที่บันทึกในระบบ: ${new Date().toLocaleString('th-TH')}
+------------------------------------------
+รายงานจากระบบ Microgrid Maintenance Tracking
     `;
 
     try {
         await fetch(GAS_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `message=${encodeURIComponent(message)}&site=${encodeURIComponent(currentSiteKey)}`
+            cache: 'no-cache',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message }) // ส่งข้อความไปให้ GAS
         });
-        console.log(`Discord Notification sent (${type})!`);
-    } catch (e) {
-        console.error("Failed to send Discord:", e);
+    } catch (err) {
+        console.error("Email notification failed:", err);
     }
-}
+};
 window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
