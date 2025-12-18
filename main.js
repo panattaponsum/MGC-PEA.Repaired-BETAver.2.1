@@ -1880,12 +1880,12 @@ window.printReport = async function() {
                     <thead>
                         <tr>
                             <th style="width: 35px;">#</th>
-                            <th style="width: 180px;">ข้อมูลอุปกรณ์</th>
+                            <th style="width: 200px;">ข้อมูลอุปกรณ์</th>
                             <th style="width: 50px;">ครั้งที่</th>
                             <th style="width: 90px;">วันที่ชำรุด</th>
                             <th style="width: 90px;">วันที่ซ่อมเสร็จ</th>
                             <th>รายละเอียดอาการและการแก้ไข</th>
-                            <th style="width: 150px;">ผู้บันทึก</th>
+                            <th style="width: 180px;">ผู้บันทึก</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1945,6 +1945,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
