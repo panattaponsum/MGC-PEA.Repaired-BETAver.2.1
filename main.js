@@ -1659,68 +1659,115 @@ window.updateDeviceStatusOverlays(currentSiteKey);
 // =========================================================================
 
 document.addEventListener("DOMContentLoaded", function() {
+// --- เพิ่มตัวแปรสถานะ ---
+let userRole = 'viewer'; // Default เป็น viewer
 
-// --- 1. Auth State Change Listener ---
-auth.onAuthStateChanged(user => {
-if (user) {
-// ผู้ใช้ล็อคอินแล้ว
-currentUser = user;
-document.getElementById('userInfo').classList.remove('hidden');
-document.getElementById('loginButton').classList.add('hidden');
-// 💥 FIX 1.3: ใช้ email
-document.getElementById('userNameDisplay').textContent = `${user.email}`; 
-toggleWriteAccess(true);
-} else {
-// ผู้ใช้ออกจากระบบ
-currentUser = null;
-document.getElementById('userInfo').classList.add('hidden');
-document.getElementById('loginButton').classList.remove('hidden');
-toggleWriteAccess(false);
-}
+// --- ฟังก์ชันตรวจสอบสิทธิ์เมื่อ Auth เปลี่ยนแปลง ---
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        // ดึงสิทธิ์จาก Firestore collection 'users'
+        const userDoc = await db.collection('users').doc(user.email).get();
+        
+        if (userDoc.exists) {
+            userRole = userDoc.data().role;
+        } else {
+            // ถ้าเป็นคนใหม่ ให้บันทึกเป็น viewer ไว้ในฐานข้อมูล
+            userRole = 'viewer';
+            await db.collection('users').doc(user.email).set({
+                email: user.email,
+                role: 'viewer',
+                lastLogin: Date.now()
+            });
+        }
+        
+        // กำหนด Admin หลัก (ระบุ Email คุณที่นี่)
+        if (user.email === "panattapon.sum@gmail.com") {
+            userRole = 'admin';
+        }
+
+        updateUIByRole();
+    } else {
+        currentUser = null;
+        userRole = 'viewer';
+        updateUIByRole();
+    }
+    loadTable(); // โหลดตารางใหม่เพื่อคำนวณสถิติ
 });
 
-// --- 2. Auth Button Listeners ---
-document.getElementById('loginButton').addEventListener('click', login);
-document.getElementById('logoutButton').addEventListener('click', logout);
+// --- อัปเดตการเข้าถึง UI ตาม Role ---
+function updateUIByRole() {
+    // 1. จัดการปุ่มบันทึก/แก้ไข (Staff & Admin เท่านั้น)
+    const canWrite = (userRole === 'staff' || userRole === 'admin');
+    const writeButtons = ['saveDataButton', 'saveAssetButton', 'clearDeviceButton'];
+    writeButtons.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.toggle('hidden', !canWrite);
+    });
 
-// --- 3. Warranty Calculator Setup ---
-setupWarrantyCalculators();
-
-// --- 4. Site Switcher Setup ---
-const locationSelect = document.getElementById("location-select");
-
-if (!locationSelect) {
-console.error("Error: Element with ID 'location-select' not found.");
-return; 
+    // 2. จัดการปุ่ม Admin
+    const isAdmin = (userRole === 'admin');
+    const adminBtn = document.getElementById('adminUserBtn');
+    if (adminBtn) adminBtn.classList.toggle('hidden', !isAdmin);
 }
 
-locationSelect.addEventListener("change", function() {
-switchSite(this.value);
-});
+// --- ฟังก์ชันคำนวณสถิติ (แทรกใน loadTable เดิม) ---
+async function updateStats(devicesData) {
+    let total = devicesData.length;
+    let down = devicesData.filter(d => d.currentStatus === 'down').length;
+    let ok = total - down;
 
-try {
-let initialSiteKey = locationSelect.value;
-const siteKeys = Object.keys(sites);
-
-if (!initialSiteKey || !sites[initialSiteKey]) {
-if (siteKeys.length > 0) {
-initialSiteKey = siteKeys[0];
-locationSelect.value = initialSiteKey; 
-} else {
-console.warn("No sites defined in the 'sites' object.");
-return;
-}
+    document.getElementById('stat-total').innerText = total;
+    document.getElementById('stat-down').innerText = down;
+    document.getElementById('stat-ok').innerText = ok;
 }
 
-// เริ่มต้นด้วยการปิดการเขียนข้อมูล (จนกว่า auth.onAuthStateChanged จะทำงาน)
-toggleWriteAccess(false); 
-switchSite(initialSiteKey); 
-
-} catch (error) {
-console.error("Initial Site Switch Error:", error);
-Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message, 'error');
+// --- ฟังก์ชันจัดการผู้ใช้งาน (สำหรับ Admin) ---
+window.openUserManagement = async function() {
+    const userModal = document.getElementById('userModal');
+    const tbody = document.getElementById('userTableBody');
+    userModal.classList.remove('hidden');
+    userModal.classList.add('flex');
+    
+    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">กำลังโหลด...</td></tr>';
+    
+    const snapshot = await db.collection('users').get();
+    tbody.innerHTML = '';
+    
+    snapshot.forEach(doc => {
+        const userData = doc.data();
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-700/50";
+        tr.innerHTML = `
+            <td class="p-2">${userData.email}</td>
+            <td class="p-2"><span class="tag">${userData.role}</span></td>
+            <td class="p-2">
+                <select onchange="changeUserRole('${userData.email}', this.value)" class="bg-slate-900 border border-slate-600 text-xs rounded p-1">
+                    <option value="">-- เปลี่ยนสิทธิ์ --</option>
+                    <option value="viewer">Viewer</option>
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
-});
+
+window.changeUserRole = async function(email, newRole) {
+    if (!newRole) return;
+    try {
+        await db.collection('users').doc(email).update({ role: newRole });
+        Swal.fire('สำเร็จ', `เปลี่ยนสิทธิ์ของ ${email} เป็น ${newRole} เรียบร้อย`, 'success');
+        openUserManagement(); // refresh list
+    } catch (e) {
+        Swal.fire('Error', e.message, 'error');
+    }
+}
+
+window.closeUserModal = () => document.getElementById('userModal').classList.replace('flex', 'hidden');
+
+
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
@@ -1948,3 +1995,4 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
