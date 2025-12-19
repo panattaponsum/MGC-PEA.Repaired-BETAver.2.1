@@ -1,463 +1,454 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Microgrid Asset Management System</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+#map-mae-sariang, #map-betong {
+    margin-top: -25px !important;
+    padding-top: 0 !important;
+}
+:root{
+  --bg:#0f172a; --text:#e5e7eb; --sub:#9ca3af;
+  --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+}
+body {
+  margin:0;
+  font-family: 'Inter', 'Prompt', sans-serif;
+  background:linear-gradient(180deg,#0f172a,#0b1220 60%);
+  color:var(--text);
+}
+input, select, textarea, button, table {
+  font-family: 'Inter', 'Prompt', sans-serif;
+  font-weight: 400;
+}
+h1,h2,h3,th {
+  font-weight: 600;
+}
+.card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;box-shadow:0 10px 15px rgba(255,255,255,.25)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.spacer{flex:1}
+.btn{border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;transition:all .15s ease}
+.btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.22)}
+.btn-brand{border-color:transparent;background:linear-gradient(180deg,#60a5fa,#3b82f6);color:#06142b}
+.btn-danger{background:linear-gradient(180deg,#f87171,#ef4444);color:#fff;border-color:transparent}
+.btn-warning{background:linear-gradient(180deg,#fbbf24,#f59e0b);color:#1f1300;border-color:transparent}
+.btn-ghost{background:transparent;border-color:rgba(255,255,255,.1);color:var(--sub)}
+.tag{padding:2px 8px;font-size:14px;border-radius:999px;border:1px solid rgba(255,255,255,.1)}
+.tag-ok{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.4);color:#84f3cc}
+.tag-warn{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.4);color:#ffd98a}
+.tag-bad{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.4);color:#ffc1c1}
+
+.toolbar input,.toolbar select{background:#0b1220;color:var(--text);border:1px solid rgba(255,255,255,.1);padding:8px 10px;border-radius:10px;outline:none;min-width:140px}
+.toolbar input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+.table td,.table th{padding:10px 12px;text-align:center}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000}
+#formModal input,#formModal select,#formModal textarea {background: #fff;color: #000;border: 1px solid #ccc;border-radius: 6px;padding: 8px 10px;font-size: 14px;outline: none;}
+#formModal{overflow-y: auto;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1001;width:min(560px,92vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95));border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;max-height:90vh;display:none;flex-direction:column;}
+.entry{border:1px dashed rgba(255,255,255,.1);border-radius:12px;padding:10px;margin:8px 0;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01))}
+.muted{color:var(--text);font-size:10px}
+.device-img{width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.06)}
+#historySection{max-height:300px;overflow-y:auto;padding-right:6px}
+.hidden{display:none;}
+#location-select {
+    /* สไตล์จากปุ่ม (btn) */
+    border: 1px solid rgba(255,255,255,.12) !important; /* ขอบ */
+    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)) !important; /* พื้นหลังไล่สี */
+    color: var(--text) !important; /* ตัวอักษรสีขาว/เทาอ่อน */
+    padding: 8px 12px !important; /* ขนาดช่อง (เหมือนปุ่ม) */
+    border-radius: 10px !important; /* ความมน (เหมือนปุ่ม) */
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    outline: none;
     
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/image-map-resizer/1.0.10/js/imageMapResizer.min.js"></script>
+    /* แก้ไขเพิ่มเติม: เพื่อให้สีตัวเลือกด้านในเข้ากัน (เฉพาะ Chrome/Edge/Firefox) */
+    -webkit-appearance: none; /* สำหรับ Webkit (Chrome, Edge) */
+    -moz-appearance: none; /* สำหรับ Firefox */
+    appearance: none; /* เพื่อช่วยให้กำหนดสไตล์พื้นหลัง/สีตัวอักษรได้ดีขึ้น */
+}
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+/* ทำให้ตัวเลือกด้านใน (Dropdown Menu) เป็นสีดำ/ขาวด้วย */
+#location-select option {
+    background: #000;
+    color: #fff;
+}
 
-    <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #0f172a; color: #f1f5f9; }
-        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        
-        /* Map Overlays */
-        .map-container { position: relative; width: 100%; max-width: 100%; }
-        .map-container img { width: 100%; height: auto; display: block; }
-        .device-overlay {
-            position: absolute; border-radius: 50%; pointer-events: none;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 10;
-        }
-        .device-overlay.down {
-            background-color: rgba(239, 68, 68, 0.6); border: 2px solid #fff;
-            animation: pulse-red 2s infinite;
-        }
-        @keyframes pulse-red {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { transform: scale(1.0); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
+/* 💥 NEW CSS for Flashing Overlay 💥 */
+.device-overlay {
+    position: absolute;
+    border: 3px solid transparent;
+    border-radius: 8px; /* ปรับให้โค้งตามกรอบ */
+    pointer-events: none; /* เพื่อให้คลิกทะลุไปที่ <area> ได้ */
+    z-index: 50;
+    transition: all 0.3s ease-in-out;
+}
 
-        /* Status Tags */
-        .tag { padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; display: inline-block; }
-        .tag-ok { background: #dcfce7; color: #166534; }
-        .tag-bad { background: #fee2e2; color: #991b1b; }
-        
-        /* Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
-    </style>
+/* สถานะชำรุด (สีแดงกระพริบ) */
+.device-overlay.down {
+    border-color: var(--bad); /* สีแดงสำหรับสถานะชำรุด */
+    box-shadow: 0 0 10px var(--bad);
+    animation: blink-red 1s infinite alternate; /* กระพริบ */
+}
+
+/* คีย์เฟรมสำหรับเอฟเฟกต์กระพริบ */
+@keyframes blink-red {
+    from {
+        opacity: 1;
+        box-shadow: 0 0 10px var(--bad);
+    }
+    to {
+        opacity: 0.6;
+        box-shadow: 0 0 20px var(--bad);
+    }
+}
+
+/* 💥 NEW CSS for Asset Modal 💥 */
+#assetModal{
+    overflow-y: auto;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    z-index:1002; /* 💡 อยู่เหนือ formModal (1001) */
+    width:min(560px,92vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95));
+    border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;max-height:80vh;
+    display:none;flex-direction:column;
+}
+#assetModal input, #assetModal select, #assetModal textarea {
+    background: #fff;color: #000;border: 1px solid #ccc;
+    border-radius: 6px;padding: 8px 10px;font-size: 14px;outline: none;
+}
+
+/* 💥 NEW CSS for Warranty Status Tags 💥 */
+.tag-warranty-ok { background:rgba(52,211,153,.12); border-color:rgba(52,211,153,.4); color:#84f3cc; }
+.tag-warranty-warn { background:rgba(251,191,36,.12); border-color:rgba(251,191,36,.4); color:#ffd98a; }
+.tag-warranty-bad { background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.4); color:#ffc1c1; }
+
+</style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="bg-gray-900">
 
-    <nav class="bg-slate-900 border-b border-slate-700 sticky top-0 z-50 shadow-lg">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 p-2 rounded-lg text-white"><i class="fas fa-bolt"></i></div>
-                <div>
-                    <h1 class="text-xl font-bold text-white leading-tight">Microgrid</h1>
-                    <span class="text-xs text-blue-400">Asset Management</span>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <span id="userInfo" class="text-sm text-gray-300 hidden font-medium"></span>
-                
-                <button id="adminPanelBtn" onclick="openAdminPanel()" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-sm transition shadow-lg border border-indigo-500">
-                    <i class="fas fa-user-shield mr-1"></i> จัดการสิทธิ์
-                </button>
+<header class="sticky top-0 bg-opacity-85 backdrop-blur-md border-b border-white/6 px-5 py-6">
+<div class="max-w-[1200px] mx-auto">
+<h1 class="text-2xl mb-1">📊 แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</h1>
+<div class="text-sm text-gray-400">บันทึก/ติดตามสถานะอุปกรณ์ควบคุมระบบไมโครกริด, ประวัติการขัดข้อง, กราฟสรุปภาพรวม, ข้อมูลทรัพย์สิน
+<h2 id="locationTitle" class="text-xl mt-3 mb-4 text-white font-bold"></h2>
+</div>
+</div>
+</header>
 
-                <button id="loginButton" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg transition">
-                    <i class="fab fa-google mr-2"></i> เข้าสู่ระบบ
-                </button>
-                <button id="logoutButton" class="hidden bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition border border-slate-600">
-                    ออกจากระบบ
-                </button>
-            </div>
+<main class="max-w-[1400px] mx-auto px-4 py-4">
+
+<div id="topologyPage" >
+  <div class="card row mb-2 flex flex-wrap items-center justify-start gap-2 px-2"> 
+     <div class="flex items-center gap-2"> <label for="location-select" class="text-gray-100 font-semibold text-sm whitespace-nowrap">เลือกสถานที่ 🔎:</label>
+      <select id="location-select" class="toolbar-select w-50">
+        <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
+        <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
+        <option value="betong">ไมโครกริดอำเภอเบตง</option>
+      </select>
+    </div>
+
+<div id="authContainer" class="ml-4">
+        <button id="loginButton" class="btn btn-ghost border-yellow-500/50 text-yellow-400">🔒 ลงชื่อเข้าใช้ด้วย Google</button>
+        <div id="userInfo" class="hidden items-center">
+            <span id="userNameDisplay" class="text-sm text-gray-200 font-medium"></span>
+            <button id="logoutButton" class="btn btn-danger"> ออกจากระบบ</button>
         </div>
-    </nav>
+</div>
+   <button class="btn btn-rgb" onclick="showSummary()">📊 สรุปผล</button>
+	  <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
+    <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
+    <label class="btn btn-warning" id="importButtonLabel">📥 Import
+      <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
+    </label>
+    <button class="btn btn-danger" onclick="clearAllDevices()" id="clearAllButton">🗑️ ล้างข้อมูลทั้งหมด</button>
+  </div>
 
-    <main class="flex-grow container mx-auto p-4 md:p-6" id="app">
-        
-        <div id="dashboardStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 hidden">
-            <div class="glass-panel p-5 rounded-xl border-l-4 border-blue-500 shadow-xl">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-gray-400 text-xs uppercase tracking-wider">อุปกรณ์ทั้งหมด</p>
-                        <h3 id="statTotal" class="text-3xl font-bold text-white mt-1">0</h3>
-                    </div>
-                    <div class="p-3 bg-blue-500/10 rounded-full"><i class="fas fa-server text-2xl text-blue-500"></i></div>
-                </div>
+    
+<div id="map-ko-phaluay" class="map-container" style="position:relative;">
+  <img class="device-img" src="phaluay.png" usemap="#netmap" width="1903" height="1041" alt="Topology" />
+ <map name="netmap">
+  <area alt="HMI Server 1" coords="203,375,282,444" shape="rect" href="" onclick="openForm('HMI Server 1'); return false;">
+  <area alt="HMI Server 2" coords="370,368,452,442" shape="rect" href="" onclick="openForm('HMI Server 2'); return false;">
+  <area alt="Operation Station" coords="536,368,616,442" shape="rect" href="" onclick="openForm('Operation Station'); return false;">
+  <area alt="Printer" coords="692,370,774,432" shape="rect" href="" onclick="openForm('Printer'); return false;">
+  <area alt="Time Server" coords="57,449,136,487" shape="rect" href="" onclick="openForm('Time Server'); return false;">
+  <area alt="MGC" coords="54,578,133,620" shape="rect" href="" onclick="openForm('MGC'); return false;">
+  <area alt="Switch 1" coords="155,531,585,606" shape="rect" href="" onclick="openForm('Switch 1'); return false;">
+  <area alt="Switch 2" coords="1083,531,1513,601" shape="rect" href="" onclick="openForm('Switch 2'); return false;">
+  <area alt="Switch 3" coords="1184,647,1282,691" shape="rect" href="" onclick="openForm('Switch 3'); return false;">
+  <area alt="Switch 4" coords="1292,647,1377,689" shape="rect" href="" onclick="openForm('Switch 4'); return false;">
+  <area alt="Switch 5" coords="1208,738,1313,773" shape="rect" href="" onclick="openForm('Switch 5'); return false;">
+  <area alt="Switch 6" coords="1214,856,1308,886" shape="rect" href="" onclick="openForm('Switch 6'); return false;">
+  <area alt="Switch 7" coords="1369,741,1471,777" shape="rect" href="" onclick="openForm('Switch 7'); return false;">
+  <area alt="Switch 8" coords="1372,849,1465,888" shape="rect" href="" onclick="openForm('Switch 8'); return false;">
+  <area alt="COV 1" coords="620,527,779,590" shape="rect" href="" onclick="openForm('COV 1'); return false;">
+  <area alt="COV 2" coords="823,533,986,585" shape="rect" href="" onclick="openForm('COV 2'); return false;">
+  <area alt="BCP" coords="287,723,375,757" shape="rect" href="" onclick="openForm('BCP'); return false;">
+  <area alt="PCS" coords="395,723,487,755" shape="rect" href="" onclick="openForm('PCS'); return false;">
+  <area alt="Inverter 1" coords="872,728,964,757" shape="rect" href="" onclick="openForm('Inverter 1'); return false;">
+  <area alt="Inverter 2" coords="872,768,961,795" shape="rect" href="" onclick="openForm('Inverter 2'); return false;">
+  <area alt="Inverter 3" coords="872,804,966,830" shape="rect" href="" onclick="openForm('Inverter 3'); return false;">
+  <area alt="Inverter 4" coords="873,842,959,869" shape="rect" href="" onclick="openForm('Inverter 4'); return false;">
+  <area alt="Inverter 5" coords="868,882,961,906" shape="rect" href="" onclick="openForm('Inverter 5'); return false;">
+  <area alt="Inverter 6" coords="1013,731,1097,755" shape="rect" href="" onclick="openForm('Inverter 6'); return false;">
+  <area alt="Inverter 7" coords="1008,768,1093,790" shape="rect" href="" onclick="openForm('Inverter 7'); return false;">
+  <area alt="Inverter 8" coords="1011,804,1093,829" shape="rect" href="" onclick="openForm('Inverter 8'); return false;">
+  <area alt="Inverter 9" coords="1006,841,1097,866" shape="rect" href="" onclick="openForm('Inverter 9'); return false;">
+  <area alt="Inverter 10" coords="1008,882,1093,903" shape="rect" href="" onclick="openForm('Inverter 10'); return false;">
+  <area alt="DG 1" coords="1582,757,1663,790" shape="rect" href="" onclick="openForm('DG 1'); return false;">
+  <area alt="DG 2" coords="1688,765,1765,792" shape="rect" href="" onclick="openForm('DG 2'); return false;">
+  <area alt="DG Master" coords="1690,889,1772,921" shape="rect" href="" onclick="openForm('DG Master'); return false;">
+  <area alt="Gateway 1" coords="1098,429,1181,466" shape="rect" href="" onclick="openForm('Gateway 1'); return false;">
+  <area alt="Gateway 2" coords="1213,429,1295,468" shape="rect" href="" onclick="openForm('Gateway 2'); return false;">
+  <area alt="Firewall 1" coords="1088,384,1181,417" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
+  <area alt="Firewall 2" coords="1216,384,1292,411" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
+  <area alt="Firewall 3" coords="1429,416,1513,446" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
+</map>
+<div id="overlay-container-ko-phaluay" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
+</div>
+
+<div id="map-mae-sariang" class="map-container hidden " style="position:relative; ">
+    <img class="device-img" src="mae-sariang.bmp" usemap="#netmap-mae-sariang" width="1918" height="959" alt="Topology" />
+    <map name="netmap-mae-sariang">
+            <area alt="FireWall 1" coords="208,317,340,343" shape="rect" href="" onclick="openForm('FireWall 1'); return false;">
+      <area alt="PCS-9893(2nd)" coords="207,432,344,460" shape="rect" href="" onclick="openForm('PCS-9893(2nd)'); return false;">
+      <area alt="HMI Display 1" coords="689,283,736,338" shape="rect" href="" onclick="openForm('HMI Display 1'); return false;">
+      <area alt="HMI Display 2" coords="574,283,621,336" shape="rect" href="" onclick="openForm('HMI Display 2'); return false;">
+  <area alt="HMI Main 1" coords="785,283,829,336" shape="rect" href="" onclick="openForm('HMI Main 1'); return false;"> 
+ <area alt="Cyber Security Manager" coords="967,283,1007,336" shape="rect" href="" onclick="openForm('Cyber Security Manager'); return false;">
+      <area alt="Scada 1" coords="1095,283,1138,336" shape="rect" href="" onclick="openForm('Scada 1'); return false;">
+      <area alt="Scada 2" coords="1202,280,1249,338" shape="rect" href="" onclick="openForm('Scada 2'); return false;">
+<area alt="Switch 1" coords="393,436,579,476" shape="rect" href="" onclick="openForm('Switch 1'); return false;">
+      <area alt="Switch 2" coords="609,436,797,478" shape="rect" href="" onclick="openForm('Switch 2'); return false;">
+      <area alt="Switch 3" coords="415,636,638,678" shape="rect" href="" onclick="openForm('Switch 3'); return false;">
+  <area alt="Switch 4" coords="1038,639,1255,675" shape="rect" href="" onclick="openForm('Switch 4'); return false;">
+      <area alt="Switch 5" coords="824,432,924,478" shape="rect" href="" onclick="openForm('Switch 5'); return false;">
+      <area alt="Switch 6" coords="953,439,1102,476" shape="rect" href="" onclick="openForm('Switch 6'); return false;">  
+ <area alt="Switch 7" coords="1143,439,1293,478" shape="rect" href="" onclick="openForm('Switch 7'); return false;">
+      <area alt="ETH Switch 1" coords="1390,412,1495,439" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
+      <area alt="ETH Switch 2" coords="1537,410,1640,441" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;">
+ <area alt="PCS-9892" coords="1465,315,1574,344" shape="rect" href="" onclick="openForm('PCS-9892'); return false;">
+      <area alt="PCS-9893(1st)" coords="1465,368,1570,392" shape="rect" href="" onclick="openForm('PCS-9893(1st)'); return false;">
+      <area alt="PCS-9799(1st)" coords="1391,468,1497,496" shape="rect" href="" onclick="openForm('PCS-9799(1st)'); return false;">
+ <area alt="PCS-9799(2nd)" coords="1543,474,1645,498" shape="rect" href="" onclick="openForm('PCS-9799(2nd)'); return false;">
+	<area alt="MGC 1" coords="659,569,593,599" shape="rect" href="" onclick="openForm('MGC 1'); return false;">
+      <area alt="MGC 2" coords="454,573,521,600" shape="rect" href="" onclick="openForm('MGC 2'); return false;">
+<area alt="ATS" coords="921,561,972,598" shape="rect" href="" onclick="openForm('ATS'); return false;">
+	<area alt="PCS-9794(1st)" coords="1013,569,1074,603" shape="rect" href="" onclick="openForm('PCS-9794(1st)'); return false;">
+      <area alt="Diesel Local" coords="1213,574,1275,603" shape="rect" href="" onclick="openForm('Diesel Local'); return false;">
+<area alt="PCS-9794(2nd)" coords="352,742,421,767" shape="rect" href="" onclick="openForm('PCS-9794(2nd)'); return false;">
+	<area alt="PCS-9726" coords="466,744,528,773" shape="rect" href="" onclick="openForm('PCS-9726'); return false;">
+      <area alt="PCS-9567C" coords="606,745,672,771" shape="rect" href="" onclick="openForm('PCS-9567C'); return false;">
+<area alt="PCS 1" coords="745,739,811,767" shape="rect" href="" onclick="openForm('PCS 1'); return false;">
+	<area alt="PCS 2" coords="877,744,938,773" shape="rect" href="" onclick="openForm('PCS 2'); return false;">
+      <area alt="PCS 3" coords="1011,742,1074,767" shape="rect" href="" onclick="openForm('PCS 3'); return false;">
+<area alt="PCS 4" coords="1147,740,1206,767" shape="rect" href="" onclick="openForm('PCS 4'); return false;">
+	<area alt="PCS 5" coords="1279,740,1342,774" shape="rect" href="" onclick="openForm('PCS 5'); return false;">
+      <area alt="PCS 6" coords="1396,747,1455,776" shape="rect" href="" onclick="openForm('PCS 6'); return false;">
+      <area alt="ETH Switch 3" coords="484,810,315,784" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
+<area alt="BMS 1" coords="748,840,828,864" shape="rect" href="" onclick="openForm('BMS 1'); return false;">
+	<area alt="BMS 2" coords="860,844,950,867" shape="rect" href="" onclick="openForm('BMS 2'); return false;">
+      <area alt="BMS 3" coords="1003,840,1086,866" shape="rect" href="" onclick="openForm('BMS 3'); return false;">
+<area alt="BMS 4" coords="1130,842,1203,866" shape="rect" href="" onclick="openForm('BMS 4'); return false;">
+	<area alt="BMS 5" coords="1282,847,1360,866" shape="rect" href="" onclick="openForm('BMS 5'); return false;">
+      <area alt="BMS 6" coords="1396,844,1477,866" shape="rect" href="" onclick="openForm('BMS 6'); return false;">
+<area alt="FRTU 1-15" coords="1492,679,1770,796" shape="rect" href="" onclick="openForm('FRTU 1-15'); return false;">
+    </map>
+    <div id="overlay-container-mae-sariang" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
+  </div>
+
+ <div id="map-betong" class="map-container hidden" style="position:relative;">
+    <h4 id="betong-map-title" </h4> 
+       <img id="map-img-betong" class="device-img" src="betong.jpg" usemap="#map-areas-betong" width="1917" height="919" alt="Topology" />
+        <map name="map-areas-betong" id="map-areas-betong">
+            <area alt="Operator HMI 24" coords="202,76,364,197" shape="rect" href="" onclick="openForm('Operator HMI 24'); return false;">
+      <area alt="Operator HMI 27" coords="378,75,755,198" shape="rect" href="" onclick="openForm('Operator HMI 27'); return false;">
+      <area alt="ETH Switch 1" coords="835,608,1011,640" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
+	<area alt="ETH Switch 2" coords="1046,606,1222,638" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;">	
+	<area alt="ETH Switch 3" coords="835,704,1011,738" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
+	<area alt="ETH Switch 4" coords="1048,708,1222,738" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
+	<area alt="ETH Switch 6" coords="464,374,510,451" shape="rect" href="" onclick="openForm('ETH Switch 6'); return false;">
+	<area alt="ETH Switch 7" coords="657,371,703,452" shape="rect" href="" onclick="openForm('ETH Switch 7'); return false;">
+    </map>
+    <div id="overlay-container-betong" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
+  </div>
+</div>
+
+<div id="summaryPage" class="hidden">
+  <button class="btn btn-warning mb-1" onclick="showTopology()">⬅️ กลับหน้าหลัก</button>
+
+  <div class="card toolbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 items-center mt-4">
+    <h3 class="m-0 text-lg font-semibold col-span-1 md:col-span-1">📌 คัดกรอง</h3>
+    <div class="col-span-1 md:col-span-1">
+      <input id="searchInput" type="search" placeholder="🔍 ค้นหาอุปกรณ์..." oninput="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm"/>
+    </div>
+    <div class="col-span-1 md:col-span-1">
+      <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm">
+        <option value="desc">📉 ชำรุด มาก → น้อย</option>
+        <option value="asc">📈 ชำรุด น้อย → มาก</option>
+      </select>
+    </div>
+    <div class="col-span-1 md:col-span-1">
+      <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm">
+        <option value="all">ทั้งหมด</option>
+	<option value="currently-down">⚠️ อุปกรณ์ที่ยังชำรุด</option>
+        <option value="down">❎ เคยชำรุด</option>
+        <option value="clean">✅ ไม่เคยชำรุด</option>
+      </select>
+    </div>
+    <div class="col-span-1 md:col-span-1">
+      <input id="fromDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm"/>
+    </div>
+    <div class="col-span-1 md:col-span-1">
+      <input id="toDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm"/>
+    </div>
+    <div class="col-span-1 md:col-span-1">
+      <button onclick="resetFilters()" class="btn btn-warning w-full px-3 py-2 rounded-lg shadow-sm">♻️ เคลียร์การตั้งค่า</button>
+    </div>
+  </div>
+
+  <div class="card mt-3 overflow-x-auto">
+    <table class="table w-full" id="summaryTable">
+      <thead>
+        <tr>
+          <th>อุปกรณ์</th>
+          <th>จำนวนครั้งชำรุด (ทั้งหมด / คงเหลือ)</th>
+		   <th>วันที่ชำรุด</th>
+          <th>วันที่ซ่อมแซม</th>
+          <th>สถานะ</th>
+	<th>⚠️ ระยะเวลาชำรุด</th>
+          <th>รายละเอียด</th>
+        </tr> </thead>
+      <tbody id="summaryBody"></tbody>
+    </table>
+    <div id="pagination"></div>
+  </div>
+
+  <div class="card mt-4">
+    <h3 class="mb-1">📈 กราฟจำนวนครั้งที่ชำรุด</h3>
+    <canvas id="chart" height="100"></canvas>
+  </div>
+</div>
+
+
+<div id="overlay" onclick="closeForm()"></div>
+<div id="formModal">
+    <div class="row mb-2">
+    <h3 id="formTitle" class="m-0">บันทึกข้อมูล</h3>
+    <span class="spacer"></span>
+    <button class="btn btn-ghost" onclick="closeForm()">✖ ปิด</button>
+    </div>
+
+    <div class="mb-3 p-3 bg-gray-700/50 border border-gray-600 rounded-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <div id="warrantyStatusDisplay" class="text-sm font-bold">-</div>
+                <div id="assetInfoDisplay" class="text-xs text-gray-400 mt-1">-</div>
             </div>
-            <div class="glass-panel p-5 rounded-xl border-l-4 border-red-500 shadow-xl">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-gray-400 text-xs uppercase tracking-wider">กำลังชำรุด (Down)</p>
-                        <h3 id="statDown" class="text-3xl font-bold text-red-400 mt-1">0</h3>
-                    </div>
-                    <div class="p-3 bg-red-500/10 rounded-full"><i class="fas fa-tools text-2xl text-red-500"></i></div>
-                </div>
-            </div>
-            <div class="glass-panel p-5 rounded-xl border-l-4 border-green-500 shadow-xl">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-gray-400 text-xs uppercase tracking-wider">ใช้งานปกติ</p>
-                        <h3 id="statNormal" class="text-3xl font-bold text-green-400 mt-1">0</h3>
-                    </div>
-                    <div class="p-3 bg-green-500/10 rounded-full"><i class="fas fa-check-circle text-2xl text-green-500"></i></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-            <div class="flex items-center gap-3 w-full md:w-auto">
-                <select id="location-select" class="bg-slate-900 border border-slate-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm">
-                    <option value="ko-phaluay">🏝️ เกาะพะลวย</option>
-                    <option value="mae-sariang">⛰️ แม่สะเรียง</option>
-                    <option value="betong">🏙️ เบตง</option>
-                </select>
-                <h2 id="locationTitle" class="text-lg font-bold text-white hidden md:block pl-2 border-l border-slate-600"></h2>
-            </div>
-
-            <div class="flex gap-2">
-                <button onclick="showTopology()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition border border-slate-600">
-                    <i class="fas fa-map mr-1"></i> แผนผัง
-                </button>
-                <button onclick="showSummary()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition border border-slate-600">
-                    <i class="fas fa-list mr-1"></i> รายการ
-                </button>
-                <button onclick="printReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm shadow-lg shadow-emerald-900/20 border border-emerald-500">
-                    <i class="fas fa-print mr-1"></i> รายงาน
-                </button>
-            </div>
-        </div>
-
-        <div id="topologyPage" class="glass-panel rounded-xl p-2 shadow-2xl relative min-h-[500px] flex items-center justify-center bg-slate-900">
-            <div id="map-ko-phaluay" class="map-container hidden">
-                <img src="https://firebasestorage.googleapis.com/v0/b/microgrid-th.firebasestorage.app/o/maps%2Fko-phaluay-map.jpg?alt=media" usemap="#image-map-ko-phaluay">
-                <map name="image-map-ko-phaluay">
-                     <area target="" alt="HMI Server 1" title="HMI Server 1" href="#" coords="386,306,456,346" shape="rect">
-                     <area target="" alt="HMI Server 2" title="HMI Server 2" href="#" coords="465,307,533,346" shape="rect">
-                     <area target="" alt="Operation Station" title="Operation Station" href="#" coords="543,306,610,346" shape="rect">
-                     <area target="" alt="Time Server" title="Time Server" href="#" coords="679,307,748,346" shape="rect">
-                     <area target="" alt="Printer" title="Printer" href="#" coords="621,308,668,347" shape="rect">
-                     <area target="" alt="MGC" title="MGC" href="#" coords="757,307,816,346" shape="rect">
-                     <area target="" alt="Switch 1" title="Switch 1" href="#" coords="395,389,483,407" shape="rect">
-                     <area target="" alt="Switch 2" title="Switch 2" href="#" coords="492,390,580,407" shape="rect">
-                     <area target="" alt="Switch 3" title="Switch 3" href="#" coords="623,389,711,407" shape="rect">
-                     <area target="" alt="Switch 4" title="Switch 4" href="#" coords="721,389,808,407" shape="rect">
-                     <area target="" alt="Switch 5" title="Switch 5" href="#" coords="347,515,417,532" shape="rect">
-                     <area target="" alt="Switch 6" title="Switch 6" href="#" coords="634,514,705,532" shape="rect">
-                     <area target="" alt="Switch 7" title="Switch 7" href="#" coords="792,514,863,532" shape="rect">
-                     <area target="" alt="Switch 8" title="Switch 8" href="#" coords="490,515,561,532" shape="rect">
-                     <area target="" alt="COV 1" title="COV 1" href="#" coords="345,556,419,598" shape="rect">
-                     <area target="" alt="COV 2" title="COV 2" href="#" coords="790,556,864,596" shape="rect">
-                     <area target="" alt="BCP" title="BCP" href="#" coords="489,555,563,596" shape="rect">
-                     <area target="" alt="PCS" title="PCS" href="#" coords="633,556,707,596" shape="rect">
-                     <area target="" alt="Gateway 1" title="Gateway 1" href="#" coords="395,431,484,451" shape="rect">
-                     <area target="" alt="Gateway 2" title="Gateway 2" href="#" coords="491,431,581,451" shape="rect">
-                     <area target="" alt="Firewall 1" title="Firewall 1" href="#" coords="623,431,712,451" shape="rect">
-                     <area target="" alt="Firewall 2" title="Firewall 2" href="#" coords="721,431,809,451" shape="rect">
-                     <area target="" alt="Firewall 3" title="Firewall 3" href="#" coords="819,431,907,451" shape="rect">
-                     <area target="" alt="DG Master" title="DG Master" href="#" coords="558,629,634,670" shape="rect">
-                     <area target="" alt="DG 1" title="DG 1" href="#" coords="345,629,420,669" shape="rect">
-                     <area target="" alt="DG 2" title="DG 2" href="#" coords="789,628,865,670" shape="rect">
-                     <area target="" alt="Inverter 1" title="Inverter 1" href="#" coords="135,551,178,610" shape="rect">
-                     <area target="" alt="Inverter 2" title="Inverter 2" href="#" coords="194,551,236,608" shape="rect">
-                     <area target="" alt="Inverter 3" title="Inverter 3" href="#" coords="252,551,294,608" shape="rect">
-                     <area target="" alt="Inverter 4" title="Inverter 4" href="#" coords="136,634,178,690" shape="rect">
-                     <area target="" alt="Inverter 5" title="Inverter 5" href="#" coords="194,634,236,690" shape="rect">
-                     <area target="" alt="Inverter 6" title="Inverter 6" href="#" coords="252,634,295,690" shape="rect">
-                     <area target="" alt="Inverter 7" title="Inverter 7" href="#" coords="914,552,957,609" shape="rect">
-                     <area target="" alt="Inverter 8" title="Inverter 8" href="#" coords="972,551,1015,609" shape="rect">
-                     <area target="" alt="Inverter 9" title="Inverter 9" href="#" coords="1031,552,1073,609" shape="rect">
-                     <area target="" alt="Inverter 10" title="Inverter 10" href="#" coords="972,634,1015,691" shape="rect">
-                </map>
-            </div>
-            <div id="map-mae-sariang" class="map-container hidden">
-                <img src="https://firebasestorage.googleapis.com/v0/b/microgrid-th.firebasestorage.app/o/maps%2Fmae-sariang-map.jpg?alt=media" usemap="#image-map-mae-sariang">
-                <map name="image-map-mae-sariang">
-                    <area target="" alt="FireWall 1" title="FireWall 1" href="#" coords="158,284,213,301" shape="rect">
-                    <area target="" alt="PCS-9893(2nd)" title="PCS-9893(2nd)" href="#" coords="216,284,272,301" shape="rect">
-                    <area target="" alt="HMI Display 1" title="HMI Display 1" href="#" coords="383,235,435,270" shape="rect">
-                    <area target="" alt="HMI Display 2" title="HMI Display 2" href="#" coords="437,235,490,269" shape="rect">
-                    <area target="" alt="HMI Main 1" title="HMI Main 1" href="#" coords="492,235,545,269" shape="rect">
-                    <area target="" alt="Cyber Security Manager" title="Cyber Security Manager" href="#" coords="547,235,600,269" shape="rect">
-                    <area target="" alt="Scada 1" title="Scada 1" href="#" coords="602,235,654,269" shape="rect">
-                    <area target="" alt="Scada 2" title="Scada 2" href="#" coords="657,235,709,269" shape="rect">
-                    <area target="" alt="Switch 1" title="Switch 1" href="#" coords="378,321,446,334" shape="rect">
-                    <area target="" alt="Switch 2" title="Switch 2" href="#" coords="448,321,514,334" shape="rect">
-                    <area target="" alt="Switch 3" title="Switch 3" href="#" coords="581,321,647,334" shape="rect">
-                    <area target="" alt="Switch 4" title="Switch 4" href="#" coords="650,321,716,334" shape="rect">
-                    <area target="" alt="Switch 5" title="Switch 5" href="#" coords="217,398,283,411" shape="rect">
-                    <area target="" alt="Switch 6" title="Switch 6" href="#" coords="328,397,394,411" shape="rect">
-                    <area target="" alt="Switch 7" title="Switch 7" href="#" coords="404,398,469,411" shape="rect">
-                    <area target="" alt="ETH Switch 1" title="ETH Switch 1" href="#" coords="621,438,674,451" shape="rect">
-                    <area target="" alt="ETH Switch 2" title="ETH Switch 2" href="#" coords="775,438,829,451" shape="rect">
-                    <area target="" alt="PCS-9892" title="PCS-9892" href="#" coords="386,340,439,352" shape="rect">
-                    <area target="" alt="PCS-9893(1st)" title="PCS-9893(1st)" href="#" coords="454,340,508,352" shape="rect">
-                    <area target="" alt="PCS-9799(1st)" title="PCS-9799(1st)" href="#" coords="587,339,641,351" shape="rect">
-                    <area target="" alt="PCS-9799(2nd)" title="PCS-9799(2nd)" href="#" coords="656,339,710,351" shape="rect">
-                    <area target="" alt="MGC 1" title="MGC 1" href="#" coords="219,425,273,454" shape="rect">
-                    <area target="" alt="MGC 2" title="MGC 2" href="#" coords="337,425,390,454" shape="rect">
-                    <area target="" alt="ATS" title="ATS" href="#" coords="411,425,464,454" shape="rect">
-                    <area target="" alt="PCS-9794(1st)" title="PCS-9794(1st)" href="#" coords="547,438,600,451" shape="rect">
-                    <area target="" alt="Diesel Local" title="Diesel Local" href="#" coords="547,488,600,501" shape="rect">
-                    <area target="" alt="PCS-9794(2nd)" title="PCS-9794(2nd)" href="#" coords="700,438,753,451" shape="rect">
-                    <area target="" alt="PCS-9726" title="PCS-9726" href="#" coords="295,301,348,314" shape="rect">
-                    <area target="" alt="PCS-9567C" title="PCS-9567C" href="#" coords="157,302,211,315" shape="rect">
-                    <area target="" alt="PCS 1" title="PCS 1" href="#" coords="352,654,411,684" shape="rect">
-                    <area target="" alt="PCS 2" title="PCS 2" href="#" coords="427,654,486,684" shape="rect">
-                    <area target="" alt="PCS 3" title="PCS 3" href="#" coords="501,654,561,684" shape="rect">
-                    <area target="" alt="PCS 4" title="PCS 4" href="#" coords="577,654,636,684" shape="rect">
-                    <area target="" alt="PCS 5" title="PCS 5" href="#" coords="652,654,710,684" shape="rect">
-                    <area target="" alt="PCS 6" title="PCS 6" href="#" coords="726,654,785,684" shape="rect">
-                    <area target="" alt="ETH Switch 3" title="ETH Switch 3" href="#" coords="535,702,600,715" shape="rect">
-                    <area target="" alt="BMS 1" title="BMS 1" href="#" coords="363,733,401,753" shape="rect">
-                    <area target="" alt="BMS 2" title="BMS 2" href="#" coords="438,733,476,753" shape="rect">
-                    <area target="" alt="BMS 3" title="BMS 3" href="#" coords="513,733,550,753" shape="rect">
-                    <area target="" alt="BMS 4" title="BMS 4" href="#" coords="587,733,625,753" shape="rect">
-                    <area target="" alt="BMS 5" title="BMS 5" href="#" coords="663,733,701,753" shape="rect">
-                    <area target="" alt="BMS 6" title="BMS 6" href="#" coords="737,733,775,753" shape="rect">
-                    <area target="" alt="FRTU 1-15" title="FRTU 1-15" href="#" coords="874,510,929,523" shape="rect">
-                </map>
-            </div>
-            <div id="map-betong" class="map-container hidden">
-                <img src="https://firebasestorage.googleapis.com/v0/b/microgrid-th.firebasestorage.app/o/maps%2Fbetong-map.jpg?alt=media" usemap="#image-map-betong">
-                <map name="image-map-betong">
-                    <area target="" alt="Operator HMI 24" title="Operator HMI 24" href="#" coords="631,232,693,277" shape="rect">
-                    <area target="" alt="Operator HMI 27" title="Operator HMI 27" href="#" coords="558,232,621,277" shape="rect">
-                    <area target="" alt="ETH Switch 1" title="ETH Switch 1" href="#" coords="558,318,620,336" shape="rect">
-                    <area target="" alt="ETH Switch 2" title="ETH Switch 2" href="#" coords="631,318,693,336" shape="rect">
-                    <area target="" alt="ETH Switch 3" title="ETH Switch 3" href="#" coords="558,404,620,422" shape="rect">
-                    <area target="" alt="ETH Switch 4" title="ETH Switch 4" href="#" coords="631,404,693,422" shape="rect">
-                    <area target="" alt="ETH Switch 6" title="ETH Switch 6" href="#" coords="304,383,365,401" shape="rect">
-                    <area target="" alt="ETH Switch 7" title="ETH Switch 7" href="#" coords="900,383,962,401" shape="rect">
-                </map>
-            </div>
-        </div>
-
-        <div id="summaryPage" class="hidden">
-            <div class="glass-panel p-4 rounded-xl mb-4 border border-slate-700">
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div class="col-span-2">
-                        <label class="text-xs text-gray-400">ค้นหาอุปกรณ์</label>
-                        <input type="text" id="searchInput" onkeyup="updateDeviceSummary()" placeholder="ชื่อ, รุ่น..." class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-400">สถานะ</label>
-                        <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
-                            <option value="all">ทั้งหมด</option>
-                            <option value="currently-down">ค้างซ่อม (Currently Down)</option>
-                            <option value="down">เคยเสีย</option>
-                            <option value="clean">ปกติ</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-400">เรียงตาม</label>
-                        <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
-                            <option value="desc">เสียมาก -> น้อย</option>
-                            <option value="asc">เสียน้อย -> มาก</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button onclick="resetFilters()" class="w-full bg-slate-600 hover:bg-slate-500 text-white p-2 rounded text-sm transition">Reset</button>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-3 pt-3 border-t border-slate-700">
-                    <div>
-                         <label class="text-xs text-gray-400">จากวันที่</label>
-                         <input type="date" id="fromDate" onchange="updateDeviceSummary()" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
-                    </div>
-                    <div>
-                         <label class="text-xs text-gray-400">ถึงวันที่</label>
-                         <input type="date" id="toDate" onchange="updateDeviceSummary()" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
-                    </div>
-                    <div class="col-span-3 flex justify-end gap-2 items-end">
-                        <label id="importButtonLabel" for="importFile" class="hidden btn bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded cursor-pointer text-sm">
-                            <i class="fas fa-file-import mr-1"></i> Import XLSX
-                        </label>
-                        <input type="file" id="importFile" accept=".xlsx" class="hidden" onchange="importData(event)">
-                        
-                        <button onclick="exportAllDataExcel()" class="bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded text-sm transition shadow">
-                            <i class="fas fa-file-excel mr-1"></i> Export XLSX
-                        </button>
-                        <button id="clearAllButton" onclick="clearAllDevices()" class="bg-red-900 hover:bg-red-800 text-white px-3 py-2 rounded text-sm transition disabled:opacity-50">
-                             <i class="fas fa-trash"></i> ล้างข้อมูล
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-panel rounded-xl overflow-hidden shadow-xl border border-slate-700">
-                <table class="w-full text-sm text-left text-gray-300">
-                    <thead class="text-xs text-white uppercase bg-slate-900">
-                        <tr>
-                            <th class="px-6 py-3">อุปกรณ์</th>
-                            <th class="px-6 py-3">ชำรุด (ครั้ง)</th>
-                            <th class="px-6 py-3">เสียล่าสุด</th>
-                            <th class="px-6 py-3">ซ่อมล่าสุด</th>
-                            <th class="px-6 py-3">สถานะ</th>
-                            <th class="px-6 py-3 text-center">ระยะเวลา</th>
-                            <th class="px-6 py-3">รายละเอียด</th>
-                        </tr>
-                    </thead>
-                    <tbody id="summaryBody" class="divide-y divide-slate-700 hover:bg-slate-800/30">
-                        </tbody>
-                </table>
-            </div>
-
-            <div id="pagination" class="mt-4 flex justify-center gap-2"></div>
-            
-            <div class="glass-panel p-4 rounded-xl mt-6 border border-slate-700">
-                <h3 class="text-white font-bold mb-4 border-b border-slate-700 pb-2">📈 10 อันดับอุปกรณ์ที่มีปัญหาบ่อยที่สุด</h3>
-                <canvas id="chart" height="70"></canvas>
-            </div>
-        </div>
-
-    </main>
-
-    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-80 hidden z-40 backdrop-blur-sm transition-opacity"></div>
-    <div id="formModal" class="fixed inset-0 hidden items-center justify-center z-50">
-        <div class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-5xl mx-4 flex flex-col max-h-[90vh] border border-slate-600">
-            <div class="flex justify-between items-center p-5 border-b border-slate-700 bg-slate-900 rounded-t-xl">
-                <div>
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i class="fas fa-edit text-blue-500"></i> <span id="formTitle">บันทึกข้อมูล</span>
-                    </h3>
-                    <div class="mt-1 flex items-center gap-3 text-sm text-gray-400">
-                        <span id="warrantyStatusDisplay"></span>
-                        <span id="assetInfoDisplay"></span>
-                        <button onclick="openAssetModal()" class="text-blue-400 hover:text-blue-300 underline text-xs">
-                            <i class="fas fa-box-open"></i> แก้ไขข้อมูลทรัพย์สิน
-                        </button>
-                    </div>
-                </div>
-                <button onclick="closeForm()" class="text-gray-400 hover:text-white text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-700 transition">&times;</button>
-            </div>
-
-            <div class="p-6 overflow-hidden flex flex-col md:flex-row gap-6 h-full">
-                <div class="w-full md:w-1/2 space-y-4 overflow-y-auto custom-scrollbar pr-2">
-                    <div class="bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-                        <label class="block text-xs font-medium text-gray-400 mb-1">ผู้บันทึก</label>
-                        <input type="text" id="userName" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm" readonly>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">สถานะ</label>
-                            <select id="status" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm focus:ring-2 focus:ring-blue-500">
-                                <option value="down">❎ ชำรุด (Down)</option>
-                                <option value="ok">✅ ใช้งานได้ (Normal)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">วันที่พบปัญหา</label>
-                            <input type="date" id="brokenDate" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">วันที่ซ่อมเสร็จ</label>
-                        <input type="date" id="fixedDate" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-gray-400 mb-1">รายละเอียด / อาการ / การแก้ไข</label>
-                        <textarea id="description" rows="4" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm" placeholder="ระบุสาเหตุและการแก้ไข..."></textarea>
-                    </div>
-
-                    <div id="editHint" class="hidden bg-yellow-500/10 border border-yellow-500/30 text-yellow-200 text-xs p-3 rounded flex items-center gap-2">
-                        <i class="fas fa-info-circle"></i> กำลังแก้ไขรายการเดิม
-                    </div>
-
-                    <div class="flex gap-3 pt-2">
-                        <button id="saveDataButton" onclick="saveData()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-medium">
-                            <i class="fas fa-save mr-1"></i> บันทึก
-                        </button>
-                        <button onclick="clearForm()" class="px-4 bg-slate-600 hover:bg-slate-500 text-white rounded transition">
-                            ล้างค่า
-                        </button>
-                    </div>
-                    
-                    <div class="pt-6 mt-4 border-t border-slate-700">
-                        <button id="clearDeviceButton" onclick="clearCurrentDevice()" class="w-full text-red-400 hover:text-red-300 text-xs border border-red-900/50 hover:bg-red-900/20 p-2 rounded transition">
-                            <i class="fas fa-trash-alt mr-1"></i> ล้างประวัติทั้งหมดของอุปกรณ์นี้
-                        </button>
-                    </div>
-                </div>
-
-                <div class="w-full md:w-1/2 bg-slate-900/50 rounded-lg border border-slate-700 flex flex-col h-full">
-                    <div class="p-3 border-b border-slate-700 bg-slate-800/50 rounded-t-lg flex justify-between items-center">
-                        <h4 class="text-white font-bold text-sm"><i class="fas fa-history mr-1"></i> ประวัติการซ่อม</h4>
-                        <span class="text-xs text-gray-400" id="historyCount"></span>
-                    </div>
-                    
-                    <div id="historySection" class="flex-grow overflow-y-auto p-3 space-y-3 custom-scrollbar">
-                        </div>
-
-                    <div class="p-3 border-t border-slate-700 flex justify-between items-center bg-slate-800/30 rounded-b-lg">
-                        <button onclick="changeHistoryPage(-1)" id="btnPrevHist" class="text-xs bg-slate-700 text-white px-2 py-1 rounded disabled:opacity-30">Prev</button>
-                        <span id="histPageIndicator" class="text-xs text-gray-400">Page 1</span>
-                        <button onclick="changeHistoryPage(1)" id="btnNextHist" class="text-xs bg-slate-700 text-white px-2 py-1 rounded disabled:opacity-30">Next</button>
-                    </div>
-                </div>
-            </div>
+            <button class="btn btn-ghost text-xs" onclick="openAssetModal()">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
         </div>
     </div>
 
-    <div id="assetModal" class="fixed inset-0 hidden items-center justify-center z-[60] backdrop-blur-sm bg-black/80">
-        <div class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-slate-500">
-            <div class="flex justify-between items-center p-4 border-b border-slate-600 bg-slate-900 rounded-t-xl">
-                <h3 class="text-lg font-bold text-white"><i class="fas fa-box mr-2"></i>แก้ไขข้อมูลทรัพย์สิน</h3>
-                <button onclick="closeAssetModal()" class="text-gray-400 hover:text-white">&times;</button>
-            </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Serial Number (S/N)</label>
-                    <input type="text" id="assetSerial" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Model / รุ่น</label>
-                        <input type="text" id="assetModel" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
-                    </div>
-                    <div>
-                         <label class="block text-xs text-gray-400 mb-1">Manufacturer / ยี่ห้อ</label>
-                         <input type="text" id="assetManufacturer" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
-                    </div>
-                </div>
-                
-                <div class="bg-slate-700/30 p-3 rounded border border-slate-600">
-                    <p class="text-xs text-blue-300 mb-2 font-bold">ข้อมูลการรับประกัน</p>
-                    <div class="grid grid-cols-2 gap-3">
-                         <div>
-                            <label class="block text-xs text-gray-400">วันเริ่มประกัน</label>
-                            <input type="date" id="assetWarrantyStart" class="w-full bg-slate-900 border border-slate-600 rounded p-1 text-white text-xs">
-                        </div>
-                        <div>
-                             <label class="block text-xs text-gray-400">ระยะเวลา (ปี)</label>
-                             <input type="number" id="assetWarrantyYears" step="1" class="w-full bg-slate-900 border border-slate-600 rounded p-1 text-white text-xs" oninput="calculateWarrantyEnd()">
-                        </div>
-                        <div class="col-span-2">
-                            <label class="block text-xs text-gray-400">วันหมดประกัน (Auto)</label>
-                            <input type="date" id="assetWarrantyEnd" class="w-full bg-slate-900 border border-slate-600 rounded p-1 text-white text-xs">
-                        </div>
-                    </div>
-                </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label>ชื่อผู้บันทึก</label>
+        <input type="text" id="userName" class="w-full" readOnly/>
+      </div>
+      <div>
+        <label>สถานะ</label>
+        <select id="status" class="w-full">
+          <option value="ok">✅ ใช้งานได้</option>
+          <option value="down">❎ ชำรุด</option>
+        </select>
+      </div>
+      <div>
+        <label>วันที่ชำรุด</label>
+        <input type="date" id="brokenDate" class="w-full"/>
+      </div>
+      <div>
+        <label>วันที่ซ่อมแซม</label>
+        <input type="date" id="fixedDate" class="w-full"/>
+      </div>
+      <div class="sm:col-span-2">
+        <label>รายละเอียด</label>
+        <textarea id="description" rows="3" class="w-full"></textarea>
+      </div>
+    </div>
+    <div class="row mt-3">
+    <button class="btn btn-brand" onclick="saveData()" id="saveDataButton">💾 บันทึก</button>
+    <button class="btn btn-warning" onclick="clearCurrentDevice()" id="clearDeviceButton">🗑️ ล้างข้อมูลอุปกรณ์นี้</button>
+    <span class="spacer"></span>
+    <div id="editHint" class="muted hidden">กำลังแก้ไขรายการเดิม…</div>
+    </div>
+    <hr class="border-white/8 mt-3 mb-2">
+    <h3 class="mt-2 mb-1">📜 ประวัติ</h3>
+    <div id="historySection"></div>
+</div>
 
-                <div class="pt-2 text-right">
-                    <button onclick="saveAssetData()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded shadow text-sm">
-                        💾 บันทึก
-                    </button>
-                </div>
-            </div>
+<div id="assetModal" >
+    <div class="row mb-3">
+        <h3 id="assetFormTitle" class="m-0 text-lg">📋 ข้อมูลทะเบียนทรัพย์สิน</h3>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" onclick="closeAssetModal()">✖ ปิด</button>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+            <label>Serial Number (S/N)</label>
+            <input type="text" id="assetSerial" class="w-full"/>
+        </div>
+        <div>
+            <label>รุ่น (Model)</label>
+            <input type="text" id="assetModel" class="w-full"/>
+        </div>
+        <div class="sm:col-span-2">
+            <label>ผู้ผลิต (Manufacturer)</label>
+            <input type="text" id="assetManufacturer" class="w-full"/>
+        </div>
+        <hr class="sm:col-span-2 border-white/10 my-1">
+        <div>
+            <label>วันที่เริ่มรับประกัน</label>
+            <input type="date" id="assetWarrantyStart" class="w-full"/>
+        </div>
+        <div>
+            <label>จำนวนปีรับประกัน</label>
+            <input type="number" id="assetWarrantyYears" class="w-full" min="0" step="1"/>
+        </div>
+        <div>
+            <label>วันที่หมดรับประกัน</label>
+            <input type="date" id="assetWarrantyEnd" class="w-full"/>
+        </div>
+         <div>
+            <label>สถานะประกัน </label>
+            <input type="text" id="assetWarrantyStatus" class="w-full bg-gray-200! text-gray-700!" readOnly/>
         </div>
     </div>
+    <div class="row mt-4">
+        <button class="btn btn-brand" onclick="saveAssetData()" id="saveAssetButton">💾 บันทึกข้อมูลทรัพย์สิน</button>
+    </div>
+</div>
 
-    <script src="main.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/image-map-resizer@1.0.10/js/imageMapResizer.min.js"></script>
+
+<script src="main.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
