@@ -143,7 +143,45 @@ h1,h2,h3,th {
 </header>
 
 <main class="max-w-[1400px] mx-auto px-4 py-4">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="card text-center">
+        <div class="text-sub text-sm">อุปกรณ์ทั้งหมด</div>
+        <div id="stat-total" class="text-2xl font-bold">0</div>
+    </div>
+    <div class="card text-center border-b-2 border-red-500">
+        <div class="text-sub text-sm">ชำรุด (Down)</div>
+        <div id="stat-down" class="text-2xl font-bold text-red-400">0</div>
+    </div>
+    <div class="card text-center border-b-2 border-green-500">
+        <div class="text-sub text-sm">ปกติ (Normal)</div>
+        <div id="stat-ok" class="text-2xl font-bold text-green-400">0</div>
+    </div>
+</div>
 
+<button id="adminUserBtn" class="btn btn-warning hidden" onclick="openUserManagement()">
+    <i class="fas fa-users-cog"></i> จัดการสิทธิ์
+</button>
+
+<div id="userModal" class="fixed inset-0 hidden z-[2000] items-center justify-center bg-black/80">
+    <div class="bg-slate-800 w-full max-w-2xl rounded-xl p-6 border border-slate-600">
+        <div class="flex justify-between mb-4">
+            <h2 class="text-xl font-bold">จัดการสิทธิ์ผู้ใช้งาน</h2>
+            <button onclick="closeUserModal()" class="text-xl">&times;</button>
+        </div>
+        <div class="overflow-y-auto max-h-[60vh]">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left border-b border-slate-700">
+                        <th class="p-2">อีเมล</th>
+                        <th class="p-2">สิทธิ์ปัจจุบัน</th>
+                        <th class="p-2">เปลี่ยนเป็น</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 <div id="topologyPage" >
   <div class="card row mb-2 flex flex-wrap items-center justify-start gap-2 px-2"> 
      <div class="flex items-center gap-2"> <label for="location-select" class="text-gray-100 font-semibold text-sm whitespace-nowrap">เลือกสถานที่ 🔎:</label>
@@ -445,6 +483,7 @@ h1,h2,h3,th {
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
