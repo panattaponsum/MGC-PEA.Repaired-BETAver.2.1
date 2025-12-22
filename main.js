@@ -304,8 +304,8 @@ window.openForm = async function(deviceName) {
 
 window.closeForm = function() {
 document.getElementById('overlay').style.display = 'none';
-document.getElementById('formModal').style.display = 'none'; // 💥 FIX: ใช้ none
-// 💡 ปิดหน้า Asset ด้วย (ถ้าเผลอเปิดค้าง)
+document.getElementById('formModal').style.display = 'none'; // 
+
 closeAssetModal(false); 
 }
 
@@ -743,8 +743,6 @@ document.getElementById('assetModal').style.display = 'none';
 if (showMainModal && currentDevice) {
 document.getElementById('formModal').style.display = 'flex'; // 💥 FIX: ใช้ flex
 } else {
-// ถ้าไม่มี showMainModal หรือ currentDevice ให้ปิด overlay ไปเลย
-closeForm();
 }
 }
 
@@ -1960,5 +1958,6 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
