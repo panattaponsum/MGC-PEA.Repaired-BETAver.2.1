@@ -1676,114 +1676,107 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('loginButton').classList.add('hidden');
             document.getElementById('userNameDisplay').textContent = `${user.email}`;
 
-            try {
-                // ดึงข้อมูลสิทธิ์จาก Firestore collection 'users'
-                const userDoc = await db.collection('users').doc(user.email).get();
-                
-                let role = 'viewer'; // ค่าเริ่มต้นถ้าไม่ระบุในระบบ
-                if (userDoc.exists) {
-                    role = userDoc.data().role;
-                } else {
-                    // ถ้า login ครั้งแรกและยังไม่มีในฐานข้อมูล ให้บันทึกเป็น viewer ไว้ก่อน
-                    await db.collection('users').doc(user.email).set({ 
-                        role: 'viewer',
-                        lastLogin: firebase.firestore.FieldValue.serverTimestamp() 
-                    });
-                }
-
-                // เรียกฟังก์ชันจัดการสิทธิ์ตาม Role ที่ได้รับ
-                applyRolePermissions(role);
-
-            } catch (error) {
-                console.error("Error fetching role:", error);
-                applyRolePermissions('viewer'); // กันเหนียวให้เป็น viewer ไว้ก่อน
-            }
-
+          // ดึง Role จาก Firestore
+        const userDoc = await db.collection('users').doc(user.email).get();
+        let role = 'viewer'; 
+        if (userDoc.exists) {
+            role = userDoc.data().role;
         } else {
-            currentUser = null;
-            document.getElementById('userInfo').classList.add('hidden');
-            document.getElementById('loginButton').classList.remove('hidden');
-            applyRolePermissions('guest'); // กรณีไม่ได้ Login
+            // ถ้าเป็นคนใหม่ ให้บันทึกเป็น viewer ไว้
+            await db.collection('users').doc(user.email).set({ role: 'viewer', lastLogin: new Date() });
         }
-    });
 
-    // --- ฟังก์ชันจัดการ UI ตามสิทธิ์ (เพิ่มใหม่) ---
-    function applyRolePermissions(role) {
-        console.log("Current Role:", role);
-        
-        // 1. Viewer: ดูได้อย่างเดียว, กด Report ได้ (ทุกคนที่ Login มีสิทธิ์นี้อยู่แล้ว)
-        // 2. Editor: เพิ่ม/แก้ไขข้อมูลได้
-        // 3. Admin: ทำได้ทุกอย่าง
-        
-        const canEdit = (role === 'editor' || role === 'admin');
-        const isAdmin = (role === 'admin');
+        window.currentUserRole = role; // เก็บไว้ใช้ทั่วระบบ
+        applyPermissions(role);
 
-        // ควบคุมปุ่มบันทึก/แก้ไขข้อมูลอุปกรณ์
-        toggleWriteAccess(canEdit);
-
-        // ควบคุมการแสดงผลเมนู Admin (ถ้ามี)
-        const adminMenu = document.getElementById('adminManagementSection');
-        if (adminMenu) {
-            isAdmin ? adminMenu.classList.remove('hidden') : adminMenu.classList.add('hidden');
-        }
-        
-        // จัดเก็บ role ไว้ในตัวแปร global เพื่อใช้ตรวจสอบในฟังก์ชันอื่นๆ
-        window.currentUserRole = role; 
-    }
-
-    // --- 2. Auth Button Listeners ---
-    document.getElementById('loginButton').addEventListener('click', login);
-    document.getElementById('logoutButton').addEventListener('click', logout);
-
-    // --- 3. Warranty Calculator Setup ---
-    setupWarrantyCalculators();
-
-    // --- 4. Site Switcher Setup ---
-    const locationSelect = document.getElementById("location-select");
-    if (locationSelect) {
-        locationSelect.addEventListener("change", function() {
-            switchSite(this.value);
-        });
-
-        let initialSiteKey = locationSelect.value;
-        if (initialSiteKey && sites[initialSiteKey]) {
-            switchSite(initialSiteKey);
-        }
+    } else {
+        currentUser = null;
+        window.currentUserRole = 'guest';
+        document.getElementById('userInfo').classList.add('hidden');
+        document.getElementById('loginButton').classList.remove('hidden');
+        applyPermissions('guest');
     }
 });
-// ฟังก์ชันโหลดรายชื่อผู้ใช้มาแสดง (เรียกใช้เมื่อ Admin เปิดหน้าจัดการ)
-async function loadAllUsers() {
-    const snapshot = await db.collection('users').get();
-    const tbody = document.getElementById('userRoleList');
-    tbody.innerHTML = '';
 
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        const email = doc.id;
-        tbody.innerHTML += `
-            <tr>
-                <td class="p-2">${email}</td>
-                <td class="p-2">
-                    <select onchange="updateUserRole('${email}', this.value)" class="bg-slate-700 text-white p-1 rounded">
-                        <option value="viewer" ${data.role === 'viewer' ? 'selected' : ''}>1. ดูอย่างเดียว</option>
-                        <option value="editor" ${data.role === 'editor' ? 'selected' : ''}>2. แก้ไขข้อมูลได้</option>
-                        <option value="admin" ${data.role === 'admin' ? 'selected' : ''}>3. Admin</option>
+function applyPermissions(role) {
+    const isAdmin = (role === 'admin');
+    const isEditor = (role === 'admin' || role === 'editor');
+
+    // แสดงปุ่ม Admin เฉพาะคนที่เป็น admin
+    const adminBtn = document.getElementById('adminPanelButton');
+    if (adminBtn) adminBtn.style.display = isAdmin ? 'block' : 'none';
+
+    // ควบคุมการบันทึกข้อมูล (ใช้ฟังก์ชันเดิมของคุณ)
+    toggleWriteAccess(isEditor);
+}
+	
+// ฟังก์ชันสลับไปหน้า Admin
+window.showAdminPage = function() {
+    document.getElementById('topologyPage').classList.add('hidden');
+    document.getElementById('summaryPage').classList.add('hidden');
+    document.getElementById('adminPage').classList.remove('hidden');
+    loadUserList(); // โหลดรายชื่อผู้ใช้
+};
+
+// ฟังก์ชันโหลดรายชื่ออีเมลที่เคยล็อคอิน
+async function loadUserList() {
+    const tbody = document.getElementById('adminUserTableBody');
+    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">กำลังโหลดข้อมูล...</td></tr>';
+
+    try {
+        const snapshot = await db.collection('users').get();
+        tbody.innerHTML = '';
+        
+        snapshot.forEach(doc => {
+            const userData = doc.data();
+            const email = doc.id;
+            const currentRole = userData.role || 'viewer';
+
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
+            tr.innerHTML = `
+                <td class="p-3 text-blue-300">${email}</td>
+                <td class="p-3">
+                    <span class="tag ${currentRole==='admin'?'tag-ok':currentRole==='editor'?'tag-warn':'tag-bad'}">
+                        ${currentRole.toUpperCase()}
+                    </span>
+                </td>
+                <td class="p-3 text-right">
+                    <select onchange="updateUserRole('${email}', this.value)" class="bg-slate-700 text-white rounded p-1 text-sm outline-none border border-white/20">
+                        <option value="viewer" ${currentRole === 'viewer' ? 'selected' : ''}>1. Viewer (ดูอย่างเดียว)</option>
+                        <option value="editor" ${currentRole === 'editor' ? 'selected' : ''}>2. Editor (แก้ไขได้)</option>
+                        <option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>3. Admin (จัดการระบบ)</option>
                     </select>
                 </td>
-            </tr>`;
-    });
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-red-400">ไม่สามารถโหลดข้อมูลได้: ' + error.message + '</td></tr>';
+    }
 }
 
 // ฟังก์ชันอัปเดตสิทธิ์ลง Firestore
-async function updateUserRole(email, newRole) {
-    if (window.currentUserRole !== 'admin') return;
+window.updateUserRole = async function(email, newRole) {
+    if (window.currentUserRole !== 'admin') {
+        Swal.fire('Error', 'คุณไม่มีสิทธิ์ดำเนินการนี้', 'error');
+        return;
+    }
+
     try {
         await db.collection('users').doc(email).update({ role: newRole });
-        Swal.fire('สำเร็จ', `เปลี่ยนสิทธิ์ ${email} เป็น ${newRole} เรียบร้อย`, 'success');
+        Swal.fire({
+            icon: 'success',
+            title: 'อัปเดตสำเร็จ',
+            text: `เปลี่ยนสิทธิ์ของ ${email} เป็น ${newRole} แล้ว`,
+            timer: 1500,
+            showConfirmButton: false
+        });
+        loadUserList(); // รีโหลดตาราง
     } catch (error) {
-        Swal.fire('ผิดพลาด', 'คุณไม่มีสิทธิ์แก้ไขข้อมูลนี้', 'error');
+        Swal.fire('ผิดพลาด', 'ไม่สามารถแก้ไขสิทธิ์ได้: ' + error.message, 'error');
     }
-}
+};
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
@@ -2011,6 +2004,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
