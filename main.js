@@ -1806,6 +1806,7 @@ window.updateUserRole = async function(email, newRole) {
         Swal.fire('ผิดพลาด', 'ไม่สามารถแก้ไขสิทธิ์ได้: ' + error.message, 'error');
     }
 };
+	});
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
@@ -2033,4 +2034,5 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
