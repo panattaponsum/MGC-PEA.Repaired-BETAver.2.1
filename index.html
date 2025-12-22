@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
@@ -58,43 +59,62 @@ h1,h2,h3,th {
 #historySection{max-height:300px;overflow-y:auto;padding-right:6px}
 .hidden{display:none;}
 #location-select {
-    border: 1px solid rgba(255,255,255,.12) !important;
-    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)) !important;
-    color: var(--text) !important;
-    padding: 8px 12px !important;
-    border-radius: 10px !important;
+    /* สไตล์จากปุ่ม (btn) */
+    border: 1px solid rgba(255,255,255,.12) !important; /* ขอบ */
+    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)) !important; /* พื้นหลังไล่สี */
+    color: var(--text) !important; /* ตัวอักษรสีขาว/เทาอ่อน */
+    padding: 8px 12px !important; /* ขนาดช่อง (เหมือนปุ่ม) */
+    border-radius: 10px !important; /* ความมน (เหมือนปุ่ม) */
     cursor: pointer;
     font-weight: 600;
     font-size: 14px;
     outline: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
+    
+    /* แก้ไขเพิ่มเติม: เพื่อให้สีตัวเลือกด้านในเข้ากัน (เฉพาะ Chrome/Edge/Firefox) */
+    -webkit-appearance: none; /* สำหรับ Webkit (Chrome, Edge) */
+    -moz-appearance: none; /* สำหรับ Firefox */
+    appearance: none; /* เพื่อช่วยให้กำหนดสไตล์พื้นหลัง/สีตัวอักษรได้ดีขึ้น */
 }
+
+/* ทำให้ตัวเลือกด้านใน (Dropdown Menu) เป็นสีดำ/ขาวด้วย */
 #location-select option {
     background: #000;
     color: #fff;
 }
+
+/* 💥 NEW CSS for Flashing Overlay 💥 */
 .device-overlay {
     position: absolute;
     border: 3px solid transparent;
-    border-radius: 8px;
-    pointer-events: none;
+    border-radius: 8px; /* ปรับให้โค้งตามกรอบ */
+    pointer-events: none; /* เพื่อให้คลิกทะลุไปที่ <area> ได้ */
     z-index: 50;
     transition: all 0.3s ease-in-out;
 }
+
+/* สถานะชำรุด (สีแดงกระพริบ) */
 .device-overlay.down {
-    border-color: var(--bad);
+    border-color: var(--bad); /* สีแดงสำหรับสถานะชำรุด */
     box-shadow: 0 0 10px var(--bad);
-    animation: blink-red 1s infinite alternate;
+    animation: blink-red 1s infinite alternate; /* กระพริบ */
 }
+
+/* คีย์เฟรมสำหรับเอฟเฟกต์กระพริบ */
 @keyframes blink-red {
-    from { opacity: 1; box-shadow: 0 0 10px var(--bad); }
-    to { opacity: 0.6; box-shadow: 0 0 20px var(--bad); }
+    from {
+        opacity: 1;
+        box-shadow: 0 0 10px var(--bad);
+    }
+    to {
+        opacity: 0.6;
+        box-shadow: 0 0 20px var(--bad);
+    }
 }
+
+/* 💥 NEW CSS for Asset Modal 💥 */
 #assetModal{
     overflow-y: auto;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
-    z-index:1002;
+    z-index:1002; /* 💡 อยู่เหนือ formModal (1001) */
     width:min(560px,92vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95));
     border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;max-height:80vh;
     display:none;flex-direction:column;
@@ -103,17 +123,12 @@ h1,h2,h3,th {
     background: #fff;color: #000;border: 1px solid #ccc;
     border-radius: 6px;padding: 8px 10px;font-size: 14px;outline: none;
 }
-/* User Management Modal */
-#userModal {
-    overflow-y: auto;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
-    z-index:1003;
-    width:min(600px,95vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95));
-    border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;max-height:80vh;
-    display:none;flex-direction:column;
-}
+
+/* 💥 NEW CSS for Warranty Status Tags 💥 */
 .tag-warranty-ok { background:rgba(52,211,153,.12); border-color:rgba(52,211,153,.4); color:#84f3cc; }
 .tag-warranty-warn { background:rgba(251,191,36,.12); border-color:rgba(251,191,36,.4); color:#ffd98a; }
 .tag-warranty-bad { background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.4); color:#ffc1c1; }
+
 </style>
 </head>
 <body class="bg-gray-900">
@@ -132,25 +147,22 @@ h1,h2,h3,th {
 <div id="topologyPage" >
   <div class="card row mb-2 flex flex-wrap items-center justify-start gap-2 px-2"> 
      <div class="flex items-center gap-2"> <label for="location-select" class="text-gray-100 font-semibold text-sm whitespace-nowrap">เลือกสถานที่ 🔎:</label>
-      <select id="location-select" class="toolbar-select w-50">
-        <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
-        <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
-        <option value="betong">ไมโครกริดอำเภอเบตง</option>
-      </select>
-    </div>
+      <select id="location-select" class="toolbar-select w-50">
+        <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
+        <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
+        <option value="betong">ไมโครกริดอำเภอเบตง</option>
+      </select>
+    </div>
 
-<div id="authContainer" class="ml-4 flex items-center gap-2">
+<div id="authContainer" class="ml-4">
         <button id="loginButton" class="btn btn-ghost border-yellow-500/50 text-yellow-400">🔒 ลงชื่อเข้าใช้ด้วย Google</button>
-        <div id="userInfo" class="hidden items-center gap-2">
+        <div id="userInfo" class="hidden items-center">
             <span id="userNameDisplay" class="text-sm text-gray-200 font-medium"></span>
-            <button id="adminUserBtn" onclick="openUserManagement()" class="btn btn-warning hidden" title="จัดการสิทธิ์ผู้ใช้งาน">
-               <span class="text-xs">⚙️ จัดการสิทธิ์</span>
-            </button>
             <button id="logoutButton" class="btn btn-danger"> ออกจากระบบ</button>
         </div>
 </div>
    <button class="btn btn-rgb" onclick="showSummary()">📊 สรุปผล</button>
-      <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
+	  <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
     <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
     <label class="btn btn-warning" id="importButtonLabel">📥 Import
       <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
@@ -158,6 +170,7 @@ h1,h2,h3,th {
     <button class="btn btn-danger" onclick="clearAllDevices()" id="clearAllButton">🗑️ ล้างข้อมูลทั้งหมด</button>
   </div>
 
+    
 <div id="map-ko-phaluay" class="map-container" style="position:relative;">
   <img class="device-img" src="phaluay.png" usemap="#netmap" width="1903" height="1041" alt="Topology" />
  <map name="netmap">
@@ -202,97 +215,76 @@ h1,h2,h3,th {
 </div>
 
 <div id="map-mae-sariang" class="map-container hidden " style="position:relative; ">
-    <img class="device-img" src="mae-sariang.bmp" usemap="#netmap-mae-sariang" width="1918" height="959" alt="Topology" />
-    <map name="netmap-mae-sariang">
-            <area alt="FireWall 1" coords="208,317,340,343" shape="rect" href="" onclick="openForm('FireWall 1'); return false;">
-      <area alt="PCS-9893(2nd)" coords="207,432,344,460" shape="rect" href="" onclick="openForm('PCS-9893(2nd)'); return false;">
-      <area alt="HMI Display 1" coords="689,283,736,338" shape="rect" href="" onclick="openForm('HMI Display 1'); return false;">
-      <area alt="HMI Display 2" coords="574,283,621,336" shape="rect" href="" onclick="openForm('HMI Display 2'); return false;">
-  <area alt="HMI Main 1" coords="785,283,829,336" shape="rect" href="" onclick="openForm('HMI Main 1'); return false;"> 
+    <img class="device-img" src="mae-sariang.bmp" usemap="#netmap-mae-sariang" width="1918" height="959" alt="Topology" />
+    <map name="netmap-mae-sariang">
+            <area alt="FireWall 1" coords="208,317,340,343" shape="rect" href="" onclick="openForm('FireWall 1'); return false;">
+      <area alt="PCS-9893(2nd)" coords="207,432,344,460" shape="rect" href="" onclick="openForm('PCS-9893(2nd)'); return false;">
+      <area alt="HMI Display 1" coords="689,283,736,338" shape="rect" href="" onclick="openForm('HMI Display 1'); return false;">
+      <area alt="HMI Display 2" coords="574,283,621,336" shape="rect" href="" onclick="openForm('HMI Display 2'); return false;">
+  <area alt="HMI Main 1" coords="785,283,829,336" shape="rect" href="" onclick="openForm('HMI Main 1'); return false;"> 
  <area alt="Cyber Security Manager" coords="967,283,1007,336" shape="rect" href="" onclick="openForm('Cyber Security Manager'); return false;">
-      <area alt="Scada 1" coords="1095,283,1138,336" shape="rect" href="" onclick="openForm('Scada 1'); return false;">
-      <area alt="Scada 2" coords="1202,280,1249,338" shape="rect" href="" onclick="openForm('Scada 2'); return false;">
+      <area alt="Scada 1" coords="1095,283,1138,336" shape="rect" href="" onclick="openForm('Scada 1'); return false;">
+      <area alt="Scada 2" coords="1202,280,1249,338" shape="rect" href="" onclick="openForm('Scada 2'); return false;">
 <area alt="Switch 1" coords="393,436,579,476" shape="rect" href="" onclick="openForm('Switch 1'); return false;">
-      <area alt="Switch 2" coords="609,436,797,478" shape="rect" href="" onclick="openForm('Switch 2'); return false;">
-      <area alt="Switch 3" coords="415,636,638,678" shape="rect" href="" onclick="openForm('Switch 3'); return false;">
-  <area alt="Switch 4" coords="1038,639,1255,675" shape="rect" href="" onclick="openForm('Switch 4'); return false;">
-      <area alt="Switch 5" coords="824,432,924,478" shape="rect" href="" onclick="openForm('Switch 5'); return false;">
-      <area alt="Switch 6" coords="953,439,1102,476" shape="rect" href="" onclick="openForm('Switch 6'); return false;">  
+      <area alt="Switch 2" coords="609,436,797,478" shape="rect" href="" onclick="openForm('Switch 2'); return false;">
+      <area alt="Switch 3" coords="415,636,638,678" shape="rect" href="" onclick="openForm('Switch 3'); return false;">
+  <area alt="Switch 4" coords="1038,639,1255,675" shape="rect" href="" onclick="openForm('Switch 4'); return false;">
+      <area alt="Switch 5" coords="824,432,924,478" shape="rect" href="" onclick="openForm('Switch 5'); return false;">
+      <area alt="Switch 6" coords="953,439,1102,476" shape="rect" href="" onclick="openForm('Switch 6'); return false;">  
  <area alt="Switch 7" coords="1143,439,1293,478" shape="rect" href="" onclick="openForm('Switch 7'); return false;">
-      <area alt="ETH Switch 1" coords="1390,412,1495,439" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
-      <area alt="ETH Switch 2" coords="1537,410,1640,441" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;">
+      <area alt="ETH Switch 1" coords="1390,412,1495,439" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
+      <area alt="ETH Switch 2" coords="1537,410,1640,441" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;">
  <area alt="PCS-9892" coords="1465,315,1574,344" shape="rect" href="" onclick="openForm('PCS-9892'); return false;">
-      <area alt="PCS-9893(1st)" coords="1465,368,1570,392" shape="rect" href="" onclick="openForm('PCS-9893(1st)'); return false;">
-      <area alt="PCS-9799(1st)" coords="1391,468,1497,496" shape="rect" href="" onclick="openForm('PCS-9799(1st)'); return false;">
+      <area alt="PCS-9893(1st)" coords="1465,368,1570,392" shape="rect" href="" onclick="openForm('PCS-9893(1st)'); return false;">
+      <area alt="PCS-9799(1st)" coords="1391,468,1497,496" shape="rect" href="" onclick="openForm('PCS-9799(1st)'); return false;">
  <area alt="PCS-9799(2nd)" coords="1543,474,1645,498" shape="rect" href="" onclick="openForm('PCS-9799(2nd)'); return false;">
-    <area alt="MGC 1" coords="659,569,593,599" shape="rect" href="" onclick="openForm('MGC 1'); return false;">
-      <area alt="MGC 2" coords="454,573,521,600" shape="rect" href="" onclick="openForm('MGC 2'); return false;">
+	<area alt="MGC 1" coords="659,569,593,599" shape="rect" href="" onclick="openForm('MGC 1'); return false;">
+      <area alt="MGC 2" coords="454,573,521,600" shape="rect" href="" onclick="openForm('MGC 2'); return false;">
 <area alt="ATS" coords="921,561,972,598" shape="rect" href="" onclick="openForm('ATS'); return false;">
-    <area alt="PCS-9794(1st)" coords="1013,569,1074,603" shape="rect" href="" onclick="openForm('PCS-9794(1st)'); return false;">
-      <area alt="Diesel Local" coords="1213,574,1275,603" shape="rect" href="" onclick="openForm('Diesel Local'); return false;">
+	<area alt="PCS-9794(1st)" coords="1013,569,1074,603" shape="rect" href="" onclick="openForm('PCS-9794(1st)'); return false;">
+      <area alt="Diesel Local" coords="1213,574,1275,603" shape="rect" href="" onclick="openForm('Diesel Local'); return false;">
 <area alt="PCS-9794(2nd)" coords="352,742,421,767" shape="rect" href="" onclick="openForm('PCS-9794(2nd)'); return false;">
-    <area alt="PCS-9726" coords="466,744,528,773" shape="rect" href="" onclick="openForm('PCS-9726'); return false;">
-      <area alt="PCS-9567C" coords="606,745,672,771" shape="rect" href="" onclick="openForm('PCS-9567C'); return false;">
+	<area alt="PCS-9726" coords="466,744,528,773" shape="rect" href="" onclick="openForm('PCS-9726'); return false;">
+      <area alt="PCS-9567C" coords="606,745,672,771" shape="rect" href="" onclick="openForm('PCS-9567C'); return false;">
 <area alt="PCS 1" coords="745,739,811,767" shape="rect" href="" onclick="openForm('PCS 1'); return false;">
-    <area alt="PCS 2" coords="877,744,938,773" shape="rect" href="" onclick="openForm('PCS 2'); return false;">
-      <area alt="PCS 3" coords="1011,742,1074,767" shape="rect" href="" onclick="openForm('PCS 3'); return false;">
+	<area alt="PCS 2" coords="877,744,938,773" shape="rect" href="" onclick="openForm('PCS 2'); return false;">
+      <area alt="PCS 3" coords="1011,742,1074,767" shape="rect" href="" onclick="openForm('PCS 3'); return false;">
 <area alt="PCS 4" coords="1147,740,1206,767" shape="rect" href="" onclick="openForm('PCS 4'); return false;">
-    <area alt="PCS 5" coords="1279,740,1342,774" shape="rect" href="" onclick="openForm('PCS 5'); return false;">
-      <area alt="PCS 6" coords="1396,747,1455,776" shape="rect" href="" onclick="openForm('PCS 6'); return false;">
-      <area alt="ETH Switch 3" coords="484,810,315,784" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
+	<area alt="PCS 5" coords="1279,740,1342,774" shape="rect" href="" onclick="openForm('PCS 5'); return false;">
+      <area alt="PCS 6" coords="1396,747,1455,776" shape="rect" href="" onclick="openForm('PCS 6'); return false;">
+      <area alt="ETH Switch 3" coords="484,810,315,784" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
 <area alt="BMS 1" coords="748,840,828,864" shape="rect" href="" onclick="openForm('BMS 1'); return false;">
-    <area alt="BMS 2" coords="860,844,950,867" shape="rect" href="" onclick="openForm('BMS 2'); return false;">
-      <area alt="BMS 3" coords="1003,840,1086,866" shape="rect" href="" onclick="openForm('BMS 3'); return false;">
+	<area alt="BMS 2" coords="860,844,950,867" shape="rect" href="" onclick="openForm('BMS 2'); return false;">
+      <area alt="BMS 3" coords="1003,840,1086,866" shape="rect" href="" onclick="openForm('BMS 3'); return false;">
 <area alt="BMS 4" coords="1130,842,1203,866" shape="rect" href="" onclick="openForm('BMS 4'); return false;">
-    <area alt="BMS 5" coords="1282,847,1360,866" shape="rect" href="" onclick="openForm('BMS 5'); return false;">
-      <area alt="BMS 6" coords="1396,844,1477,866" shape="rect" href="" onclick="openForm('BMS 6'); return false;">
+	<area alt="BMS 5" coords="1282,847,1360,866" shape="rect" href="" onclick="openForm('BMS 5'); return false;">
+      <area alt="BMS 6" coords="1396,844,1477,866" shape="rect" href="" onclick="openForm('BMS 6'); return false;">
 <area alt="FRTU 1-15" coords="1492,679,1770,796" shape="rect" href="" onclick="openForm('FRTU 1-15'); return false;">
-    </map>
+    </map>
     <div id="overlay-container-mae-sariang" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
-  </div>
+  </div>
 
  <div id="map-betong" class="map-container hidden" style="position:relative;">
     <h4 id="betong-map-title" </h4> 
-       <img id="map-img-betong" class="device-img" src="betong.jpg" usemap="#map-areas-betong" width="1917" height="919" alt="Topology" />
-        <map name="map-areas-betong" id="map-areas-betong">
-            <area alt="Operator HMI 24" coords="202,76,364,197" shape="rect" href="" onclick="openForm('Operator HMI 24'); return false;">
-      <area alt="Operator HMI 27" coords="378,75,755,198" shape="rect" href="" onclick="openForm('Operator HMI 27'); return false;">
-      <area alt="ETH Switch 1" coords="835,608,1011,640" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
-    <area alt="ETH Switch 2" coords="1046,606,1222,638" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;"> 
-    <area alt="ETH Switch 3" coords="835,704,1011,738" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
-    <area alt="ETH Switch 4" coords="1048,708,1222,738" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
-    <area alt="ETH Switch 6" coords="464,374,510,451" shape="rect" href="" onclick="openForm('ETH Switch 6'); return false;">
-    <area alt="ETH Switch 7" coords="657,371,703,452" shape="rect" href="" onclick="openForm('ETH Switch 7'); return false;">
-    </map>
+       <img id="map-img-betong" class="device-img" src="betong.jpg" usemap="#map-areas-betong" width="1917" height="919" alt="Topology" />
+        <map name="map-areas-betong" id="map-areas-betong">
+            <area alt="Operator HMI 24" coords="202,76,364,197" shape="rect" href="" onclick="openForm('Operator HMI 24'); return false;">
+      <area alt="Operator HMI 27" coords="378,75,755,198" shape="rect" href="" onclick="openForm('Operator HMI 27'); return false;">
+      <area alt="ETH Switch 1" coords="835,608,1011,640" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
+	<area alt="ETH Switch 2" coords="1046,606,1222,638" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;">	
+	<area alt="ETH Switch 3" coords="835,704,1011,738" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
+	<area alt="ETH Switch 4" coords="1048,708,1222,738" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
+	<area alt="ETH Switch 6" coords="464,374,510,451" shape="rect" href="" onclick="openForm('ETH Switch 6'); return false;">
+	<area alt="ETH Switch 7" coords="657,371,703,452" shape="rect" href="" onclick="openForm('ETH Switch 7'); return false;">
+    </map>
     <div id="overlay-container-betong" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
-  </div>
+  </div>
 </div>
 
 <div id="summaryPage" class="hidden">
   <button class="btn btn-warning mb-1" onclick="showTopology()">⬅️ กลับหน้าหลัก</button>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 mb-4">
-    <div class="card p-4 text-center bg-slate-800/80 border border-slate-700">
-        <div class="text-sm text-gray-400 uppercase tracking-wider">อุปกรณ์ทั้งหมด</div>
-        <div id="stat-total" class="text-3xl font-bold text-white mt-1">0</div>
-    </div>
-    <div class="card p-4 text-center bg-slate-800/80 border border-red-900/50 relative overflow-hidden">
-        <div class="absolute inset-0 bg-red-500/10"></div>
-        <div class="relative">
-            <div class="text-sm text-red-300 uppercase tracking-wider">ชำรุด (Down)</div>
-            <div id="stat-down" class="text-3xl font-bold text-red-400 mt-1">0</div>
-        </div>
-    </div>
-    <div class="card p-4 text-center bg-slate-800/80 border border-green-900/50 relative overflow-hidden">
-        <div class="absolute inset-0 bg-green-500/10"></div>
-        <div class="relative">
-            <div class="text-sm text-green-300 uppercase tracking-wider">ปกติ (Normal)</div>
-            <div id="stat-normal" class="text-3xl font-bold text-green-400 mt-1">0</div>
-        </div>
-    </div>
-  </div>
-
-  <div class="card toolbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 items-center">
+  <div class="card toolbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 items-center mt-4">
     <h3 class="m-0 text-lg font-semibold col-span-1 md:col-span-1">📌 คัดกรอง</h3>
     <div class="col-span-1 md:col-span-1">
       <input id="searchInput" type="search" placeholder="🔍 ค้นหาอุปกรณ์..." oninput="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm"/>
@@ -306,7 +298,7 @@ h1,h2,h3,th {
     <div class="col-span-1 md:col-span-1">
       <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm">
         <option value="all">ทั้งหมด</option>
-    <option value="currently-down">⚠️ อุปกรณ์ที่ยังชำรุด</option>
+	<option value="currently-down">⚠️ อุปกรณ์ที่ยังชำรุด</option>
         <option value="down">❎ เคยชำรุด</option>
         <option value="clean">✅ ไม่เคยชำรุด</option>
       </select>
@@ -328,10 +320,10 @@ h1,h2,h3,th {
         <tr>
           <th>อุปกรณ์</th>
           <th>จำนวนครั้งชำรุด (ทั้งหมด / คงเหลือ)</th>
-           <th>วันที่ชำรุด</th>
+		   <th>วันที่ชำรุด</th>
           <th>วันที่ซ่อมแซม</th>
           <th>สถานะ</th>
-    <th>⚠️ ระยะเวลาชำรุด</th>
+	<th>⚠️ ระยะเวลาชำรุด</th>
           <th>รายละเอียด</th>
         </tr> </thead>
       <tbody id="summaryBody"></tbody>
@@ -344,6 +336,7 @@ h1,h2,h3,th {
     <canvas id="chart" height="100"></canvas>
   </div>
 </div>
+
 
 <div id="overlay" onclick="closeForm()"></div>
 <div id="formModal">
@@ -441,27 +434,6 @@ h1,h2,h3,th {
     </div>
 </div>
 
-<div id="userModal">
-    <div class="row mb-3">
-        <h3 class="m-0 text-lg text-white">⚙️ จัดการสิทธิ์ผู้ใช้งาน</h3>
-        <span class="spacer"></span>
-        <button class="btn btn-ghost" onclick="closeUserModal()">✖ ปิด</button>
-    </div>
-    <div class="bg-gray-800 rounded-lg p-1 border border-gray-700 overflow-hidden">
-        <table class="w-full text-sm text-left text-gray-300">
-            <thead class="text-xs uppercase bg-gray-700 text-gray-400">
-                <tr>
-                    <th class="px-4 py-3">อีเมล</th>
-                    <th class="px-4 py-3">สิทธิ์ปัจจุบัน</th>
-                    <th class="px-4 py-3">เปลี่ยนสิทธิ์</th>
-                </tr>
-            </thead>
-            <tbody id="userTableBody" class="divide-y divide-gray-700">
-                </tbody>
-        </table>
-    </div>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -473,3 +445,10 @@ h1,h2,h3,th {
 <script src="main.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
