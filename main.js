@@ -1636,41 +1636,7 @@ try { window.updateDeviceSummary(); } catch (e) {}
 
 window.resetFilters = resetFilters;
 
-window.clearAllDevices = async function() {
-// 💥 MODIFIED: Check Auth 💥
-if (!currentUser) {
-Swal.fire('ไม่ได้รับอนุญาต', 'กรุณาลงชื่อเข้าใช้ก่อน', 'warning');
-return;
-}
 
-// 💡 ใช้ SweetAlert2
-const result = await Swal.fire({
-title: '⚠️ ลบข้อมูลทั้งหมด?',
-text: `คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมดของไซต์ ${sites[currentSiteKey].name}? ข้อมูลทรัพย์สิน (Serial, Model) จะไม่ถูกลบ`,
-icon: 'error',
-showCancelButton: true,
-confirmButtonColor: '#ef4444',
-cancelButtonColor: '#6b7280',
-confirmButtonText: 'ใช่, ลบทั้งหมด!',
-cancelButtonText: 'ยกเลิก'
-});
-
-if (result.isConfirmed) {
-const docs = await getAllDevicesDocs(currentSiteKey);
-const batch = db.batch(); 
-
-for (let d of docs.docs) {
-const docRef = getSiteCollection(currentSiteKey).doc(d.id);
-// 💡 ใช้ merge: true เพื่อไม่ให้ลบ assetInfo
-batch.set(docRef, { records: [], downCount: 0, currentStatus: 'ok' }, { merge: true });
-}
-await batch.commit();
-
-window.updateDeviceSummary(); 
-window.updateDeviceStatusOverlays(currentSiteKey); 
-Swal.fire('ลบเรียบร้อย', 'ลบข้อมูลประวัติทั้งหมดแล้ว', 'success');
-}
-}
 
 // สลับหน้า
 window.showSummary = function() {
@@ -1997,6 +1963,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
