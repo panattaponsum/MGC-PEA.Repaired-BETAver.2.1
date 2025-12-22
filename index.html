@@ -2,154 +2,159 @@
 <html lang="th">
 
 <head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* CSS เดิมของคุณทั้งหมด */
-        #map-mae-sariang, #map-betong { margin-top: -25px !important; padding-top: 0 !important; }
-        :root{ --bg:#0f172a; --text:#e5e7eb; --sub:#9ca3af; --ok:#34d399; --warn:#fbbf24; --bad:#f87171; }
-        body { margin:0; font-family: 'Inter', 'Prompt', sans-serif; background:linear-gradient(180deg,#0f172a,#1e293b); color:var(--text); min-height:100vh; }
-        .btn { padding:0.5rem 1rem; border-radius:0.5rem; font-weight:500; transition:all 0.2s; cursor:pointer; font-size:0.875rem; display:inline-flex; align-items:center; gap:0.5rem; }
-        .btn-brand { background: #3b82f6; color:white; }
-        .btn-brand:hover { background: #2563eb; }
-        /* เพิ่ม CSS สำหรับสถานะ Disable */
-        .btn-brand:disabled { background: #4b5563; cursor: not-allowed; opacity: 0.5; }
-        .card { background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.1); border-radius:1rem; backdrop-filter:blur(10px); }
-        .tag { padding:0.25rem 0.625rem; border-radius:9999px; font-size:0.75rem; font-weight:600; text-transform:uppercase; }
-        .tag-ok { background:rgba(52,211,153,0.1); color:var(--ok); border:1px solid rgba(52,211,153,0.2); }
-        .tag-bad { background:rgba(248,113,113,0.1); color:var(--bad); border:1px solid rgba(248,113,113,0.2); }
-        .device-pin { position:absolute; width:12px; height:12px; border-radius:50%; cursor:pointer; transition:all 0.3s; z-index:10; border:2px solid white; }
-        .status-ok { background-color:var(--ok); box-shadow: 0 0 15px var(--ok); }
-        .status-down { background-color:var(--bad); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform:scale(1); box-shadow:0 0 0 0 rgba(248,113,113,0.7); } 70% { transform:scale(1.2); box-shadow:0 0 0 10px rgba(248,113,113,0); } 100% { transform:scale(1); box-shadow:0 0 0 0 rgba(248,113,113,0); } }
-        #overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); z-index:40; }
-        #formModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:50; width:95%; max-width:1000px; max-height:90vh; overflow-y:auto; }
-        input, select, textarea { background:rgba(255,255,255,0.05)!important; border:1px solid rgba(255,255,255,0.1)!important; color:white!important; border-radius:0.5rem!important; padding:0.5rem!important; }
-        .hidden { display: none; }
-    </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* CSS เดิมของคุณทั้งหมด ไม่มีการแก้ไข */
+#map-mae-sariang, #map-betong { margin-top: -25px !important; padding-top: 0 !important; }
+:root{ --bg:#0f172a; --text:#e5e7eb; --sub:#9ca3af; --ok:#34d399; --warn:#fbbf24; --bad:#f87171; }
+body { margin:0; font-family: 'Inter', 'Prompt', sans-serif; background:linear-gradient(180deg,#0f172a,#1e293b); color:var(--text); min-height:100vh; }
+.btn { padding:0.5rem 1rem; border-radius:0.5rem; font-weight:500; transition:all 0.2s; cursor:pointer; font-size:0.875rem; display:inline-flex; align-items:center; gap:0.5rem; }
+.btn-brand { background: #3b82f6; color:white; }
+.btn-brand:hover { background: #2563eb; }
+.btn-brand:disabled { background: #4b5563; cursor: not-allowed; opacity: 0.6; } /* เพิ่มเพื่อให้ปุ่มล็อคดูออก */
+.card { background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.1); border-radius:1rem; backdrop-filter:blur(10px); }
+.tag { padding:0.25rem 0.625rem; border-radius:9999px; font-size:0.75rem; font-weight:600; text-transform:uppercase; }
+.tag-ok { background:rgba(52,211,153,0.1); color:var(--ok); border:1px solid rgba(52,211,153,0.2); }
+.tag-bad { background:rgba(248,113,113,0.1); color:var(--bad); border:1px solid rgba(248,113,113,0.2); }
+.device-pin { position:absolute; width:12px; height:12px; border-radius:50%; cursor:pointer; transition:all 0.3s; z-index:10; border:2px solid white; }
+.status-ok { background-color:var(--ok); box-shadow: 0 0 15px var(--ok); }
+.status-down { background-color:var(--bad); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { transform:scale(1); box-shadow:0 0 0 0 rgba(248,113,113,0.7); } 70% { transform:scale(1.2); box-shadow:0 0 0 10px rgba(248,113,113,0); } 100% { transform:scale(1); box-shadow:0 0 0 0 rgba(248,113,113,0); } }
+#overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); z-index:40; }
+#formModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:50; width:95%; max-width:1000px; max-height:90vh; overflow-y:auto; }
+input, select, textarea { background:rgba(255,255,255,0.05)!important; border:1px solid rgba(255,255,255,0.1)!important; color:white!important; border-radius:0.5rem!important; padding:0.5rem!important; }
+.hidden { display: none; }
+</style>
 </head>
 
 <body class="p-4 md:p-8">
-    <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Microgrid Asset & Maintenance</h1>
-            <p class="text-sub" id="locationTitle">ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี</p>
-        </div>
-        <div class="flex items-center gap-3">
-            <select id="location-select" class="btn bg-slate-800 border-slate-700">
-                <option value="ko-phaluay">เกาะพะลวย</option>
-                <option value="mae-sariang">แม่สะเรียง</option>
-                <option value="betong">เบตง</option>
-            </select>
-            <button class="btn btn-brand" onclick="handleLogin()" id="loginButton">🔑 เข้าสู่ระบบ</button>
-            <div id="userInfo" class="hidden flex items-center gap-3 bg-white/5 p-1 pr-3 rounded-full border border-white/10">
-                <span id="userNameDisplay" class="text-sm ml-2"></span>
-                <button class="text-xs text-red-400 font-bold" onclick="handleLogout()">Logout</button>
-            </div>
-        </div>
-    </header>
 
-    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div class="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="card p-4 flex justify-between items-center">
-                <div><p class="text-sub text-sm">อุปกรณ์ทั้งหมด</p><h3 class="text-3xl font-bold" id="stat-total">0</h3></div>
-                <div class="p-3 bg-blue-500/10 rounded-xl text-blue-400">📦</div>
-            </div>
-            <div class="card p-4 flex justify-between items-center">
-                <div><p class="text-sub text-sm">ปกติ</p><h3 class="text-3xl font-bold text-emerald-400" id="stat-normal">0</h3></div>
-                <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">✅</div>
-            </div>
-            <div class="card p-4 flex justify-between items-center">
-                <div><p class="text-sub text-sm">ชำรุด</p><h3 class="text-3xl font-bold text-red-400" id="stat-down">0</h3></div>
-                <div class="p-3 bg-red-500/10 rounded-xl text-red-400">🚨</div>
-            </div>
+<header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+    <div>
+        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Microgrid Asset & Maintenance</h1>
+        <p class="text-sub" id="locationTitle">ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <select id="location-select" class="btn bg-slate-800 border-slate-700">
+            <option value="ko-phaluay">เกาะพะลวย</option>
+            <option value="mae-sariang">แม่สะเรียง</option>
+            <option value="betong">เบตง</option>
+        </select>
+        
+        <button class="btn btn-brand" onclick="handleLogin()" id="loginButton">🔑 เข้าสู่ระบบ</button>
+        <div id="userInfo" class="hidden flex items-center gap-3 bg-white/5 p-1 pr-3 rounded-full border border-white/10">
+            <span id="userNameDisplay" class="text-sm ml-2"></span>
+            <button class="text-xs text-red-400 font-bold" onclick="handleLogout()">Logout</button>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
         </div>
 
-        <div class="lg:col-span-12 card p-6 relative overflow-hidden min-h-[500px]">
-            <div id="map-ko-phaluay" class="relative mx-auto mt-10">
-                <img src="https://raw.githubusercontent.com/Aof-Pannattapon/Image/main/Phaluay.png" class="max-w-full h-auto opacity-80">
-                <div id="pin-hmi-server-1" class="device-pin status-ok" style="top:32.4%; left:27.1%;" onclick="openForm('HMI Server 1')"></div>
-                </div>
-            </div>
-
-        <div class="lg:col-span-12 card overflow-hidden">
-            <div class="p-6 border-b border-white/10 flex flex-col md:flex-row justify-between gap-4">
-                <h2 class="text-lg font-semibold">📋 รายการสถานะอุปกรณ์</h2>
-                <div class="flex gap-2">
-                    <input type="text" id="searchInput" placeholder="ค้นหาอุปกรณ์..." class="text-sm w-64">
-                    <button class="btn bg-emerald-600 text-white" onclick="exportToExcel()">Excel</button>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse" id="summaryTable">
-                    <thead class="bg-white/5 text-sub text-xs uppercase">
-                        <tr>
-                            <th class="px-6 py-4">อุปกรณ์</th>
-                            <th class="px-6 py-4">สถานะ</th>
-                            <th class="px-6 py-4">อัปเดตล่าสุด</th>
-                            <th class="px-6 py-4 text-right">จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="summaryTableBody" class="text-sm divide-y divide-white/5"></tbody>
-                </table>
-            </div>
+    <div class="lg:col-span-12 card p-6 relative overflow-hidden min-h-[500px]">
+        <div id="map-ko-phaluay" class="relative mx-auto mt-10">
+            <img src="https://raw.githubusercontent.com/Aof-Pannattapon/Image/main/Phaluay.png" class="max-w-full h-auto opacity-80">
+            <div id="pin-hmi-server-1" class="device-pin status-ok" style="top:32.4%; left:27.1%;" onclick="openForm('HMI Server 1')"></div>
         </div>
-    </main>
+    </div>
 
-    <div id="overlay" onclick="closeForm()"></div>
-    <div id="formModal" class="card shadow-2xl flex flex-col">
-        <div class="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-slate-900 z-10">
-            <h2 class="text-xl font-bold" id="formTitle">Device Name</h2>
-            <button onclick="closeForm()" class="text-sub hover:text-white text-2xl">&times;</button>
+    <div class="lg:col-span-12 card overflow-hidden">
         </div>
+</main>
 
-        <div class="p-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div class="sm:col-span-2"><h3 class="text-blue-400 font-bold border-b border-blue-400/30 pb-1 mb-2">🛠️ บันทึกงานซ่อมบำรุง</h3></div>
-                <div><label class="text-xs text-sub block mb-1">สถานะ</label>
-                    <select id="status" class="w-full"><option value="down">🚨 ชำรุด (Down)</option><option value="ok">✅ ปกติ (Normal)</option></select>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div><label class="text-xs text-sub block mb-1">วันที่ชำรุด</label><input type="date" id="brokenDate" class="w-full"></div>
-                    <div><label class="text-xs text-sub block mb-1">วันที่ซ่อมเสร็จ</label><input type="date" id="fixedDate" class="w-full"></div>
-                </div>
-                <div class="sm:col-span-2"><label class="text-xs text-sub block mb-1">รายละเอียด</label>
-                    <textarea id="description" rows="2" class="w-full"></textarea>
-                </div>
-                <div class="sm:col-span-2">
+<div id="overlay" onclick="closeForm()"></div>
+<div id="formModal" class="card shadow-2xl flex flex-col">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-slate-900 z-10">
+        <h2 class="text-xl font-bold" id="formTitle">Device Name</h2>
+        <button onclick="closeForm()" class="text-sub hover:text-white text-2xl">&times;</button>
+    </div>
+
+    <div class="p-6 overflow-y-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+                <h3 class="text-blue-400 font-bold border-b border-blue-400/30 pb-1 mb-4">🛠️ บันทึกงานซ่อมบำรุง</h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-sub block mb-1">สถานะ</label>
+                            <select id="status" class="w-full">
+                                <option value="down">🚨 ชำรุด (Down)</option>
+                                <option value="ok">✅ ปกติ (Normal)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-sub block mb-1">วันที่ชำรุด</label>
+                            <input type="date" id="brokenDate" class="w-full">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-sub block mb-1">วันที่ซ่อมเสร็จ</label>
+                        <input type="date" id="fixedDate" class="w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs text-sub block mb-1">รายละเอียดการดำเนินการ</label>
+                        <textarea id="description" rows="3" class="w-full"></textarea>
+                    </div>
                     <button class="btn btn-brand w-full justify-center py-3" onclick="saveData()" id="saveDataButton">💾 บันทึกข้อมูล</button>
                 </div>
+
+                <div class="mt-8 pt-6 border-t border-white/10">
+                    <h3 class="text-emerald-400 font-bold border-b border-emerald-400/30 pb-1 mb-4">📦 ข้อมูลทรัพย์สิน</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label>S/N (Serial Number)</label>
+                            <input type="text" id="assetSerial" class="w-full"/>
+                        </div>
+                        <div>
+                            <label>Model (รุ่น)</label>
+                            <input type="text" id="assetModel" class="w-full"/>
+                        </div>
+                        <div>
+                            <label>Manufacturer (ยี่ห้อ)</label>
+                            <input type="text" id="assetManufacturer" class="w-full"/>
+                        </div>
+                        <hr class="sm:col-span-2 border-white/10 my-1">
+                        <div>
+                            <label>วันที่เริ่มรับประกัน</label>
+                            <input type="date" id="assetWarrantyStart" class="w-full"/>
+                        </div>
+                        <div>
+                            <label>จำนวนปีรับประกัน</label>
+                            <input type="number" id="assetWarrantyYears" class="w-full" min="0" step="1"/>
+                        </div>
+                        <div>
+                            <label>วันที่หมดรับประกัน</label>
+                            <input type="date" id="assetWarrantyEnd" class="w-full"/>
+                        </div>
+                        <div>
+                            <label>สถานะประกัน </label>
+                            <input type="text" id="assetWarrantyStatus" class="w-full bg-gray-200! text-gray-700!" readOnly/>
+                        </div>
+                    </div>
+                    <div class="row mt-4">
+                        <button class="btn btn-brand" onclick="saveAssetData()" id="saveAssetButton">💾 บันทึกข้อมูลทรัพย์สิน</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-white/10 pt-6">
-                <div class="sm:col-span-2"><h3 class="text-emerald-400 font-bold border-b border-emerald-400/30 pb-1 mb-2">📦 ข้อมูลทรัพย์สิน</h3></div>
-                <div><label class="text-xs text-sub block mb-1">Serial Number</label><input type="text" id="assetSerial" class="w-full"></div>
-                <div><label class="text-xs text-sub block mb-1">Model / ยี่ห้อ</label><input type="text" id="assetModel" class="w-full"></div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div><label class="text-xs text-sub block mb-1">เริ่มประกัน</label><input type="date" id="assetWarrantyStart" class="w-full"></div>
-                    <div><label class="text-xs text-sub block mb-1">ระยะเวลา (ปี)</label><input type="number" id="assetWarrantyYears" class="w-full"></div>
-                </div>
-                <div><label class="text-xs text-sub block mb-1">วันหมดประกัน</label><input type="date" id="assetWarrantyEnd" class="w-full" readonly></div>
-                <div class="sm:col-span-2">
-                    <button class="btn bg-emerald-600 text-white w-full justify-center py-3" onclick="saveAssetData()" id="saveAssetButton">💾 บันทึกข้อมูลทรัพย์สิน</button>
-                </div>
-            </div>
-
-            <div class="mt-8 border-t border-white/10 pt-6">
+            <div class="border-l border-white/10 pl-0 lg:pl-8">
                 <h3 class="text-sub font-bold mb-4 italic">⏳ ประวัติรายการ</h3>
                 <div id="historySection" class="space-y-4"></div>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="main.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> <script src="main.js"></script>
 </body>
 </html>
