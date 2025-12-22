@@ -1668,35 +1668,64 @@ window.updateDeviceStatusOverlays(currentSiteKey);
 
 document.addEventListener("DOMContentLoaded", function() {
 
-    // --- 1. Auth State Change Listener (แก้ไขใหม่เพื่อรองรับ Role) ---
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            currentUser = user;
-            document.getElementById('userInfo').classList.remove('hidden');
-            document.getElementById('loginButton').classList.add('hidden');
-            document.getElementById('userNameDisplay').textContent = `${user.email}`;
+  // --- 1. Auth State Change Listener ---
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('loginButton').classList.add('hidden');
+        document.getElementById('userNameDisplay').textContent = `${user.email}`;
 
-          // ดึง Role จาก Firestore
-        const userDoc = await db.collection('users').doc(user.email).get();
-        let role = 'viewer'; 
-        if (userDoc.exists) {
-            role = userDoc.data().role;
-        } else {
-            // ถ้าเป็นคนใหม่ ให้บันทึกเป็น viewer ไว้
-            await db.collection('users').doc(user.email).set({ role: 'viewer', lastLogin: new Date() });
+        try {
+            // ดึงข้อมูลสิทธิ์จากคอลเลกชัน users
+            const userDoc = await db.collection('users').doc(user.email).get();
+            
+            let role = 'viewer'; // default ถ้าไม่มีข้อมูล
+            if (userDoc.exists) {
+                role = userDoc.data().role;
+            } else {
+                // ถ้าเป็นผู้ใช้ใหม่ ให้สร้างข้อมูลใน users เป็น viewer
+                await db.collection('users').doc(user.email).set({
+                    role: 'viewer',
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+
+            // เก็บ Role ไว้ใช้ตรวจสอบที่อื่น
+            window.currentUserRole = role;
+            
+            // เรียกฟังก์ชันจัดการ UI ตามสิทธิ์
+            updateUIByRole(role);
+
+        } catch (error) {
+            console.error("Error fetching user role:", error);
+            updateUIByRole('viewer'); // กรณี error ให้เป็นแค่คนดู
         }
-
-        window.currentUserRole = role; // เก็บไว้ใช้ทั่วระบบ
-        applyPermissions(role);
-
     } else {
         currentUser = null;
         window.currentUserRole = 'guest';
         document.getElementById('userInfo').classList.add('hidden');
         document.getElementById('loginButton').classList.remove('hidden');
-        applyPermissions('guest');
+        updateUIByRole('guest');
     }
 });
+
+// ฟังก์ชันใหม่สำหรับคุมปุ่มต่างๆ ตามสิทธิ์ 3 ระดับ
+function updateUIByRole(role) {
+    const isEditor = (role === 'editor' || role === 'admin');
+    const isAdmin = (role === 'admin');
+
+    // 1. สิทธิ์การเขียน/แก้ไข (ระดับ 2 และ 3 ทำได้)
+    toggleWriteAccess(isEditor);
+
+    // 2. ปุ่มจัดการสิทธิ์แอดมิน (เฉพาะระดับ 3)
+    const adminBtn = document.getElementById('adminPanelButton'); // ชื่อ ID ตามที่แก้ใน HTML
+    if (adminBtn) adminBtn.style.display = isAdmin ? 'block' : 'none';
+
+    // 3. ปุ่มอันตราย เช่น Clear All (เฉพาะแอดมิน)
+    const clearBtn = document.getElementById('clearAllButton');
+    if (clearBtn) clearBtn.style.display = isAdmin ? 'block' : 'none';
+}
 
 function applyPermissions(role) {
     const isAdmin = (role === 'admin');
@@ -2004,3 +2033,4 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
