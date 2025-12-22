@@ -166,6 +166,8 @@ h1,h2,h3,th {
     <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
     <label class="btn btn-warning" id="importButtonLabel">📥 Import
       <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
+    </label>
+    <button class="btn btn-danger" onclick="clearAllDevices()" id="clearAllButton">🗑️ ล้างข้อมูลทั้งหมด</button>
   </div>
 
     
@@ -443,7 +445,6 @@ h1,h2,h3,th {
 <script src="main.js"></script>
 </body>
 </html>
-
 
 
 
