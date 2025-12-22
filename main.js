@@ -912,24 +912,31 @@ endEl.addEventListener('change', calculateYears);
 endEl.addEventListener('change', updateAssetWarrantyStatusField);
 }
 
-// 💥💥💥 FUNCTION: updateDeviceSummary (ฉบับแก้ไข: แสดงวันที่และสถานะถูกต้อง) 💥💥💥
+
 window.updateDeviceSummary = async function() {
     const siteData = sites[currentSiteKey];
     if (!siteData) return;
 
-    // Filter/Sort Parameters
+    // 1. ดึงค่า Filter/Sort Parameters
     const search = document.getElementById('searchInput').value.toLowerCase();
     const sortOrder = document.getElementById('sortOrder').value;
     const filterStatus = document.getElementById('filterStatus').value;
     const from = document.getElementById('fromDate').value;
     const to = document.getElementById('toDate').value;
 
+    // 2. ดึงข้อมูลจาก Database
     const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' }); 
     const dataMap = {}; 
     docsSnap.forEach(d => dataMap[d.id] = d.data());
 
     let summary = [];
+    
+    // 💥 ตัวแปรสำหรับ Dashboard Stats (นับจากรายการจริงทั้งหมดก่อน Filter)
+    let statTotal = siteData.devices.length;
+    let statDown = 0;
+    let statOk = 0;
 
+    // 3. วนลูปประมวลผลอุปกรณ์แต่ละตัว
     for (const dev of siteData.devices) {
         const docData = dataMap[dev]; 
         const records = docData?.records || [];
@@ -941,50 +948,41 @@ window.updateDeviceSummary = async function() {
         const latestRecord = records.length > 0 ? records[records.length - 1] : null;
         let downCount = docData?.downCount || 0; 
 
-        // ✅ Helper: ฟังก์ชันเช็คว่า "ยังไม่ซ่อม" หรือไม่ (ใช้ Logic เดียวกับตอน Save)
+        // ✅ Helper: เช็ครายการที่ "ยังไม่ซ่อม"
         const isUnresolved = (r) => {
             if (r.status !== 'down') return false;
             return !r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null';
         };
 
-        // 💥 NEW: คำนวณคงเหลือ (ใช้ Helper)
         const remainingDownRecords = records.filter(r => isUnresolved(r));
         const remainingDownCount = remainingDownRecords.length;
+
+        // --- 📊 อัปเดตตัวนับ Dashboard (อิงตามสถานะปัจจุบัน) ---
+        if (remainingDownCount > 0) {
+            statDown++; // มีรายการค้างซ่อม = ชำรุด
+        } else {
+            statOk++;   // ไม่มีรายการค้าง = ปกติ
+        }
 
         // --- Downtime Calculation & Display Logic ---
         let latestBrokenDuration = '-';
         let latestBrokenDays = 0;
         let earliestBrokenDate = '-';
-        let latestFixedDate = '-'; // ค่าเริ่มต้นคือยังไม่ซ่อม
-        let currentStatusDisplay = 'ok'; // ค่าเริ่มต้น
+        let latestFixedDate = '-';
+        let currentStatusDisplay = 'ok';
 
-        // 💥 NEW LOGIC: ตรวจสอบว่ามีรายการค้างหรือไม่?
         if (remainingDownCount > 0) {
-            // กรณี 1: มีรายการชำรุดค้างอยู่ (อย่างน้อย 1 รายการ)
             currentStatusDisplay = '❎ ชำรุด';
-
-            // หา "วันที่ชำรุด" ที่เก่าที่สุด ของรายการที่ยังไม่ซ่อม
-            // (remainingDownRecords ถูกเรียงจาก เก่า->ใหม่ อยู่แล้ว เพราะ records หลักเรียงมาแล้ว)
             const oldestIssue = remainingDownRecords[0]; 
-
             earliestBrokenDate = oldestIssue.brokenDate || '-';
-            
-            // วันที่ซ่อมแซม: บังคับเป็น '-' เพราะยังซ่อมไม่หมด
             latestFixedDate = '-'; 
-
-            // คำนวณระยะเวลาจากตัวที่เก่าที่สุดถึงปัจจุบัน
             latestBrokenDays = calculateDaysDifference(earliestBrokenDate, null);
             latestBrokenDuration = formatDuration(latestBrokenDays) + ' (ยังไม่ได้แก้ไข)';
-
         } else {
-            // กรณี 2: ซ่อมครบหมดแล้ว หรือไม่มีรายการชำรุดเลย
             currentStatusDisplay = '✅ ใช้งานได้'; 
-
             if (latestRecord && latestRecord.brokenDate) {
-                 // แสดงประวัติจากรายการล่าสุด (ที่จบไปแล้ว)
                  earliestBrokenDate = latestRecord.brokenDate;
                  latestFixedDate = latestRecord.fixedDate || '-'; 
-
                  if (latestRecord.fixedDate && latestRecord.fixedDate !== '-') {
                       latestBrokenDays = calculateDaysDifference(latestRecord.brokenDate, latestRecord.fixedDate);
                       latestBrokenDuration = formatDuration(latestBrokenDays);
@@ -992,7 +990,7 @@ window.updateDeviceSummary = async function() {
             }
         }
         
-        // --- การกรองข้อมูล (Filter Logic) ---
+        // --- 🔍 การกรองข้อมูล (Filter Logic) ---
         let dateFilterSource = earliestBrokenDate !== '-' ? earliestBrokenDate : (latestRecord?.brokenDate);
 
         if (dateFilterSource && dateFilterSource !== '-') {
@@ -1015,7 +1013,7 @@ window.updateDeviceSummary = async function() {
         summary.push({
             device: dev,
             count: downCount,
-            remaining: remainingDownCount, // แสดงจำนวนคงเหลือที่คำนวณใหม่
+            remaining: remainingDownCount,
             brokenDate: earliestBrokenDate,
             fixedDate: latestFixedDate,
             status: currentStatusDisplay,
@@ -1025,15 +1023,19 @@ window.updateDeviceSummary = async function() {
         });
     }
 
-    // --- Sorting Logic ---
+    // 💥 4. อัปเดตตัวเลขลงบน Dashboard Cards
+    if(document.getElementById('statTotal')) document.getElementById('statTotal').textContent = statTotal;
+    if(document.getElementById('statOk')) document.getElementById('statOk').textContent = statOk;
+    if(document.getElementById('statDown')) document.getElementById('statDown').textContent = statDown;
+
+    // 5. Sorting Logic
     summary.sort((a, b) => {
         const countSort = sortOrder === 'desc' ? b.count - a.count : a.count - b.count;
         if (countSort !== 0) return countSort;
-        // เรียงตามระยะเวลาที่เสีย (มาก -> น้อย)
         return b.latestBrokenDays - a.latestBrokenDays; 
     });
 
-    // --- Rendering ---
+    // 6. Rendering Table & Pagination
     const pageSize = 10;
     const totalPages = Math.max(1, Math.ceil(summary.length / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
@@ -1049,33 +1051,43 @@ window.updateDeviceSummary = async function() {
     } else {
         pageData.forEach(s => {
             const tr = document.createElement('tr');
-            tr.className = 'border-t border-white/10 hover:bg-white/5 cursor-pointer'; 
+            tr.className = 'border-t border-white/10 hover:bg-white/5 cursor-pointer transition-colors'; 
             tr.innerHTML = `
-                <td class="text-left font-medium">${escapeHtml(s.device)}</td>
-                <td><span class="${s.count > 0 ? 'tag tag-bad' : 'tag tag-ok'}">${s.count} / ${s.remaining}</span></td> 
-                <td>${s.brokenDate}</td>
-                <td>${s.fixedDate}</td>
-                <td><span class="${s.status.includes('ชำรุด') ? 'tag tag-bad' : 'tag tag-ok'}">${s.status}</span></td>
-                <td class="font-semibold text-center">${s.latestBrokenDuration}</td>
-                <td class="text-left text-sm text-gray-300 max-w-[200px] whitespace-normal">${escapeHtml(s.latestDescription || '-')}</td>
+                <td class="text-left font-medium text-blue-100">${escapeHtml(s.device)}</td>
+                <td class="text-center">
+                    <span class="px-2 py-1 rounded text-xs font-bold ${s.remaining > 0 ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-green-500/20 text-green-400 border border-green-500/50'}">
+                        ${s.count} / ${s.remaining}
+                    </span>
+                </td> 
+                <td class="text-center text-sm">${s.brokenDate}</td>
+                <td class="text-center text-sm">${s.fixedDate}</td>
+                <td class="text-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${s.status.includes('ชำรุด') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+                        ${s.status}
+                    </span>
+                </td>
+                <td class="font-semibold text-center text-yellow-400">${s.latestBrokenDuration}</td>
+                <td class="text-left text-xs text-gray-400 max-w-[200px] truncate hover:whitespace-normal transition-all">${escapeHtml(s.latestDescription || '-')}</td>
             `;
             tr.addEventListener('click', () => window.openForm(s.device)); 
             tbody.appendChild(tr);
         });
     }
 
-    // Pagination controls
-    document.getElementById('pagination').innerHTML = `
-        <div class="flex justify-center items-center gap-2 mt-2">
-            <button class="btn" onclick="changePage(-1)" ${currentPage===1?'disabled':''}>⬅️ ก่อนหน้า</button>
-            <span>หน้า ${currentPage} / ${totalPages}</span>
-            <button class="btn" onclick="changePage(1)" ${currentPage===totalPages?'disabled':''}>ถัดไป ➡️</button>
-        </div>
-    `;
+    // 7. Pagination
+    const paginationEl = document.getElementById('pagination');
+    if(paginationEl) {
+        paginationEl.innerHTML = `
+            <div class="flex justify-center items-center gap-4 mt-6">
+                <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded-lg transition-all" onclick="changePage(-1)" ${currentPage===1?'disabled':''}>⬅️ ก่อนหน้า</button>
+                <span class="text-sm font-medium">หน้า ${currentPage} / ${totalPages}</span>
+                <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded-lg transition-all" onclick="changePage(1)" ${currentPage===totalPages?'disabled':''}>ถัดไป ➡️</button>
+            </div>
+        `;
+    }
 
-    updateChart(summary);
+    if(typeof updateChart === 'function') updateChart(summary);
 };
-
 
 function updateChart(summary) {
 const sorted = [...summary].sort((a, b) => b.count - a.count);
@@ -1948,4 +1960,5 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
