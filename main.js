@@ -1668,67 +1668,122 @@ window.updateDeviceStatusOverlays(currentSiteKey);
 
 document.addEventListener("DOMContentLoaded", function() {
 
-// --- 1. Auth State Change Listener ---
-auth.onAuthStateChanged(user => {
-if (user) {
-// ผู้ใช้ล็อคอินแล้ว
-currentUser = user;
-document.getElementById('userInfo').classList.remove('hidden');
-document.getElementById('loginButton').classList.add('hidden');
-// 💥 FIX 1.3: ใช้ email
-document.getElementById('userNameDisplay').textContent = `${user.email}`; 
-toggleWriteAccess(true);
-} else {
-// ผู้ใช้ออกจากระบบ
-currentUser = null;
-document.getElementById('userInfo').classList.add('hidden');
-document.getElementById('loginButton').classList.remove('hidden');
-toggleWriteAccess(false);
-}
+    // --- 1. Auth State Change Listener (แก้ไขใหม่เพื่อรองรับ Role) ---
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('loginButton').classList.add('hidden');
+            document.getElementById('userNameDisplay').textContent = `${user.email}`;
+
+            try {
+                // ดึงข้อมูลสิทธิ์จาก Firestore collection 'users'
+                const userDoc = await db.collection('users').doc(user.email).get();
+                
+                let role = 'viewer'; // ค่าเริ่มต้นถ้าไม่ระบุในระบบ
+                if (userDoc.exists) {
+                    role = userDoc.data().role;
+                } else {
+                    // ถ้า login ครั้งแรกและยังไม่มีในฐานข้อมูล ให้บันทึกเป็น viewer ไว้ก่อน
+                    await db.collection('users').doc(user.email).set({ 
+                        role: 'viewer',
+                        lastLogin: firebase.firestore.FieldValue.serverTimestamp() 
+                    });
+                }
+
+                // เรียกฟังก์ชันจัดการสิทธิ์ตาม Role ที่ได้รับ
+                applyRolePermissions(role);
+
+            } catch (error) {
+                console.error("Error fetching role:", error);
+                applyRolePermissions('viewer'); // กันเหนียวให้เป็น viewer ไว้ก่อน
+            }
+
+        } else {
+            currentUser = null;
+            document.getElementById('userInfo').classList.add('hidden');
+            document.getElementById('loginButton').classList.remove('hidden');
+            applyRolePermissions('guest'); // กรณีไม่ได้ Login
+        }
+    });
+
+    // --- ฟังก์ชันจัดการ UI ตามสิทธิ์ (เพิ่มใหม่) ---
+    function applyRolePermissions(role) {
+        console.log("Current Role:", role);
+        
+        // 1. Viewer: ดูได้อย่างเดียว, กด Report ได้ (ทุกคนที่ Login มีสิทธิ์นี้อยู่แล้ว)
+        // 2. Editor: เพิ่ม/แก้ไขข้อมูลได้
+        // 3. Admin: ทำได้ทุกอย่าง
+        
+        const canEdit = (role === 'editor' || role === 'admin');
+        const isAdmin = (role === 'admin');
+
+        // ควบคุมปุ่มบันทึก/แก้ไขข้อมูลอุปกรณ์
+        toggleWriteAccess(canEdit);
+
+        // ควบคุมการแสดงผลเมนู Admin (ถ้ามี)
+        const adminMenu = document.getElementById('adminManagementSection');
+        if (adminMenu) {
+            isAdmin ? adminMenu.classList.remove('hidden') : adminMenu.classList.add('hidden');
+        }
+        
+        // จัดเก็บ role ไว้ในตัวแปร global เพื่อใช้ตรวจสอบในฟังก์ชันอื่นๆ
+        window.currentUserRole = role; 
+    }
+
+    // --- 2. Auth Button Listeners ---
+    document.getElementById('loginButton').addEventListener('click', login);
+    document.getElementById('logoutButton').addEventListener('click', logout);
+
+    // --- 3. Warranty Calculator Setup ---
+    setupWarrantyCalculators();
+
+    // --- 4. Site Switcher Setup ---
+    const locationSelect = document.getElementById("location-select");
+    if (locationSelect) {
+        locationSelect.addEventListener("change", function() {
+            switchSite(this.value);
+        });
+
+        let initialSiteKey = locationSelect.value;
+        if (initialSiteKey && sites[initialSiteKey]) {
+            switchSite(initialSiteKey);
+        }
+    }
 });
+// ฟังก์ชันโหลดรายชื่อผู้ใช้มาแสดง (เรียกใช้เมื่อ Admin เปิดหน้าจัดการ)
+async function loadAllUsers() {
+    const snapshot = await db.collection('users').get();
+    const tbody = document.getElementById('userRoleList');
+    tbody.innerHTML = '';
 
-// --- 2. Auth Button Listeners ---
-document.getElementById('loginButton').addEventListener('click', login);
-document.getElementById('logoutButton').addEventListener('click', logout);
-
-// --- 3. Warranty Calculator Setup ---
-setupWarrantyCalculators();
-
-// --- 4. Site Switcher Setup ---
-const locationSelect = document.getElementById("location-select");
-
-if (!locationSelect) {
-console.error("Error: Element with ID 'location-select' not found.");
-return; 
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        const email = doc.id;
+        tbody.innerHTML += `
+            <tr>
+                <td class="p-2">${email}</td>
+                <td class="p-2">
+                    <select onchange="updateUserRole('${email}', this.value)" class="bg-slate-700 text-white p-1 rounded">
+                        <option value="viewer" ${data.role === 'viewer' ? 'selected' : ''}>1. ดูอย่างเดียว</option>
+                        <option value="editor" ${data.role === 'editor' ? 'selected' : ''}>2. แก้ไขข้อมูลได้</option>
+                        <option value="admin" ${data.role === 'admin' ? 'selected' : ''}>3. Admin</option>
+                    </select>
+                </td>
+            </tr>`;
+    });
 }
 
-locationSelect.addEventListener("change", function() {
-switchSite(this.value);
-});
-
-try {
-let initialSiteKey = locationSelect.value;
-const siteKeys = Object.keys(sites);
-
-if (!initialSiteKey || !sites[initialSiteKey]) {
-if (siteKeys.length > 0) {
-initialSiteKey = siteKeys[0];
-locationSelect.value = initialSiteKey; 
-} else {
-console.warn("No sites defined in the 'sites' object.");
-return;
+// ฟังก์ชันอัปเดตสิทธิ์ลง Firestore
+async function updateUserRole(email, newRole) {
+    if (window.currentUserRole !== 'admin') return;
+    try {
+        await db.collection('users').doc(email).update({ role: newRole });
+        Swal.fire('สำเร็จ', `เปลี่ยนสิทธิ์ ${email} เป็น ${newRole} เรียบร้อย`, 'success');
+    } catch (error) {
+        Swal.fire('ผิดพลาด', 'คุณไม่มีสิทธิ์แก้ไขข้อมูลนี้', 'error');
+    }
 }
-}
-
-// เริ่มต้นด้วยการปิดการเขียนข้อมูล (จนกว่า auth.onAuthStateChanged จะทำงาน)
-toggleWriteAccess(false); 
-switchSite(initialSiteKey); 
-
-} catch (error) {
-console.error("Initial Site Switch Error:", error);
-Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message, 'error');
-}
-});
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
@@ -1956,6 +2011,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
