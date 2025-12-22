@@ -11,7 +11,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 #map-mae-sariang, #map-betong {
-    margin-top: -25px !important;
+    margin-top: 0 px !important;
     padding-top: 0 !important;
 }
 :root{
@@ -143,8 +143,6 @@ h1,h2,h3,th {
     <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
     <label class="btn btn-warning" id="importButtonLabel">📥 Import
       <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
-    </label>
-    <button class="btn btn-danger" onclick="clearAllDevices()" id="clearAllButton">🗑️ ล้างข้อมูลทั้งหมด</button>
   </div>
 
 <div id="map-ko-phaluay" class="map-container" style="position:relative;">
@@ -419,4 +417,5 @@ h1,h2,h3,th {
 
 </body>
 </html>
+
 
