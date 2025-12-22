@@ -44,62 +44,6 @@ devices: [
 ]
 }
 };
-// เพิ่มตัวแปรสำหรับระบบสิทธิ์
-let userRole = 'viewer'; 
-const ADMIN_EMAIL = 'pannattapon.sum@gmail.com'; // อีเมลแอดมินหลัก
-
-// เพิ่มระบบตรวจสอบสิทธิ์เมื่อมีการ Login
-auth.onAuthStateChanged(async (user) => {
-    const loginBtn = document.getElementById('loginButton');
-    const userInfo = document.getElementById('userInfo');
-    const nameDisplay = document.getElementById('userNameDisplay');
-
-    if (user) {
-        currentUser = user;
-        loginBtn.classList.add('hidden');
-        userInfo.classList.remove('hidden');
-        nameDisplay.innerText = user.email;
-
-        // ดึงข้อมูลสิทธิ์จาก Firestore 'users'
-        const userDoc = await db.collection('users').doc(user.email).get();
-        if (userDoc.exists) {
-            userRole = userDoc.data().role || 'viewer';
-        } else {
-            // ถ้าเป็นแอดมินหลักให้เซ็ตเป็น admin อัตโนมัติ
-            userRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer';
-            await db.collection('users').doc(user.email).set({ 
-                email: user.email, 
-                role: userRole, 
-                lastLogin: new Date().toISOString() 
-            });
-        }
-    } else {
-        currentUser = null;
-        userRole = 'viewer';
-        loginBtn.classList.remove('hidden');
-        userInfo.classList.add('hidden');
-    }
-    applyPermissions(); // เรียกฟังก์ชันจัดการปุ่ม
-    refreshData();
-});
-
-// ฟังก์ชันเปิด-ปิดการใช้งานปุ่มตามสิทธิ์
-function applyPermissions() {
-    const isStaff = (userRole === 'staff' || userRole === 'admin');
-    const isAdmin = (userRole === 'admin');
-
-    // ถ้าไม่ใช่ Staff/Admin จะกดปุ่มบันทึกไม่ได้
-    if (document.getElementById('saveDataButton')) {
-        document.getElementById('saveDataButton').disabled = !isStaff;
-    }
-    // ถ้าไม่ใช่ Admin จะมองไม่เห็นปุ่มจัดการทรัพย์สินและปุ่มล้างข้อมูล
-    if (document.getElementById('saveAssetButton')) {
-        document.getElementById('saveAssetButton').style.display = isAdmin ? 'inline-block' : 'none';
-    }
-    if (document.getElementById('clearDeviceButton')) {
-        document.getElementById('clearDeviceButton').style.display = isAdmin ? 'inline-block' : 'none';
-    }
-}
  let currentSiteKey = "ko-phaluay";
 let currentDevice = null, editIndex = -1, chartInstance = null;
 let currentPage = 1;
@@ -406,10 +350,6 @@ window.saveData = async function() {
         Swal.fire('ไม่ได้รับอนุญาต', 'กรุณาลงชื่อเข้าใช้ก่อนบันทึกข้อมูล', 'warning');
         return false;
     }
-	if (userRole === 'viewer') {
-        Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์', text: 'คุณไม่มีสิทธิ์ในการบันทึกข้อมูล' });
-        return;
-    }
     if (!currentDevice) {
         Swal.fire("ผิดพลาด", "กรุณาเลือกอุปกรณ์", "error");
         return false;
@@ -624,103 +564,106 @@ infoEl.innerHTML = 'กรุณาคลิก "ดู/แก้ไขข้อ
 }
 
 async function loadHistory() {
-    const container = document.getElementById('historySection');
-    container.innerHTML = '';
-    if (!currentDevice) return;
+const container = document.getElementById('historySection');
+container.innerHTML = '';
+if (!currentDevice) return;
 
-    // 1. ดึงข้อมูลจาก Firestore (ใช้ฟังก์ชัน getDeviceRef หรือ docRef เดิมของคุณ)
-    const docRef = db.collection('sites').doc(currentSiteKey).collection('devices').doc(currentDevice);
-    let records = [];
+// 1. 💥 ดึงข้อมูลเอกสารเต็ม (ไม่ใช่แค่ records)
+const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
+let docData = null, records = [], assetInfo = null;
 
-    try {
-        const snap = await docRef.get({ source: 'server' });
-        if (snap.exists) {
-            const docData = snap.data();
-            records = docData.records || [];
-            // อัปเดตข้อมูลทรัพย์สิน (ถ้ามีฟังก์ชันนี้)
-            if (typeof updateAssetDisplays === "function") updateAssetDisplays(docData.assetInfo || null);
-        }
-    } catch (e) {
-        console.error("Error fetching device document:", e);
-        container.innerHTML = '<p class="text-center text-red-400">Error loading data</p>';
-        return;
-    }
+try {   const snap = await docRef.get({ source: 'server' }); 
 
-    if (records.length === 0) {
-        container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>';
-        return;
-    }
+if (snap.exists) {
+docData = snap.data();
+records = docData.records || [];
+assetInfo = docData.assetInfo || null;
+}
+} catch (e) {
+console.error("Error fetching device document:", e);
+container.innerHTML = '<p>Error loading data</p>';
+return;
+}
 
-    // 2. เตรียมข้อมูลสำหรับการแสดงผล (เรียงจากใหม่ไปเก่า)
-    // เก็บ Index เดิมไว้เพื่อให้ตอนแก้ไข/ลบ ทำงานได้ถูกต้อง
-    const indexedRecords = records.map((r, i) => ({ ...r, originalIndex: i }));
-    indexedRecords.sort((a, b) => b.ts - a.ts); 
+// 2. อัปเดตหน้าจอข้อมูลทรัพย์สิน (ที่อยู่เหนือประวัติ)
+updateAssetDisplays(assetInfo);
 
-    let isCurrentBrokenFound = false;
-    const totalRecords = records.length;
+// 3. สร้างประวัติ (History)
+records.sort((a, b) => b.ts - a.ts); // เรียงจากใหม่ไปเก่า
 
-    indexedRecords.forEach((r, displayIndex) => {
-        const recordSequence = totalRecords - displayIndex;
-        let duration = '-';
+if (records.length === 0) {
+container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>';
+return;
+}
 
-        // คำนวณระยะเวลา (Logic เดิมของคุณ)
-        if (r.brokenDate) {
-            if (r.fixedDate) {
-                const days = calculateDaysDifference(r.brokenDate, r.fixedDate);
-                duration = formatDuration(days);
-            } else if (!r.fixedDate && !isCurrentBrokenFound) {
-                const days = calculateDaysDifference(r.brokenDate, null);
-                duration = formatDuration(days) + ' <span class="text-sm text-red-400 font-semibold">(ชำรุด)</span>';
-                isCurrentBrokenFound = true;
-            } else {
-                const days = calculateDaysDifference(r.brokenDate, null);
-                duration = formatDuration(days);
-            }
-        }
+// 4.  ตรวจสอบสถานะล็อคอินสำหรับปุ่ม
+const buttonsDisabled = currentUser ? '' : 'disabled title="กรุณาลงชื่อเข้าใช้"';
 
-        const statusClass = r.status === 'ok' ? 'tag-ok' : 'tag-bad';
-        const statusText = r.status === 'ok' ? '✅ ใช้งานได้' : '❎ ชำรุด';
+let isCurrentBrokenFound = false; 
+// ไม่ต้องมีตัวนับ recordCount เพราะใช้ totalRecords - index แล้ว
+const totalRecords = records.length; // จำนวนรายการทั้งหมด
 
-        // --- ส่วนที่แก้ไข: การจัดการสิทธิ์ปุ่ม ---
-        const canEdit = (userRole === 'admin' || userRole === 'staff');
-        const canDelete = (userRole === 'admin');
+records.forEach((r, index) => {
 
-        const div = document.createElement('div');
-        div.className = 'p-4 mb-3 border border-gray-700 bg-gray-800 rounded-lg shadow-md';
-        div.innerHTML = `
-            <div class="flex justify-between items-start border-b border-gray-700 pb-2 mb-2">
-                <div class="text-lg font-bold text-white">
-                    <span class="tag ${statusClass}">${statusText}</span>
-                    <span class="ml-2 text-base text-gray-300"> | ครั้งที่ ${recordSequence}</span>
-                </div>
-                <div class="text-sm text-gray-400">
-                    บันทึกโดย: <span class="font-semibold text-white">${r.user || 'ไม่ระบุ'}</span>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-300">
-                <div class="font-medium text-white">วันที่ชำรุด:</div>
-                <div>${r.brokenDate || '-'}</div>
-                <div class="font-medium text-white">วันที่ซ่อมแซม:</div>
-                <div>${r.fixedDate || '-'}</div>
-                <div class="font-bold text-red-300">ระยะเวลาชำรุด:</div>
-                <div class="font-bold text-red-300">${duration}</div>
-            </div>
-            <div class="mt-3 pt-3 border-t border-gray-700">
-                <p class="font-medium text-white mb-1">รายละเอียด:</p>
-                <div class="text-sm text-gray-300">${r.description || '-'}</div>
-            </div>
+// คำนวณลำดับที่ถูกต้อง (เก่าสุดคือ 1, ใหม่สุดคือ totalRecords) 
+        const recordSequence = totalRecords - index; 
+let duration = '-';
+if (r.brokenDate) {
 
-            <div class="mt-4 flex justify-end space-x-2">
-                ${canEdit ? 
-                    `<button class="btn btn-ghost text-yellow-500 hover:bg-gray-700" onclick="editRecord(${r.originalIndex})">✏️ แก้ไข</button>` : ''
-                }
-                ${canDelete ? 
-                    `<button class="btn btn-danger text-red-400 hover:bg-gray-700" onclick="deleteRecord(${r.originalIndex})">🗑️ ลบ</button>` : ''
-                }
-            </div>
-        `;
-        container.appendChild(div);
-    });
+if (r.fixedDate) {
+// 🟢 รายการที่ "ซ่อมแล้ว"
+const days = calculateDaysDifference(r.brokenDate, r.fixedDate);
+duration = formatDuration(days);
+
+} else if (!r.fixedDate && !isCurrentBrokenFound) { 
+// 🟢 รายการที่ "ยังชำรุด" (และเป็นตัวแรกที่เจอ)
+const days = calculateDaysDifference(r.brokenDate, null);
+duration = formatDuration(days) + ' <span class="text-sm text-red-400 font-semibold">(ชำรุด)</span>';
+isCurrentBrokenFound = true; // 👈 ตั้งค่าว่าเจอแล้ว
+
+} else {
+// 🟢 รายการที่ "ชำรุด" (แต่อันเก่ากว่า)
+const days = calculateDaysDifference(r.brokenDate, null);
+duration = formatDuration(days);
+}
+}
+
+const statusClass = r.status === 'ok' ? 'tag-ok' : 'tag-bad';
+const statusText = r.status === 'ok' ? '✅ ใช้งานได้' : '❎ ชำรุด';
+
+const div = document.createElement('div');
+div.className = 'p-4 mb-3 border border-gray-700 bg-gray-800 rounded-lg shadow-md'; 
+
+div.innerHTML = `
+           <div class="flex justify-between items-start border-b border-gray-700 pb-2 mb-2">
+               <div class="text-lg font-bold text-white">
+                   <span class="tag ${statusClass}">${statusText}</span>
+					<span class="ml-2 text-base text-gray-300"> | ครั้งที่ ${recordSequence}</span>
+               </div>
+               <div class="text-sm text-gray-400">
+                   บันทึกโดย: <span class="font-semibold text-white">${escapeHtml(r.user || 'ไม่ระบุ')}</span>
+               </div>
+           </div>
+           <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-300">
+               <div class="font-medium text-white">วันที่ชำรุด:</div>
+               <div>${r.brokenDate || '-'}</div>
+               <div class="font-medium text-white">วันที่ซ่อมแซม:</div>
+               <div>${r.fixedDate || '-'}</div>
+               <div class="font-bold text-red-300">ระยะเวลาชำรุด:</div>
+               <div class="font-bold text-red-300">${duration}</div>
+           </div>
+           <div class="mt-3 pt-3 border-t border-gray-700">
+               <p class="font-medium text-white mb-1">รายละเอียด:</p>
+               <div class="text-sm text-gray-300">${escapeHtml(r.description || '-')}</div>
+           </div>
+
+           <div class="mt-4 flex justify-end space-x-2">
+               <button class="btn btn-ghost text-yellow-500 hover:bg-gray-700" onclick="editRecord('${r.ts}')" ${buttonsDisabled}>✏️ แก้ไข</button>
+               <button class="btn btn-danger text-white-500 hover:bg-gray-700" onclick="deleteRecord('${r.ts}')" ${buttonsDisabled}>🗑️ ลบ</button>
+           </div>
+       `;
+container.appendChild(div);
+});
 }
 window.deleteRecord = async function(ts) {
 // 💥 MODIFIED: Check Auth (ปุ่มควรจะ disable อยู่แล้ว) 💥
@@ -873,10 +816,18 @@ window.saveAssetData = async function() {
         Swal.fire('ไม่ได้รับอนุญาต', 'กรุณาลงชื่อเข้าใช้ก่อนบันทึกข้อมูล', 'warning');
         return;
     }
-	if (userRole !== 'admin') {
-        Swal.fire('Admin Only', 'เฉพาะผู้ดูแลระบบเท่านั้นที่จัดการข้อมูลทรัพย์สินได้', 'error');
-        return;
+
+    // 💥 NEW: ตรวจสอบอีเมลอนุญาต (Hard-coded Security Check) 💥
+    const allowedEmail = 'panattapon.sum@gmail.com';
+    if (currentUser.email !== allowedEmail) {
+        Swal.fire({
+            icon: 'error',
+            title: 'ไม่มีสิทธิ์เข้าถึง',
+            text: `เฉพาะบัญชี Admin เท่านั้น ที่ได้รับอนุญาตให้แก้ไขข้อมูลทรัพย์สิน`
+        });
+        return; // หยุดการทำงานทันที
     }
+
     if (!currentDevice) return;
 
     const assetInfo = {
@@ -1636,7 +1587,41 @@ try { window.updateDeviceSummary(); } catch (e) {}
 
 window.resetFilters = resetFilters;
 
+window.clearAllDevices = async function() {
+// 💥 MODIFIED: Check Auth 💥
+if (!currentUser) {
+Swal.fire('ไม่ได้รับอนุญาต', 'กรุณาลงชื่อเข้าใช้ก่อน', 'warning');
+return;
+}
 
+// 💡 ใช้ SweetAlert2
+const result = await Swal.fire({
+title: '⚠️ ลบข้อมูลทั้งหมด?',
+text: `คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมดของไซต์ ${sites[currentSiteKey].name}? ข้อมูลทรัพย์สิน (Serial, Model) จะไม่ถูกลบ`,
+icon: 'error',
+showCancelButton: true,
+confirmButtonColor: '#ef4444',
+cancelButtonColor: '#6b7280',
+confirmButtonText: 'ใช่, ลบทั้งหมด!',
+cancelButtonText: 'ยกเลิก'
+});
+
+if (result.isConfirmed) {
+const docs = await getAllDevicesDocs(currentSiteKey);
+const batch = db.batch(); 
+
+for (let d of docs.docs) {
+const docRef = getSiteCollection(currentSiteKey).doc(d.id);
+// 💡 ใช้ merge: true เพื่อไม่ให้ลบ assetInfo
+batch.set(docRef, { records: [], downCount: 0, currentStatus: 'ok' }, { merge: true });
+}
+await batch.commit();
+
+window.updateDeviceSummary(); 
+window.updateDeviceStatusOverlays(currentSiteKey); 
+Swal.fire('ลบเรียบร้อย', 'ลบข้อมูลประวัติทั้งหมดแล้ว', 'success');
+}
+}
 
 // สลับหน้า
 window.showSummary = function() {
@@ -1963,31 +1948,4 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
