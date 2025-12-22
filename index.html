@@ -415,17 +415,8 @@ h1,h2,h3,th {
 <script src="https://unpkg.com/image-map-resizer@1.0.10/js/imageMapResizer.min.js"></script>
 <script src="main.js"></script>
 
-<script>
-    // Logic เพิ่มเติมสำหรับการสลับแผนที่ (เพื่อความสมบูรณ์ของโค้ด)
-    document.getElementById('location-select').addEventListener('change', function() {
-        const selectedVal = this.value;
-        const containers = document.querySelectorAll('.map-container');
-        containers.forEach(div => div.classList.add('hidden'));
-        document.getElementById('map-' + selectedVal).classList.remove('hidden');
-        imageMapResize(); // รีเซ็ตพิกัดคลิกให้ตรงกับขนาดรูปใหม่
-    });
-    window.onload = function() { imageMapResize(); };
-</script>
+
 
 </body>
 </html>
+
