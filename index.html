@@ -2,159 +2,220 @@
 <html lang="th">
 
 <head>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-/* CSS เดิมของคุณทั้งหมด ไม่มีการแก้ไข */
-#map-mae-sariang, #map-betong { margin-top: -25px !important; padding-top: 0 !important; }
-:root{ --bg:#0f172a; --text:#e5e7eb; --sub:#9ca3af; --ok:#34d399; --warn:#fbbf24; --bad:#f87171; }
-body { margin:0; font-family: 'Inter', 'Prompt', sans-serif; background:linear-gradient(180deg,#0f172a,#1e293b); color:var(--text); min-height:100vh; }
-.btn { padding:0.5rem 1rem; border-radius:0.5rem; font-weight:500; transition:all 0.2s; cursor:pointer; font-size:0.875rem; display:inline-flex; align-items:center; gap:0.5rem; }
-.btn-brand { background: #3b82f6; color:white; }
-.btn-brand:hover { background: #2563eb; }
-.btn-brand:disabled { background: #4b5563; cursor: not-allowed; opacity: 0.6; } /* เพิ่มเพื่อให้ปุ่มล็อคดูออก */
-.card { background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.1); border-radius:1rem; backdrop-filter:blur(10px); }
-.tag { padding:0.25rem 0.625rem; border-radius:9999px; font-size:0.75rem; font-weight:600; text-transform:uppercase; }
-.tag-ok { background:rgba(52,211,153,0.1); color:var(--ok); border:1px solid rgba(52,211,153,0.2); }
-.tag-bad { background:rgba(248,113,113,0.1); color:var(--bad); border:1px solid rgba(248,113,113,0.2); }
-.device-pin { position:absolute; width:12px; height:12px; border-radius:50%; cursor:pointer; transition:all 0.3s; z-index:10; border:2px solid white; }
-.status-ok { background-color:var(--ok); box-shadow: 0 0 15px var(--ok); }
-.status-down { background-color:var(--bad); animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% { transform:scale(1); box-shadow:0 0 0 0 rgba(248,113,113,0.7); } 70% { transform:scale(1.2); box-shadow:0 0 0 10px rgba(248,113,113,0); } 100% { transform:scale(1); box-shadow:0 0 0 0 rgba(248,113,113,0); } }
-#overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); z-index:40; }
-#formModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:50; width:95%; max-width:1000px; max-height:90vh; overflow-y:auto; }
-input, select, textarea { background:rgba(255,255,255,0.05)!important; border:1px solid rgba(255,255,255,0.1)!important; color:white!important; border-radius:0.5rem!important; padding:0.5rem!important; }
-.hidden { display: none; }
-</style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* --- CSS เดิมของคุณทั้งหมด --- */
+        #map-mae-sariang, #map-betong {
+            margin-top: -25px !important;
+            padding-top: 0 !important;
+        }
+        :root {
+            --bg: #0f172a; --text: #e5e7eb; --sub: #9ca3af;
+            --ok: #34d399; --warn: #fbbf24; --bad: #f87171;
+        }
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Prompt', sans-serif;
+            background: linear-gradient(180deg, #0f172a, #0b1220 60%);
+            color: var(--text);
+        }
+        input, select, textarea, button, table {
+            font-family: 'Inter', 'Prompt', sans-serif;
+            font-weight: 400;
+        }
+        h1, h2, h3, th { font-weight: 600; }
+        .card { background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)); border: 1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 16px; box-shadow: 0 10px 15px rgba(255,255,255,.25) }
+        .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+        .spacer { flex: 1 }
+        .btn { border: 1px solid rgba(255,255,255,.12); background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all .15s ease }
+        .btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.22) }
+        /* สไตล์เพิ่มเติมสำหรับปุ่มที่ถูกล็อค */
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+        
+        .btn-brand { border-color: transparent; background: linear-gradient(180deg,#60a5fa,#3b82f6); color: #06142b }
+        .btn-danger { background: linear-gradient(180deg,#f87171,#ef4444); color: #fff; border-color: transparent }
+        .btn-warning { background: linear-gradient(180deg,#fbbf24,#f59e0b); color: #1f1300; border-color: transparent }
+        .btn-ghost { background: transparent; border-color: rgba(255,255,255,.1); color: var(--sub) }
+        .tag { padding: 2px 8px; font-size: 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1) }
+        .tag-ok { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.4); color: #84f3cc }
+        .tag-bad { background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.4); color: #ffc1c1 }
+
+        .toolbar input, .toolbar select { background: #0b1220; color: var(--text); border: 1px solid rgba(255,255,255,.1); padding: 8px 10px; border-radius: 10px; outline: none; min-width: 140px }
+        #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000 }
+        #formModal, #assetModal { 
+            display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); 
+            z-index: 1001; width: min(560px,92vw); max-height: 90vh; overflow-y: auto;
+            background: linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95)); 
+            border: 1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 18px;
+        }
+        #assetModal { z-index: 1002; }
+        .device-overlay.down { border: 3px solid var(--bad); box-shadow: 0 0 10px var(--bad); animation: blink-red 1s infinite alternate; }
+        @keyframes blink-red { from { opacity: 1; } to { opacity: 0.6; } }
+        .hidden { display: none !important; }
+    </style>
 </head>
 
-<body class="p-4 md:p-8">
+<body class="bg-gray-900">
 
-<header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-    <div>
-        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Microgrid Asset & Maintenance</h1>
-        <p class="text-sub" id="locationTitle">ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี</p>
-    </div>
-    <div class="flex items-center gap-3">
-        <select id="location-select" class="btn bg-slate-800 border-slate-700">
-            <option value="ko-phaluay">เกาะพะลวย</option>
-            <option value="mae-sariang">แม่สะเรียง</option>
-            <option value="betong">เบตง</option>
-        </select>
-        
-        <button class="btn btn-brand" onclick="handleLogin()" id="loginButton">🔑 เข้าสู่ระบบ</button>
-        <div id="userInfo" class="hidden flex items-center gap-3 bg-white/5 p-1 pr-3 rounded-full border border-white/10">
-            <span id="userNameDisplay" class="text-sm ml-2"></span>
-            <button class="text-xs text-red-400 font-bold" onclick="handleLogout()">Logout</button>
+    <header class="sticky top-0 bg-opacity-85 backdrop-blur-md border-b border-white/6 px-5 py-6 z-40">
+        <div class="max-w-[1200px] mx-auto">
+            <h1 class="text-2xl mb-1">📊 แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</h1>
+            <div class="text-sm text-gray-400">บันทึก/ติดตามสถานะอุปกรณ์ควบคุมระบบไมโครกริด, ประวัติการขัดข้อง, กราฟสรุปภาพรวม, ข้อมูลทรัพย์สิน
+                <h2 id="locationTitle" class="text-xl mt-3 mb-4 text-white font-bold"></h2>
+            </div>
         </div>
-    </div>
-</header>
+    </header>
 
-<main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-    <div class="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <main class="max-w-[1400px] mx-auto px-4 py-4">
+
+        <div id="topologyPage">
+            <div class="card row mb-2 flex flex-wrap items-center justify-start gap-2 px-2">
+                <div class="flex items-center gap-2"> 
+                    <label for="location-select" class="text-gray-100 font-semibold text-sm whitespace-nowrap">เลือกสถานที่ 🔎:</label>
+                    <select id="location-select" class="btn bg-slate-800">
+                        <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
+                        <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
+                        <option value="betong">ไมโครกริดอำเภอเบตง</option>
+                    </select>
+                </div>
+
+                <div id="authContainer" class="flex items-center gap-2 ml-4">
+                    <button id="loginButton" class="btn border-yellow-500/50 text-yellow-400" onclick="handleLogin()">🔑 ลงชื่อเข้าใช้ด้วย Google</button>
+                    <div id="userInfo" class="hidden flex items-center gap-3">
+                        <span id="userNameDisplay" class="text-sm text-gray-200 font-medium"></span>
+                        <button id="logoutButton" class="btn btn-danger" onclick="handleLogout()">ออกจากระบบ</button>
+                    </div>
+                </div>
+
+                <div class="spacer"></div>
+                
+                <button class="btn" onclick="showSummary()">📊 สรุปผล</button>
+                <button onclick="window.printReport()" class="btn bg-blue-600">🖨️ Report PDF</button>
+                <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
+                <label class="btn btn-warning" id="importButtonLabel">📥 Import
+                    <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden" />
+                </label>
+                <button class="btn btn-danger" onclick="clearAllDevices()" id="clearAllButton">🗑️ ล้างข้อมูลทั้งหมด</button>
+            </div>
+
+            <div id="map-ko-phaluay" class="map-container relative">
+                <img class="device-img" src="phaluay.png" usemap="#netmap" width="1903" height="1041" alt="Topology" />
+                <map name="netmap">
+                    <area alt="HMI Server 1" coords="203,375,282,444" shape="rect" href="" onclick="openForm('HMI Server 1'); return false;">
+                    </map>
+                <div id="overlay-container-ko-phaluay" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
+            </div>
+            
+            <div id="map-mae-sariang" class="map-container hidden relative">
+                <img class="device-img" src="mae-sariang.bmp" usemap="#netmap-mae-sariang" width="1918" height="959" />
+                <map name="netmap-mae-sariang">
+                    <area alt="FireWall 1" coords="208,317,340,343" shape="rect" href="" onclick="openForm('FireWall 1'); return false;">
+                </map>
+                <div id="overlay-container-mae-sariang" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
+            </div>
         </div>
 
-    <div class="lg:col-span-12 card p-6 relative overflow-hidden min-h-[500px]">
-        <div id="map-ko-phaluay" class="relative mx-auto mt-10">
-            <img src="https://raw.githubusercontent.com/Aof-Pannattapon/Image/main/Phaluay.png" class="max-w-full h-auto opacity-80">
-            <div id="pin-hmi-server-1" class="device-pin status-ok" style="top:32.4%; left:27.1%;" onclick="openForm('HMI Server 1')"></div>
+        <div id="summaryPage" class="hidden">
+            <button class="btn btn-warning mb-4" onclick="showTopology()">⬅️ กลับหน้าหลัก</button>
+            <div class="card toolbar grid grid-cols-1 md:grid-cols-7 gap-3 mb-4">
+                </div>
+            <div class="card overflow-x-auto">
+                <table class="table w-full" id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th>อุปกรณ์</th><th>จำนวนครั้งชำรุด</th><th>วันที่ชำรุด</th><th>วันที่ซ่อมแซม</th><th>สถานะ</th><th>ระยะเวลา</th><th>รายละเอียด</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryBody"></tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <div class="lg:col-span-12 card overflow-hidden">
+    </main>
+
+    <div id="overlay" onclick="closeForm()"></div>
+    <div id="formModal">
+        <div class="row mb-4">
+            <h3 id="formTitle" class="m-0">บันทึกข้อมูล</h3>
+            <span class="spacer"></span>
+            <button class="btn btn-ghost" onclick="closeForm()">✖ ปิด</button>
         </div>
-</main>
 
-<div id="overlay" onclick="closeForm()"></div>
-<div id="formModal" class="card shadow-2xl flex flex-col">
-    <div class="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-slate-900 z-10">
-        <h2 class="text-xl font-bold" id="formTitle">Device Name</h2>
-        <button onclick="closeForm()" class="text-sub hover:text-white text-2xl">&times;</button>
-    </div>
+        <div class="mb-4 p-4 bg-gray-800/50 border border-gray-600 rounded-lg">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div id="warrantyStatusDisplay" class="text-sm font-bold text-emerald-400">-</div>
+                    <div id="assetInfoDisplay" class="text-xs text-gray-400 mt-1">-</div>
+                </div>
+                <button class="btn btn-ghost text-xs" onclick="openAssetModal()">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
+            </div>
+        </div>
 
-    <div class="p-6 overflow-y-auto">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <h3 class="text-blue-400 font-bold border-b border-blue-400/30 pb-1 mb-4">🛠️ บันทึกงานซ่อมบำรุง</h3>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs text-sub block mb-1">สถานะ</label>
-                            <select id="status" class="w-full">
-                                <option value="down">🚨 ชำรุด (Down)</option>
-                                <option value="ok">✅ ปกติ (Normal)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs text-sub block mb-1">วันที่ชำรุด</label>
-                            <input type="date" id="brokenDate" class="w-full">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-xs text-sub block mb-1">วันที่ซ่อมเสร็จ</label>
-                        <input type="date" id="fixedDate" class="w-full">
-                    </div>
-                    <div>
-                        <label class="text-xs text-sub block mb-1">รายละเอียดการดำเนินการ</label>
-                        <textarea id="description" rows="3" class="w-full"></textarea>
-                    </div>
-                    <button class="btn btn-brand w-full justify-center py-3" onclick="saveData()" id="saveDataButton">💾 บันทึกข้อมูล</button>
-                </div>
-
-                <div class="mt-8 pt-6 border-t border-white/10">
-                    <h3 class="text-emerald-400 font-bold border-b border-emerald-400/30 pb-1 mb-4">📦 ข้อมูลทรัพย์สิน</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="col-span-2">
-                            <label>S/N (Serial Number)</label>
-                            <input type="text" id="assetSerial" class="w-full"/>
-                        </div>
-                        <div>
-                            <label>Model (รุ่น)</label>
-                            <input type="text" id="assetModel" class="w-full"/>
-                        </div>
-                        <div>
-                            <label>Manufacturer (ยี่ห้อ)</label>
-                            <input type="text" id="assetManufacturer" class="w-full"/>
-                        </div>
-                        <hr class="sm:col-span-2 border-white/10 my-1">
-                        <div>
-                            <label>วันที่เริ่มรับประกัน</label>
-                            <input type="date" id="assetWarrantyStart" class="w-full"/>
-                        </div>
-                        <div>
-                            <label>จำนวนปีรับประกัน</label>
-                            <input type="number" id="assetWarrantyYears" class="w-full" min="0" step="1"/>
-                        </div>
-                        <div>
-                            <label>วันที่หมดรับประกัน</label>
-                            <input type="date" id="assetWarrantyEnd" class="w-full"/>
-                        </div>
-                        <div>
-                            <label>สถานะประกัน </label>
-                            <input type="text" id="assetWarrantyStatus" class="w-full bg-gray-200! text-gray-700!" readOnly/>
-                        </div>
-                    </div>
-                    <div class="row mt-4">
-                        <button class="btn btn-brand" onclick="saveAssetData()" id="saveAssetButton">💾 บันทึกข้อมูลทรัพย์สิน</button>
-                    </div>
-                </div>
+                <label class="text-xs text-sub block mb-1">ชื่อผู้บันทึก</label>
+                <input type="text" id="userName" class="w-full" readOnly />
             </div>
-
-            <div class="border-l border-white/10 pl-0 lg:pl-8">
-                <h3 class="text-sub font-bold mb-4 italic">⏳ ประวัติรายการ</h3>
-                <div id="historySection" class="space-y-4"></div>
+            <div>
+                <label class="text-xs text-sub block mb-1">สถานะ</label>
+                <select id="status" class="w-full">
+                    <option value="ok">✅ ใช้งานได้</option>
+                    <option value="down">❎ ชำรุด</option>
+                </select>
+            </div>
+            <div><label class="text-xs text-sub block mb-1">วันที่ชำรุด</label><input type="date" id="brokenDate" class="w-full" /></div>
+            <div><label class="text-xs text-sub block mb-1">วันที่ซ่อมแซม</label><input type="date" id="fixedDate" class="w-full" /></div>
+            <div class="sm:col-span-2">
+                <label class="text-xs text-sub block mb-1">รายละเอียด</label>
+                <textarea id="description" rows="3" class="w-full"></textarea>
             </div>
         </div>
+        <div class="row mt-4">
+            <button class="btn btn-brand" onclick="saveData()" id="saveDataButton">💾 บันทึก</button>
+            <button class="btn btn-warning" onclick="clearCurrentDevice()" id="clearDeviceButton">🗑️ ล้างข้อมูลอุปกรณ์นี้</button>
+            <span class="spacer"></span>
+            <div id="editHint" class="muted hidden">กำลังแก้ไขรายการเดิม…</div>
+        </div>
+        <hr class="border-white/10 my-4">
+        <h3 class="text-sm font-bold mb-2">📜 ประวัติ</h3>
+        <div id="historySection"></div>
     </div>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> <script src="main.js"></script>
+    <div id="assetModal">
+        <div class="row mb-4">
+            <h3 id="assetFormTitle" class="m-0 text-lg">📋 ข้อมูลทะเบียนทรัพย์สิน</h3>
+            <span class="spacer"></span>
+            <button class="btn btn-ghost" onclick="closeAssetModal()">✖ ปิด</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label class="text-xs text-sub">Serial Number (S/N)</label><input type="text" id="assetSerial" class="w-full" /></div>
+            <div><label class="text-xs text-sub">รุ่น (Model)</label><input type="text" id="assetModel" class="w-full" /></div>
+            <div class="sm:col-span-2"><label class="text-xs text-sub">ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer" class="w-full" /></div>
+            <hr class="sm:col-span-2 border-white/10 my-1">
+            <div><label class="text-xs text-sub">วันที่เริ่มรับประกัน</label><input type="date" id="assetWarrantyStart" class="w-full" /></div>
+            <div><label class="text-xs text-sub">จำนวนปีรับประกัน</label><input type="number" id="assetWarrantyYears" class="w-full" min="0" /></div>
+            <div><label class="text-xs text-sub">วันที่หมดรับประกัน</label><input type="date" id="assetWarrantyEnd" class="w-full" /></div>
+            <div><label class="text-xs text-sub">สถานะประกัน</label><input type="text" id="assetWarrantyStatus" class="w-full" readOnly /></div>
+        </div>
+        <div class="row mt-6">
+            <button class="btn btn-brand" onclick="saveAssetData()" id="saveAssetButton">💾 บันทึกข้อมูลทรัพย์สิน</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/image-map-resizer@1.0.10/js/imageMapResizer.min.js"></script>
+
+    <script src="main.js"></script>
 </body>
 </html>
