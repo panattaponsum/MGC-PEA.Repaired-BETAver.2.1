@@ -2004,9 +2004,3 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
-
-
-
-
-
-
