@@ -305,8 +305,6 @@ window.openForm = async function(deviceName) {
 window.closeForm = function() {
 document.getElementById('overlay').style.display = 'none';
 document.getElementById('formModal').style.display = 'none'; // 
-
-closeAssetModal(false); 
 }
 
 function clearForm() {
@@ -1958,6 +1956,7 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
 
