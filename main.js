@@ -304,7 +304,9 @@ window.openForm = async function(deviceName) {
 
 window.closeForm = function() {
 document.getElementById('overlay').style.display = 'none';
-document.getElementById('formModal').style.display = 'none'; // 
+document.getElementById('formModal').style.display = 'none'; // 💥 FIX: ใช้ none
+// 💡 ปิดหน้า Asset ด้วย (ถ้าเผลอเปิดค้าง)
+closeAssetModal(false); 
 }
 
 function clearForm() {
@@ -741,6 +743,8 @@ document.getElementById('assetModal').style.display = 'none';
 if (showMainModal && currentDevice) {
 document.getElementById('formModal').style.display = 'flex'; // 💥 FIX: ใช้ flex
 } else {
+// ถ้าไม่มี showMainModal หรือ currentDevice ให้ปิด overlay ไปเลย
+closeForm();
 }
 }
 
@@ -908,31 +912,24 @@ endEl.addEventListener('change', calculateYears);
 endEl.addEventListener('change', updateAssetWarrantyStatusField);
 }
 
-
+// 💥💥💥 FUNCTION: updateDeviceSummary (ฉบับแก้ไข: แสดงวันที่และสถานะถูกต้อง) 💥💥💥
 window.updateDeviceSummary = async function() {
     const siteData = sites[currentSiteKey];
     if (!siteData) return;
 
-    // 1. ดึงค่า Filter/Sort Parameters
+    // Filter/Sort Parameters
     const search = document.getElementById('searchInput').value.toLowerCase();
     const sortOrder = document.getElementById('sortOrder').value;
     const filterStatus = document.getElementById('filterStatus').value;
     const from = document.getElementById('fromDate').value;
     const to = document.getElementById('toDate').value;
 
-    // 2. ดึงข้อมูลจาก Database
     const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' }); 
     const dataMap = {}; 
     docsSnap.forEach(d => dataMap[d.id] = d.data());
 
     let summary = [];
-    
-    // 💥 ตัวแปรสำหรับ Dashboard Stats (นับจากรายการจริงทั้งหมดก่อน Filter)
-    let statTotal = siteData.devices.length;
-    let statDown = 0;
-    let statOk = 0;
 
-    // 3. วนลูปประมวลผลอุปกรณ์แต่ละตัว
     for (const dev of siteData.devices) {
         const docData = dataMap[dev]; 
         const records = docData?.records || [];
@@ -944,41 +941,50 @@ window.updateDeviceSummary = async function() {
         const latestRecord = records.length > 0 ? records[records.length - 1] : null;
         let downCount = docData?.downCount || 0; 
 
-        // ✅ Helper: เช็ครายการที่ "ยังไม่ซ่อม"
+        // ✅ Helper: ฟังก์ชันเช็คว่า "ยังไม่ซ่อม" หรือไม่ (ใช้ Logic เดียวกับตอน Save)
         const isUnresolved = (r) => {
             if (r.status !== 'down') return false;
             return !r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null';
         };
 
+        // 💥 NEW: คำนวณคงเหลือ (ใช้ Helper)
         const remainingDownRecords = records.filter(r => isUnresolved(r));
         const remainingDownCount = remainingDownRecords.length;
-
-        // --- 📊 อัปเดตตัวนับ Dashboard (อิงตามสถานะปัจจุบัน) ---
-        if (remainingDownCount > 0) {
-            statDown++; // มีรายการค้างซ่อม = ชำรุด
-        } else {
-            statOk++;   // ไม่มีรายการค้าง = ปกติ
-        }
 
         // --- Downtime Calculation & Display Logic ---
         let latestBrokenDuration = '-';
         let latestBrokenDays = 0;
         let earliestBrokenDate = '-';
-        let latestFixedDate = '-';
-        let currentStatusDisplay = 'ok';
+        let latestFixedDate = '-'; // ค่าเริ่มต้นคือยังไม่ซ่อม
+        let currentStatusDisplay = 'ok'; // ค่าเริ่มต้น
 
+        // 💥 NEW LOGIC: ตรวจสอบว่ามีรายการค้างหรือไม่?
         if (remainingDownCount > 0) {
+            // กรณี 1: มีรายการชำรุดค้างอยู่ (อย่างน้อย 1 รายการ)
             currentStatusDisplay = '❎ ชำรุด';
+
+            // หา "วันที่ชำรุด" ที่เก่าที่สุด ของรายการที่ยังไม่ซ่อม
+            // (remainingDownRecords ถูกเรียงจาก เก่า->ใหม่ อยู่แล้ว เพราะ records หลักเรียงมาแล้ว)
             const oldestIssue = remainingDownRecords[0]; 
+
             earliestBrokenDate = oldestIssue.brokenDate || '-';
+            
+            // วันที่ซ่อมแซม: บังคับเป็น '-' เพราะยังซ่อมไม่หมด
             latestFixedDate = '-'; 
+
+            // คำนวณระยะเวลาจากตัวที่เก่าที่สุดถึงปัจจุบัน
             latestBrokenDays = calculateDaysDifference(earliestBrokenDate, null);
             latestBrokenDuration = formatDuration(latestBrokenDays) + ' (ยังไม่ได้แก้ไข)';
+
         } else {
+            // กรณี 2: ซ่อมครบหมดแล้ว หรือไม่มีรายการชำรุดเลย
             currentStatusDisplay = '✅ ใช้งานได้'; 
+
             if (latestRecord && latestRecord.brokenDate) {
+                 // แสดงประวัติจากรายการล่าสุด (ที่จบไปแล้ว)
                  earliestBrokenDate = latestRecord.brokenDate;
                  latestFixedDate = latestRecord.fixedDate || '-'; 
+
                  if (latestRecord.fixedDate && latestRecord.fixedDate !== '-') {
                       latestBrokenDays = calculateDaysDifference(latestRecord.brokenDate, latestRecord.fixedDate);
                       latestBrokenDuration = formatDuration(latestBrokenDays);
@@ -986,7 +992,7 @@ window.updateDeviceSummary = async function() {
             }
         }
         
-        // --- 🔍 การกรองข้อมูล (Filter Logic) ---
+        // --- การกรองข้อมูล (Filter Logic) ---
         let dateFilterSource = earliestBrokenDate !== '-' ? earliestBrokenDate : (latestRecord?.brokenDate);
 
         if (dateFilterSource && dateFilterSource !== '-') {
@@ -1009,7 +1015,7 @@ window.updateDeviceSummary = async function() {
         summary.push({
             device: dev,
             count: downCount,
-            remaining: remainingDownCount,
+            remaining: remainingDownCount, // แสดงจำนวนคงเหลือที่คำนวณใหม่
             brokenDate: earliestBrokenDate,
             fixedDate: latestFixedDate,
             status: currentStatusDisplay,
@@ -1019,19 +1025,15 @@ window.updateDeviceSummary = async function() {
         });
     }
 
-    // 💥 4. อัปเดตตัวเลขลงบน Dashboard Cards
-    if(document.getElementById('statTotal')) document.getElementById('statTotal').textContent = statTotal;
-    if(document.getElementById('statOk')) document.getElementById('statOk').textContent = statOk;
-    if(document.getElementById('statDown')) document.getElementById('statDown').textContent = statDown;
-
-    // 5. Sorting Logic
+    // --- Sorting Logic ---
     summary.sort((a, b) => {
         const countSort = sortOrder === 'desc' ? b.count - a.count : a.count - b.count;
         if (countSort !== 0) return countSort;
+        // เรียงตามระยะเวลาที่เสีย (มาก -> น้อย)
         return b.latestBrokenDays - a.latestBrokenDays; 
     });
 
-    // 6. Rendering Table & Pagination
+    // --- Rendering ---
     const pageSize = 10;
     const totalPages = Math.max(1, Math.ceil(summary.length / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
@@ -1047,43 +1049,33 @@ window.updateDeviceSummary = async function() {
     } else {
         pageData.forEach(s => {
             const tr = document.createElement('tr');
-            tr.className = 'border-t border-white/10 hover:bg-white/5 cursor-pointer transition-colors'; 
+            tr.className = 'border-t border-white/10 hover:bg-white/5 cursor-pointer'; 
             tr.innerHTML = `
-                <td class="text-left font-medium text-blue-100">${escapeHtml(s.device)}</td>
-                <td class="text-center">
-                    <span class="px-2 py-1 rounded text-xs font-bold ${s.remaining > 0 ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-green-500/20 text-green-400 border border-green-500/50'}">
-                        ${s.count} / ${s.remaining}
-                    </span>
-                </td> 
-                <td class="text-center text-sm">${s.brokenDate}</td>
-                <td class="text-center text-sm">${s.fixedDate}</td>
-                <td class="text-center">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${s.status.includes('ชำรุด') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
-                        ${s.status}
-                    </span>
-                </td>
-                <td class="font-semibold text-center text-yellow-400">${s.latestBrokenDuration}</td>
-                <td class="text-left text-xs text-gray-400 max-w-[200px] truncate hover:whitespace-normal transition-all">${escapeHtml(s.latestDescription || '-')}</td>
+                <td class="text-left font-medium">${escapeHtml(s.device)}</td>
+                <td><span class="${s.count > 0 ? 'tag tag-bad' : 'tag tag-ok'}">${s.count} / ${s.remaining}</span></td> 
+                <td>${s.brokenDate}</td>
+                <td>${s.fixedDate}</td>
+                <td><span class="${s.status.includes('ชำรุด') ? 'tag tag-bad' : 'tag tag-ok'}">${s.status}</span></td>
+                <td class="font-semibold text-center">${s.latestBrokenDuration}</td>
+                <td class="text-left text-sm text-gray-300 max-w-[200px] whitespace-normal">${escapeHtml(s.latestDescription || '-')}</td>
             `;
             tr.addEventListener('click', () => window.openForm(s.device)); 
             tbody.appendChild(tr);
         });
     }
 
-    // 7. Pagination
-    const paginationEl = document.getElementById('pagination');
-    if(paginationEl) {
-        paginationEl.innerHTML = `
-            <div class="flex justify-center items-center gap-4 mt-6">
-                <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded-lg transition-all" onclick="changePage(-1)" ${currentPage===1?'disabled':''}>⬅️ ก่อนหน้า</button>
-                <span class="text-sm font-medium">หน้า ${currentPage} / ${totalPages}</span>
-                <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded-lg transition-all" onclick="changePage(1)" ${currentPage===totalPages?'disabled':''}>ถัดไป ➡️</button>
-            </div>
-        `;
-    }
+    // Pagination controls
+    document.getElementById('pagination').innerHTML = `
+        <div class="flex justify-center items-center gap-2 mt-2">
+            <button class="btn" onclick="changePage(-1)" ${currentPage===1?'disabled':''}>⬅️ ก่อนหน้า</button>
+            <span>หน้า ${currentPage} / ${totalPages}</span>
+            <button class="btn" onclick="changePage(1)" ${currentPage===totalPages?'disabled':''}>ถัดไป ➡️</button>
+        </div>
+    `;
 
-    if(typeof updateChart === 'function') updateChart(summary);
+    updateChart(summary);
 };
+
 
 function updateChart(summary) {
 const sorted = [...summary].sort((a, b) => b.count - a.count);
@@ -1668,145 +1660,67 @@ window.updateDeviceStatusOverlays(currentSiteKey);
 
 document.addEventListener("DOMContentLoaded", function() {
 
-  // --- 1. Auth State Change Listener ---
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById('userInfo').classList.remove('hidden');
-        document.getElementById('loginButton').classList.add('hidden');
-        document.getElementById('userNameDisplay').textContent = `${user.email}`;
-
-        try {
-            // ดึงข้อมูลสิทธิ์จากคอลเลกชัน users
-            const userDoc = await db.collection('users').doc(user.email).get();
-            
-            let role = 'viewer'; // default ถ้าไม่มีข้อมูล
-            if (userDoc.exists) {
-                role = userDoc.data().role;
-            } else {
-                // ถ้าเป็นผู้ใช้ใหม่ ให้สร้างข้อมูลใน users เป็น viewer
-                await db.collection('users').doc(user.email).set({
-                    role: 'viewer',
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
-
-            // เก็บ Role ไว้ใช้ตรวจสอบที่อื่น
-            window.currentUserRole = role;
-            
-            // เรียกฟังก์ชันจัดการ UI ตามสิทธิ์
-            updateUIByRole(role);
-
-        } catch (error) {
-            console.error("Error fetching user role:", error);
-            updateUIByRole('viewer'); // กรณี error ให้เป็นแค่คนดู
-        }
-    } else {
-        currentUser = null;
-        window.currentUserRole = 'guest';
-        document.getElementById('userInfo').classList.add('hidden');
-        document.getElementById('loginButton').classList.remove('hidden');
-        updateUIByRole('guest');
-    }
+// --- 1. Auth State Change Listener ---
+auth.onAuthStateChanged(user => {
+if (user) {
+// ผู้ใช้ล็อคอินแล้ว
+currentUser = user;
+document.getElementById('userInfo').classList.remove('hidden');
+document.getElementById('loginButton').classList.add('hidden');
+// 💥 FIX 1.3: ใช้ email
+document.getElementById('userNameDisplay').textContent = `${user.email}`; 
+toggleWriteAccess(true);
+} else {
+// ผู้ใช้ออกจากระบบ
+currentUser = null;
+document.getElementById('userInfo').classList.add('hidden');
+document.getElementById('loginButton').classList.remove('hidden');
+toggleWriteAccess(false);
+}
 });
 
-// ฟังก์ชันใหม่สำหรับคุมปุ่มต่างๆ ตามสิทธิ์ 3 ระดับ
-function updateUIByRole(role) {
-    const isEditor = (role === 'editor' || role === 'admin');
-    const isAdmin = (role === 'admin');
+// --- 2. Auth Button Listeners ---
+document.getElementById('loginButton').addEventListener('click', login);
+document.getElementById('logoutButton').addEventListener('click', logout);
 
-    // 1. สิทธิ์การเขียน/แก้ไข (ระดับ 2 และ 3 ทำได้)
-    toggleWriteAccess(isEditor);
+// --- 3. Warranty Calculator Setup ---
+setupWarrantyCalculators();
 
-    // 2. ปุ่มจัดการสิทธิ์แอดมิน (เฉพาะระดับ 3)
-    const adminBtn = document.getElementById('adminPanelButton'); // ชื่อ ID ตามที่แก้ใน HTML
-    if (adminBtn) adminBtn.style.display = isAdmin ? 'block' : 'none';
+// --- 4. Site Switcher Setup ---
+const locationSelect = document.getElementById("location-select");
 
-    // 3. ปุ่มอันตราย เช่น Clear All (เฉพาะแอดมิน)
-    const clearBtn = document.getElementById('clearAllButton');
-    if (clearBtn) clearBtn.style.display = isAdmin ? 'block' : 'none';
+if (!locationSelect) {
+console.error("Error: Element with ID 'location-select' not found.");
+return; 
 }
 
-function applyPermissions(role) {
-    const isAdmin = (role === 'admin');
-    const isEditor = (role === 'admin' || role === 'editor');
+locationSelect.addEventListener("change", function() {
+switchSite(this.value);
+});
 
-    // แสดงปุ่ม Admin เฉพาะคนที่เป็น admin
-    const adminBtn = document.getElementById('adminPanelButton');
-    if (adminBtn) adminBtn.style.display = isAdmin ? 'block' : 'none';
+try {
+let initialSiteKey = locationSelect.value;
+const siteKeys = Object.keys(sites);
 
-    // ควบคุมการบันทึกข้อมูล (ใช้ฟังก์ชันเดิมของคุณ)
-    toggleWriteAccess(isEditor);
+if (!initialSiteKey || !sites[initialSiteKey]) {
+if (siteKeys.length > 0) {
+initialSiteKey = siteKeys[0];
+locationSelect.value = initialSiteKey; 
+} else {
+console.warn("No sites defined in the 'sites' object.");
+return;
 }
-	
-// ฟังก์ชันสลับไปหน้า Admin
-window.showAdminPage = function() {
-    document.getElementById('topologyPage').classList.add('hidden');
-    document.getElementById('summaryPage').classList.add('hidden');
-    document.getElementById('adminPage').classList.remove('hidden');
-    loadUserList(); // โหลดรายชื่อผู้ใช้
-};
-
-// ฟังก์ชันโหลดรายชื่ออีเมลที่เคยล็อคอิน
-async function loadUserList() {
-    const tbody = document.getElementById('adminUserTableBody');
-    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">กำลังโหลดข้อมูล...</td></tr>';
-
-    try {
-        const snapshot = await db.collection('users').get();
-        tbody.innerHTML = '';
-        
-        snapshot.forEach(doc => {
-            const userData = doc.data();
-            const email = doc.id;
-            const currentRole = userData.role || 'viewer';
-
-            const tr = document.createElement('tr');
-            tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
-            tr.innerHTML = `
-                <td class="p-3 text-blue-300">${email}</td>
-                <td class="p-3">
-                    <span class="tag ${currentRole==='admin'?'tag-ok':currentRole==='editor'?'tag-warn':'tag-bad'}">
-                        ${currentRole.toUpperCase()}
-                    </span>
-                </td>
-                <td class="p-3 text-right">
-                    <select onchange="updateUserRole('${email}', this.value)" class="bg-slate-700 text-white rounded p-1 text-sm outline-none border border-white/20">
-                        <option value="viewer" ${currentRole === 'viewer' ? 'selected' : ''}>1. Viewer (ดูอย่างเดียว)</option>
-                        <option value="editor" ${currentRole === 'editor' ? 'selected' : ''}>2. Editor (แก้ไขได้)</option>
-                        <option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>3. Admin (จัดการระบบ)</option>
-                    </select>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-red-400">ไม่สามารถโหลดข้อมูลได้: ' + error.message + '</td></tr>';
-    }
 }
 
-// ฟังก์ชันอัปเดตสิทธิ์ลง Firestore
-window.updateUserRole = async function(email, newRole) {
-    if (window.currentUserRole !== 'admin') {
-        Swal.fire('Error', 'คุณไม่มีสิทธิ์ดำเนินการนี้', 'error');
-        return;
-    }
+// เริ่มต้นด้วยการปิดการเขียนข้อมูล (จนกว่า auth.onAuthStateChanged จะทำงาน)
+toggleWriteAccess(false); 
+switchSite(initialSiteKey); 
 
-    try {
-        await db.collection('users').doc(email).update({ role: newRole });
-        Swal.fire({
-            icon: 'success',
-            title: 'อัปเดตสำเร็จ',
-            text: `เปลี่ยนสิทธิ์ของ ${email} เป็น ${newRole} แล้ว`,
-            timer: 1500,
-            showConfirmButton: false
-        });
-        loadUserList(); // รีโหลดตาราง
-    } catch (error) {
-        Swal.fire('ผิดพลาด', 'ไม่สามารถแก้ไขสิทธิ์ได้: ' + error.message, 'error');
-    }
-};
-	});
+} catch (error) {
+console.error("Initial Site Switch Error:", error);
+Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message, 'error');
+}
+});
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
@@ -2034,5 +1948,3 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
-
-
