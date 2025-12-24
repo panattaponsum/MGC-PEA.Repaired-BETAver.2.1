@@ -275,10 +275,10 @@ Swal.fire('Login ผิดพลาด', error.message, 'error');
 });
 }
 
-function logout() {
-auth.signOut();
-}
-
+window.logout = function() {
+    firebase.auth().signOut().then(() => {
+        window.location.reload();
+    });
 
 // =========================================================================
 // UI and Form Functions (Global Scope for HTML interaction)
@@ -2034,5 +2034,6 @@ window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 	
 };
+
 
 
