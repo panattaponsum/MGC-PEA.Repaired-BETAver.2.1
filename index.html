@@ -59,76 +59,54 @@ h1,h2,h3,th {
 #historySection{max-height:300px;overflow-y:auto;padding-right:6px}
 .hidden{display:none;}
 #location-select {
-    /* สไตล์จากปุ่ม (btn) */
-    border: 1px solid rgba(255,255,255,.12) !important; /* ขอบ */
-    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)) !important; /* พื้นหลังไล่สี */
-    color: var(--text) !important; /* ตัวอักษรสีขาว/เทาอ่อน */
-    padding: 8px 12px !important; /* ขนาดช่อง (เหมือนปุ่ม) */
-    border-radius: 10px !important; /* ความมน (เหมือนปุ่ม) */
+    border: 1px solid rgba(255,255,255,.12) !important;
+    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)) !important;
+    color: var(--text) !important;
+    padding: 8px 12px !important;
+    border-radius: 10px !important;
     cursor: pointer;
     font-weight: 600;
     font-size: 14px;
     outline: none;
-    
-    /* แก้ไขเพิ่มเติม: เพื่อให้สีตัวเลือกด้านในเข้ากัน (เฉพาะ Chrome/Edge/Firefox) */
-    -webkit-appearance: none; /* สำหรับ Webkit (Chrome, Edge) */
-    -moz-appearance: none; /* สำหรับ Firefox */
-    appearance: none; /* เพื่อช่วยให้กำหนดสไตล์พื้นหลัง/สีตัวอักษรได้ดีขึ้น */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
+#location-select option { background: #000; color: #fff; }
 
-/* ทำให้ตัวเลือกด้านใน (Dropdown Menu) เป็นสีดำ/ขาวด้วย */
-#location-select option {
-    background: #000;
-    color: #fff;
-}
-
-/* 💥 NEW CSS for Flashing Overlay 💥 */
 .device-overlay {
     position: absolute;
     border: 3px solid transparent;
-    border-radius: 8px; /* ปรับให้โค้งตามกรอบ */
-    pointer-events: none; /* เพื่อให้คลิกทะลุไปที่ <area> ได้ */
+    border-radius: 8px;
+    pointer-events: none;
     z-index: 50;
     transition: all 0.3s ease-in-out;
 }
-
-/* สถานะชำรุด (สีแดงกระพริบ) */
 .device-overlay.down {
-    border-color: var(--bad); /* สีแดงสำหรับสถานะชำรุด */
+    border-color: var(--bad);
     box-shadow: 0 0 10px var(--bad);
-    animation: blink-red 1s infinite alternate; /* กระพริบ */
+    animation: blink-red 1s infinite alternate;
 }
-
-/* คีย์เฟรมสำหรับเอฟเฟกต์กระพริบ */
 @keyframes blink-red {
-    from {
-        opacity: 1;
-        box-shadow: 0 0 10px var(--bad);
-    }
-    to {
-        opacity: 0.6;
-        box-shadow: 0 0 20px var(--bad);
-    }
+    from { opacity: 1; box-shadow: 0 0 10px var(--bad); }
+    to { opacity: 0.6; box-shadow: 0 0 20px var(--bad); }
 }
 
-/* 💥 NEW CSS for Asset Modal 💥 */
-#assetModal{
+#assetModal, #userManagementModal {
     overflow-y: auto;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
-    z-index:1002; /* 💡 อยู่เหนือ formModal (1001) */
-    width:min(560px,92vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95));
+    z-index:1002;
+    width:min(600px,92vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95));
     border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;max-height:80vh;
     display:none;flex-direction:column;
 }
-#assetModal input, #assetModal select, #assetModal textarea {
+#assetModal input, #assetModal select, #assetModal textarea, #userManagementModal select {
     background: #fff;color: #000;border: 1px solid #ccc;
     border-radius: 6px;padding: 8px 10px;font-size: 14px;outline: none;
 }
-
-/* 💥 NEW CSS for Warranty Status Tags 💥 */
 .tag-warranty-ok { background:rgba(52,211,153,.12); border-color:rgba(52,211,153,.4); color:#84f3cc; }
 .tag-warranty-warn { background:rgba(251,191,36,.12); border-color:rgba(251,191,36,.4); color:#ffd98a; }
 .tag-warranty-bad { background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.4); color:#ffc1c1; }
-
+.user-row { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0; display: flex; align-items: center; justify-content: space-between; }
 </style>
 </head>
 <body class="bg-gray-900">
@@ -156,8 +134,10 @@ h1,h2,h3,th {
 
 <div id="authContainer" class="ml-4">
         <button id="loginButton" class="btn btn-ghost border-yellow-500/50 text-yellow-400">🔒 ลงชื่อเข้าใช้ด้วย Google</button>
-        <div id="userInfo" class="hidden items-center">
+        <div id="userInfo" class="hidden items-center gap-2">
             <span id="userNameDisplay" class="text-sm text-gray-200 font-medium"></span>
+            <span id="userRoleDisplay" class="text-xs border border-gray-600 rounded px-2 py-0.5 text-gray-400"></span>
+            <button id="manageUsersBtn" class="btn btn-brand text-xs hidden" onclick="openUserManagement()">👥 จัดการผู้ใช้</button>
             <button id="logoutButton" class="btn btn-danger"> ออกจากระบบ</button>
         </div>
 </div>
@@ -170,7 +150,6 @@ h1,h2,h3,th {
     <button class="btn btn-danger" onclick="clearAllDevices()" id="clearAllButton">🗑️ ล้างข้อมูลทั้งหมด</button>
   </div>
 
-    
 <div id="map-ko-phaluay" class="map-container" style="position:relative;">
   <img class="device-img" src="phaluay.png" usemap="#netmap" width="1903" height="1041" alt="Topology" />
  <map name="netmap">
@@ -352,7 +331,7 @@ h1,h2,h3,th {
                 <div id="warrantyStatusDisplay" class="text-sm font-bold">-</div>
                 <div id="assetInfoDisplay" class="text-xs text-gray-400 mt-1">-</div>
             </div>
-            <button class="btn btn-ghost text-xs" onclick="openAssetModal()">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
+            <button class="btn btn-ghost text-xs" onclick="openAssetModal()" id="assetEditBtn">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
         </div>
     </div>
 
@@ -434,6 +413,17 @@ h1,h2,h3,th {
     </div>
 </div>
 
+<div id="userManagementModal">
+    <div class="row mb-3 border-b border-white/10 pb-3">
+        <h3 class="m-0 text-lg">👥 จัดการสิทธิ์ผู้ใช้งาน</h3>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" onclick="closeUserManagement()">✖ ปิด</button>
+    </div>
+    <div id="userListContainer" class="flex-1 overflow-y-auto pr-2">
+        <p class="text-center text-gray-400 py-4">กำลังโหลดรายชื่อ...</p>
+    </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -445,11 +435,3 @@ h1,h2,h3,th {
 <script src="main.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
