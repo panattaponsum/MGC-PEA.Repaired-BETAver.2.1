@@ -1746,16 +1746,16 @@ auth.onAuthStateChanged(async user => {
         if (user.email === ADMIN_EMAIL) {
             currentUserRole = ROLE_ADMIN;
             // บันทึกว่าเป็น Admin ลง DB ด้วย (เผื่อไว้) แต่ Logic หลักจะเช็ค email เสมอ
-            await userRef.set({ role: ROLE_ADMIN, lastLogin: Date.now() }, { merge: true });
+           // await userRef.set({ role: ROLE_ADMIN, lastLogin: Date.now() }, { merge: true });
         } else {
             if (userSnap.exists) {
                 // ดึง Role จาก DB
                 currentUserRole = userSnap.data().role || ROLE_VIEWER;
-                await userRef.update({ lastLogin: Date.now() });
+             //   await userRef.update({ lastLogin: Date.now() });
             } else {
                 // User ใหม่ -> Default Viewer
                 currentUserRole = ROLE_VIEWER;
-                await userRef.set({ role: ROLE_VIEWER, lastLogin: Date.now() });
+             //   await userRef.set({ role: ROLE_VIEWER, lastLogin: Date.now() });
             }
         }
 
@@ -1821,4 +1821,5 @@ Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพ�
 window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 };
+
 
