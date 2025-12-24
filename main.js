@@ -231,17 +231,30 @@ function applyRolePermissions() {
     }
 }
 
+// แก้ไขฟังก์ชัน login
 function login() {
-const provider = new firebase.auth.GoogleAuthProvider();
-auth.signInWithPopup(provider).then((result) => {
-}).catch((error) => {
-console.error("Login Error:", error);
-Swal.fire('Login ผิดพลาด', error.message, 'error');
-});
+    const provider = new firebase.auth.GoogleAuthProvider();
+    // เปลี่ยนจาก signInWithPopup เป็น signInWithRedirect
+    auth.signInWithRedirect(provider);
 }
 
+// เพิ่มส่วนนี้ไว้ในระดับ Global (ด้านนอกฟังก์ชัน) เพื่อดึงผลลัพธ์หลังจาก Redirect กลับมา
+auth.getRedirectResult().then((result) => {
+    if (result.user) {
+        console.log("เข้าสู่ระบบสำเร็จ:", result.user.displayName);
+        // ตรงนี้คุณอาจจะเรียกฟังก์ชันเช็คสิทธิ์ หรือแสดง Swal แจ้งเตือนสำเร็จ
+        Swal.fire('สำเร็จ!', `ยินดีต้อนรับคุณ ${result.user.displayName}`, 'success');
+    }
+}).catch((error) => {
+    if (error.code !== 'auth/invalid-auth-event') {
+        console.error("Login Error:", error);
+    }
+});
+
 function logout() {
-auth.signOut();
+    auth.signOut().then(() => {
+        location.reload(); // รีเฟรชหน้าเพื่อให้สถานะเป็น Logout
+    });
 }
 
 // =========================================================================
@@ -1808,3 +1821,4 @@ Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพ�
 window.onload = function() {
 try { imageMapResize(); } catch (e) {}
 };
+
