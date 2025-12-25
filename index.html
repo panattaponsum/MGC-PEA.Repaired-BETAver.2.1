@@ -80,13 +80,13 @@ h1,h2,h3,th { font-weight: 600; }
     </div>
 
 <div id="authContainer" class="ml-4">
-        <button id="loginButton" class="btn btn-ghost border-yellow-500/50 text-yellow-400">🔒 ลงชื่อเข้าใช้ด้วย Google</button>
+        <button id="loginButton" class="btn btn-ghost border-yellow-500/50 text-yellow-400">🔒Login with Google</button>
         <div id="userInfo" class="hidden items-center gap-2">
             <span id="userNameDisplay" class="text-sm text-gray-200 font-medium"></span>
-            <span id="userRoleDisplay" class="tag tag-ok text-xs">Viewer</span> <button id="manageUsersBtn" class="btn btn-warning hidden" onclick="openUserManagement()">⚙️ จัดการผู้ใช้</button> <button id="logoutButton" class="btn btn-danger"> ออกจากระบบ</button>
+            <span id="userRoleDisplay" class="tag tag-ok text-xs">Viewer</span> <button id="manageUsersBtn" class="btn btn-warning hidden" onclick="openUserManagement()">⚙️ จัดการผู้ใช้</button> <button id="logoutButton" class="btn btn-danger"> Logout</button>
         </div>
 </div>
-   <button class="btn btn-rgb" onclick="showSummary()">📊 สรุปผล</button>
+   <button class="btn btn-rgb" onclick="showSummary()">📊 Status</button>
       <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
     <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
     <label class="btn btn-warning" id="importButtonLabel">📥 Import
@@ -384,6 +384,7 @@ h1,h2,h3,th { font-weight: 600; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
