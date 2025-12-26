@@ -41,9 +41,44 @@ h1,h2,h3,th { font-weight: 600; }
 .hidden{display:none;}
 #location-select { border: 1px solid rgba(255,255,255,.12) !important; background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)) !important; color: var(--text) !important; padding: 8px 12px !important; border-radius: 10px !important; cursor: pointer; font-weight: 600; font-size: 14px; outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
 #location-select option { background: #000; color: #fff; }
-.device-overlay { position: absolute; border: 3px solid transparent; border-radius: 8px; pointer-events: none; z-index: 50; transition: all 0.3s ease-in-out; }
-.device-overlay.down { border-color: var(--bad); box-shadow: 0 0 10px var(--bad); animation: blink-red 1s infinite alternate; }
-@keyframes blink-red { from { opacity: 1; box-shadow: 0 0 10px var(--bad); } to { opacity: 0.6; box-shadow: 0 0 20px var(--bad); } }
+.device-overlay {
+    position: absolute;
+    border-radius: 4px; /* ลดความมนลงเพื่อให้เข้ากับกากบาท */
+    pointer-events: none;
+    z-index: 50;
+    transition: all 0.3s ease-in-out;
+    box-sizing: border-box; /* สำคัญ: เพื่อให้เส้นขอบไม่ดันขนาด */
+}
+
+/* ✅ สถานะปกติ: กรอบสีเขียว */
+.device-overlay.normal {
+    border: 2px solid var(--ok); /* สีเขียว */
+    background-color: rgba(52, 211, 153, 0.1); /* สีพื้นจางๆ */
+    opacity: 0.5; /* โปร่งแสงหน่อยจะได้ไม่บังรูป */
+}
+/* เพิ่มลูกเล่น: เอาเมาส์ชี้แล้วชัดขึ้น */
+.map-container:hover .device-overlay.normal {
+    opacity: 0.8;
+}
+
+/* ❎ สถานะชำรุด: กากบาทสีแดง (X) */
+.device-overlay.down {
+    border: 3px solid var(--bad); /* กรอบแดงหนา */
+    background-color: rgba(248, 113, 113, 0.2); /* พื้นแดงจางๆ */
+    
+    /* สร้างกากบาท X ด้วย Linear Gradient */
+    background-image: 
+        linear-gradient(to top right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px)),
+        linear-gradient(to bottom right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px));
+    
+    animation: blink-red 1s infinite alternate;
+    z-index: 60; /* ให้อยู่เหนือกรอบเขียวถ้าซ้อนกัน */
+}
+
+@keyframes blink-red {
+    from { opacity: 0.8; box-shadow: 0 0 5px var(--bad); }
+    to { opacity: 0.4; box-shadow: 0 0 15px var(--bad); }
+}
 #assetModal{ overflow-y: auto;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%); z-index:1002; width:min(560px,92vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95)); border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;max-height:80vh; display:none;flex-direction:column; }
 #assetModal input, #assetModal select, #assetModal textarea { background: #fff;color: #000;border: 1px solid #ccc; border-radius: 6px;padding: 8px 10px;font-size: 14px;outline: none; }
 .tag-warranty-ok { background:rgba(52,211,153,.12); border-color:rgba(52,211,153,.4); color:#84f3cc; }
@@ -384,6 +419,7 @@ h1,h2,h3,th { font-weight: 600; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
