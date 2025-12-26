@@ -880,39 +880,75 @@ window.updateDeviceSummary();
 }
 
 window.updateDeviceStatusOverlays = async function(siteKey) {
-const mapContainer = document.getElementById(`map-${siteKey}`);
-if (!mapContainer) return;
-mapContainer.querySelectorAll('.device-overlay').forEach(el => el.remove());
-const docsSnap = await getAllDevicesDocs(siteKey);
-const downDevices = {};
-docsSnap.forEach(d => { if (d.data() && d.data().currentStatus === 'down') downDevices[d.id] = true; });
-const mapElement = mapContainer.querySelector('map');
-if (!mapElement) return;
-const areaElements = mapElement.querySelectorAll('area');
-const MIN_DIMENSION = 10; 
-const OFFSET_TOP = (siteKey === 'mae-sariang' || siteKey === 'betong') ? 25 : 0;
-areaElements.forEach(area => {
-const deviceName = area.getAttribute('alt');
-if (downDevices[deviceName]) {
-const coords = area.getAttribute('coords').split(',').map(c => parseInt(c.trim()));
-const shape = area.getAttribute('shape');
-let x, y, width, height;
-if (shape === 'rect' && coords.length === 4) {
-x = coords[0]; y = coords[1]; width = coords[2] - coords[0]; height = coords[3] - coords[1];
-width = Math.max(width, MIN_DIMENSION); height = Math.max(height, MIN_DIMENSION);
-} else return;
-const overlay = document.createElement('div');
-overlay.className = 'device-overlay down';
-const PADDING = 2; 
-overlay.style.left = `${x - PADDING}px`;
-overlay.style.top = `${y - PADDING + OFFSET_TOP}px`; 
-overlay.style.width = `${width + (2 * PADDING)}px`;
-overlay.style.height = `${height + (2 * PADDING)}px`;
-overlay.setAttribute('title', deviceName);
-mapContainer.appendChild(overlay);
-}
-});
-}
+    const mapContainer = document.getElementById(`map-${siteKey}`);
+    if (!mapContainer) return;
+
+    // 1. ลบ Overlay เก่าทั้งหมดออก
+    mapContainer.querySelectorAll('.device-overlay').forEach(el => el.remove());
+
+    // 2. ดึงข้อมูลอุปกรณ์เพื่อเช็คสถานะ
+    const docsSnap = await getAllDevicesDocs(siteKey);
+    const downDevices = {};
+    docsSnap.forEach(d => {
+        if (d.data() && d.data().currentStatus === 'down') {
+            downDevices[d.id] = true;
+        }
+    });
+
+    // 3. ค้นหา Map Area ทั้งหมด (เพื่อวาดทั้งกรอบเขียวและกากบาทแดง)
+    const mapElement = mapContainer.querySelector('map');
+    if (!mapElement) return;
+
+    const areaElements = mapElement.querySelectorAll('area');
+    const MIN_DIMENSION = 10;
+    
+    // 💥 แก้ไข: ลบ OFFSET_TOP ออก เพื่อแก้ปัญหาตำแหน่งเลื่อน
+    // const OFFSET_TOP = ... (ลบทิ้ง)
+
+    areaElements.forEach(area => {
+        const deviceName = area.getAttribute('alt');
+        const isDown = downDevices[deviceName]; // เช็คว่าเสียหรือไม่
+
+        // ดึงพิกัด
+        const coords = area.getAttribute('coords').split(',').map(c => parseInt(c.trim()));
+        const shape = area.getAttribute('shape');
+
+        let x, y, width, height;
+
+        if (shape === 'rect' && coords.length === 4) {
+            x = coords[0];
+            y = coords[1];
+            width = coords[2] - coords[0];
+            height = coords[3] - coords[1];
+
+            width = Math.max(width, MIN_DIMENSION);
+            height = Math.max(height, MIN_DIMENSION);
+        } else {
+            return; // รองรับแค่ rect ในตอนนี้
+        }
+
+        // สร้าง Overlay
+        const overlay = document.createElement('div');
+        
+        // 💥 กำหนด Class ตามสถานะ (ปกติ=กรอบเขียว, เสีย=กากบาทแดง)
+        if (isDown) {
+            overlay.className = 'device-overlay down'; // กากบาทแดง
+        } else {
+            overlay.className = 'device-overlay normal'; // กรอบเขียว
+        }
+
+        const PADDING = 0; // ปรับ Padding เป็น 0 เพื่อให้กรอบตรงเป๊ะกับ Area
+
+        overlay.style.left = `${x - PADDING}px`;
+        overlay.style.top = `${y - PADDING}px`; // ไม่ต้องบวก OFFSET_TOP แล้ว
+        overlay.style.width = `${width + (2 * PADDING)}px`;
+        overlay.style.height = `${height + (2 * PADDING)}px`;
+
+        overlay.setAttribute('title', deviceName);
+
+        mapContainer.appendChild(overlay);
+    });
+};
 
 let unsubscribe = null; 
 
@@ -1407,3 +1443,4 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
