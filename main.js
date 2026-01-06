@@ -254,7 +254,7 @@ window.openForm = async function(deviceName) {
 window.closeForm = function() {
 document.getElementById('overlay').style.display = 'none';
 document.getElementById('formModal').style.display = 'none'; 
-closeAssetModal(false); 
+document.getElementById('assetModal').style.display = 'none';
 }
 
 function clearForm() {
@@ -532,7 +532,7 @@ document.getElementById('assetModal').style.display = 'none';
 if (showMainModal && currentDevice) {
 document.getElementById('formModal').style.display = 'flex'; 
 } else {
-closeForm();
+
 }
 }
 
@@ -1443,4 +1443,5 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
