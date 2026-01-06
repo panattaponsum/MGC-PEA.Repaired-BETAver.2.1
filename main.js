@@ -665,6 +665,7 @@ window.closeUserManagement = function() {
 
 window.loadUsers = async function() {
     const listContainer = document.getElementById('userListContainer');
+    // เปลี่ยนสีข้อความสถานะ Loading เป็นสีเทาเข้มขึ้น
     listContainer.innerHTML = '<div class="text-center py-4 text-gray-500">กำลังโหลด...</div>';
     
     try {
@@ -682,9 +683,9 @@ window.loadUsers = async function() {
             const isMe = (email === currentUser.email);
             
             const div = document.createElement('div');
-            div.className = 'user-item bg-white rounded mb-2 shadow-sm border border-gray-100';
+            // ปรับ Background Item: สีขาว มีเส้นขอบล่าง
+            div.className = 'user-item flex justify-between items-center p-3 border-b border-gray-200 hover:bg-gray-50 transition-colors';
             
-            // Dropdown options
             const roleOptions = `
                 <option value="viewer" ${role==='viewer'?'selected':''}>Viewer (ดูอย่างเดียว)</option>
                 <option value="editor" ${role==='editor'?'selected':''}>Editor (บันทึก/แก้ไข)</option>
@@ -693,11 +694,14 @@ window.loadUsers = async function() {
 
             div.innerHTML = `
                 <div class="flex flex-col">
-                    <span class="text-white font-medium ${isMe ? 'text-green-400' : ''}">${email} ${isMe?'(คุณ)':''}</span>
-                    <span class="text-xs text-gray-500">Current Role: ${role}</span>
+                    <span class="font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}">
+                        ${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}
+                    </span>
+                    <span class="text-xs text-gray-500">สิทธิ์ปัจจุบัน: ${role}</span>
                 </div>
                 <div>
-                    <select onchange="changeUserRole('${email}', this.value)" class="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 text-sm">
+                    <select onchange="changeUserRole('${email}', this.value)" 
+                            class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 outline-none shadow-sm cursor-pointer">
                         ${roleOptions}
                     </select>
                 </div>
@@ -707,7 +711,7 @@ window.loadUsers = async function() {
 
     } catch (error) {
         console.error("Load users failed:", error);
-        listContainer.innerHTML = `<div class="text-red-500 text-center">โหลดไม่สำเร็จ: ${error.message}</div>`;
+        listContainer.innerHTML = `<div class="text-red-500 text-center py-4">โหลดไม่สำเร็จ: ${error.message}</div>`;
     }
 }
 
@@ -1444,6 +1448,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
