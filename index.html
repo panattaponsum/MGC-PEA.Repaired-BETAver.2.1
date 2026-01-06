@@ -10,116 +10,229 @@
 <title>แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-#map-mae-sariang, #map-betong { margin-top: 20px !important; padding-top: 0 !important; }
-:root{ --bg:#0f172a; --text:#e5e7eb; --sub:#9ca3af; --ok:#34d399; --warn:#fbbf24; --bad:#f87171; }
-body { margin:0; font-family: 'Inter', 'Prompt', sans-serif; background:linear-gradient(180deg,#0f172a,#0b1220 60%); color:var(--text); }
-input, select, textarea, button, table { font-family: 'Inter', 'Prompt', sans-serif; font-weight: 400; }
-h1,h2,h3,th { font-weight: 600; }
-.card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;box-shadow:0 10px 15px rgba(255,255,255,.25)}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.spacer{flex:1}
-.btn{border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;transition:all .15s ease}
-.btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.22)}
-.btn-brand{border-color:transparent;background:linear-gradient(180deg,#60a5fa,#3b82f6);color:#06142b}
-.btn-danger{background:linear-gradient(180deg,#f87171,#ef4444);color:#fff;border-color:transparent}
-.btn-warning{background:linear-gradient(180deg,#fbbf24,#f59e0b);color:#1f1300;border-color:transparent}
-.btn-ghost{background:transparent;border-color:rgba(255,255,255,.1);color:var(--sub)}
-.tag{padding:2px 8px;font-size:14px;border-radius:999px;border:1px solid rgba(255,255,255,.1)}
-.tag-ok{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.4);color:#84f3cc}
-.tag-warn{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.4);color:#ffd98a}
-.tag-bad{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.4);color:#ffc1c1}
-.toolbar input,.toolbar select{background:#0b1220;color:var(--text);border:1px solid rgba(255,255,255,.1);padding:8px 10px;border-radius:10px;outline:none;min-width:140px}
-.toolbar input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
-.table td,.table th{padding:10px 12px;text-align:center}
-#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000}
-#formModal input,#formModal select,#formModal textarea {background: #fff;color: #000;border: 1px solid #ccc;border-radius: 6px;padding: 8px 10px;font-size: 14px;outline: none;}
-#formModal{overflow-y: auto;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1001;width:min(560px,92vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95));border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;max-height:90vh;display:none;flex-direction:column;}
-.entry{border:1px dashed rgba(255,255,255,.1);border-radius:12px;padding:10px;margin:8px 0;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01))}
-.muted{color:var(--text);font-size:10px}
-.device-img{width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.06)}
-#historySection{max-height:300px;overflow-y:auto;padding-right:6px}
-.hidden{display:none;}
-#location-select { border: 1px solid rgba(255,255,255,.12) !important; background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)) !important; color: var(--text) !important; padding: 8px 12px !important; border-radius: 10px !important; cursor: pointer; font-weight: 600; font-size: 14px; outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
-#location-select option { background: #000; color: #fff; }
-.device-overlay {
-    position: absolute;
-    border-radius: 4px; /* ลดความมนลงเพื่อให้เข้ากับกากบาท */
-    pointer-events: none;
-    z-index: 50;
-    transition: all 0.3s ease-in-out;
-    box-sizing: border-box; /* สำคัญ: เพื่อให้เส้นขอบไม่ดันขนาด */
-}
-
-
-/* เพิ่มลูกเล่น: เอาเมาส์ชี้แล้วชัดขึ้น */
-.map-container:hover .device-overlay.normal {
-    opacity: 0.8;
-}
-
-/* ❎ สถานะชำรุด: กากบาทสีแดง (X) */
-.device-overlay.down {
-    border: 3px solid var(--bad); /* กรอบแดงหนา */
-    background-color: rgba(248, 113, 113, 0.2); /* พื้นแดงจางๆ */
+/* --- Light Theme CSS Variables --- */
+:root {
+    --bg: #f8fafc;        /* พื้นหลังหลัก (Slate-50) */
+    --card-bg: #ffffff;   /* พื้นหลังการ์ด */
+    --text: #1e293b;      /* สีตัวอักษรหลัก (Slate-800) */
+    --sub: #64748b;       /* สีตัวอักษรรอง (Slate-500) */
+    --border: #e2e8f0;    /* สีเส้นขอบ (Slate-200) */
     
-    /* สร้างกากบาท X ด้วย Linear Gradient */
+    --ok: #10b981;        /* Emerald-500 */
+    --warn: #f59e0b;      /* Amber-500 */
+    --bad: #ef4444;       /* Red-500 */
+}
+
+body { 
+    margin: 0; 
+    font-family: 'Inter', 'Prompt', sans-serif; 
+    background: var(--bg); 
+    color: var(--text); 
+}
+
+/* ปรับระยะห่าง Map */
+#map-mae-sariang, #map-betong { margin-top: 20px !important; padding-top: 0 !important; }
+
+/* Global Elements */
+input, select, textarea, button, table { font-family: 'Inter', 'Prompt', sans-serif; font-weight: 400; }
+h1,h2,h3,th { font-weight: 600; color: #0f172a; }
+
+/* --- Card Design (Clean White) --- */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.spacer { flex: 1; }
+
+/* --- Button Styles (Modern Light) --- */
+.btn {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all .2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.btn:hover { background: #f1f5f9; border-color: #94a3b8; transform: translateY(-1px); }
+
+/* Button Variants */
+.btn-brand { 
+    border-color: transparent; 
+    background: linear-gradient(180deg, #3b82f6, #2563eb); 
+    color: #ffffff; 
+}
+.btn-brand:hover { background: linear-gradient(180deg, #2563eb, #1d4ed8); }
+
+.btn-danger { 
+    background: linear-gradient(180deg, #ef4444, #dc2626); 
+    color: #fff; 
+    border-color: transparent; 
+}
+.btn-danger:hover { background: linear-gradient(180deg, #dc2626, #b91c1c); }
+
+.btn-warning { 
+    background: linear-gradient(180deg, #f59e0b, #d97706); 
+    color: #fff; 
+    border-color: transparent; 
+}
+.btn-warning:hover { background: linear-gradient(180deg, #d97706, #b45309); }
+
+.btn-ghost { 
+    background: transparent; 
+    border-color: transparent; 
+    color: var(--sub); 
+    box-shadow: none; 
+}
+.btn-ghost:hover { background: #f1f5f9; color: var(--text); }
+
+/* --- Tags --- */
+.tag { padding: 2px 10px; font-size: 13px; border-radius: 999px; border: 1px solid transparent; font-weight: 500; }
+.tag-ok { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+.tag-warn { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.tag-bad { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+
+/* --- Inputs --- */
+.toolbar input, .toolbar select {
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    outline: none;
+    min-width: 140px;
+}
+.toolbar input:focus, .toolbar select:focus { border-color: #3b82f6; ring: 2px solid #bfdbfe; }
+
+/* --- Table --- */
+.table th { background: #f8fafc; color: #475569; border-bottom: 2px solid #e2e8f0; font-size: 14px; }
+.table td { padding: 12px 12px; text-align: center; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 14px; }
+.table tr:hover { background-color: #f8fafc; }
+
+/* --- Modals (Light Theme) --- */
+#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); z-index: 1000; }
+
+#formModal, #assetModal, #userModal {
+    overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
+    width: min(600px, 92vw);
+    background: #ffffff; /* White bg */
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    display: none; flex-direction: column;
+    color: var(--text);
+}
+
+#formModal input, #formModal select, #formModal textarea,
+#assetModal input, #assetModal select, #assetModal textarea {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+#formModal input:focus, #assetModal input:focus { border-color: #3b82f6; }
+
+/* Entry / History Items */
+.entry {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    margin: 8px 0;
+    background: #f8fafc;
+}
+
+.muted { color: #64748b; font-size: 12px; }
+.device-img { width: 100%; height: auto; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+#historySection { max-height: 300px; overflow-y: auto; padding-right: 6px; }
+.hidden { display: none; }
+
+/* Map Select */
+#location-select { 
+    border: 1px solid #cbd5e1 !important; 
+    background: #ffffff !important; 
+    color: #1e293b !important; 
+    padding: 8px 12px !important; 
+    border-radius: 8px !important; 
+    cursor: pointer; font-weight: 600; font-size: 14px; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+#location-select option { background: #fff; color: #000; }
+
+/* Device Overlays */
+.device-overlay {
+    position: absolute; border-radius: 4px; pointer-events: none; z-index: 50; transition: all 0.3s ease-in-out; box-sizing: border-box;
+}
+.map-container:hover .device-overlay.normal { opacity: 0.6; }
+.device-overlay.down {
+    border: 3px solid var(--bad);
+    background-color: rgba(239, 68, 68, 0.3);
     background-image: 
         linear-gradient(to top right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px)),
         linear-gradient(to bottom right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px));
-    
-    animation: blink-red 1s infinite alternate;
-    z-index: 60; /* ให้อยู่เหนือกรอบเขียวถ้าซ้อนกัน */
+    animation: blink-red 1s infinite alternate; z-index: 60;
 }
+.device-overlay.normal { border: 2px solid var(--ok); background-color: rgba(16, 185, 129, 0.1); }
+@keyframes blink-red { from { opacity: 0.8; box-shadow: 0 0 5px var(--bad); } to { opacity: 0.4; box-shadow: 0 0 15px var(--bad); } }
 
-@keyframes blink-red {
-    from { opacity: 0.8; box-shadow: 0 0 5px var(--bad); }
-    to { opacity: 0.4; box-shadow: 0 0 15px var(--bad); }
-}
-#assetModal{ overflow-y: auto;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%); z-index:1002; width:min(560px,92vw);background:linear-gradient(180deg, rgba(17,24,39,.95), rgba(3,6,14,.95)); border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px;max-height:80vh; display:none;flex-direction:column; }
-#assetModal input, #assetModal select, #assetModal textarea { background: #fff;color: #000;border: 1px solid #ccc; border-radius: 6px;padding: 8px 10px;font-size: 14px;outline: none; }
-.tag-warranty-ok { background:rgba(52,211,153,.12); border-color:rgba(52,211,153,.4); color:#84f3cc; }
-.tag-warranty-warn { background:rgba(251,191,36,.12); border-color:rgba(251,191,36,.4); color:#ffd98a; }
-.tag-warranty-bad { background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.4); color:#ffc1c1; }
+/* Warranty Tags */
+.tag-warranty-ok { background:#d1fae5; border:1px solid #a7f3d0; color:#065f46; }
+.tag-warranty-warn { background:#fef3c7; border:1px solid #fde68a; color:#92400e; }
+.tag-warranty-bad { background:#fee2e2; border:1px solid #fecaca; color:#991b1b; }
 
-/* 💥 New Styles for User Management 💥 */
-#userModal { overflow-y: auto; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:1005; width:min(600px,92vw); background:linear-gradient(180deg, rgba(17,24,39,.98), rgba(3,6,14,.98)); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:18px; max-height:85vh; display:none; flex-direction:column; }
-.user-item { display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid rgba(255,255,255,0.1); }
-.user-item:last-child { border-bottom:none; }
+/* User Modal List */
+.user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9; }
+.user-item:last-child { border-bottom: none; }
 </style>
 </head>
-<body class="bg-gray-900">
-
-<header class="sticky top-0 bg-opacity-85 backdrop-blur-md border-b border-white/6 px-5 py-6">
+<body class="bg-gray-50"> <header class="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200 px-5 py-4 z-40 shadow-sm">
 <div class="max-w-[1200px] mx-auto">
-<h1 class="text-2xl mb-1">📊 แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</h1>
-<div class="text-sm text-gray-400">บันทึก/ติดตามสถานะอุปกรณ์ควบคุมระบบไมโครกริด, ประวัติการขัดข้อง, กราฟสรุปภาพรวม, ข้อมูลทรัพย์สิน
-<h2 id="locationTitle" class="text-xl mt-3 mb-4 text-white font-bold"></h2>
+<h1 class="text-2xl mb-1 text-slate-800">📊 แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</h1>
+<div class="text-sm text-gray-500">บันทึก/ติดตามสถานะอุปกรณ์ควบคุมระบบไมโครกริด, ประวัติการขัดข้อง, กราฟสรุปภาพรวม
+<h2 id="locationTitle" class="text-xl mt-3 mb-1 text-blue-700 font-bold"></h2>
 </div>
 </div>
 </header>
 
-<main class="max-w-[1400px] mx-auto px-4 py-4">
+<main class="max-w-[1400px] mx-auto px-4 py-6">
 
 <div id="topologyPage" >
-  <div class="card row mb-2 flex flex-wrap items-center justify-start gap-2 px-2"> 
-     <div class="flex items-center gap-2"> <label for="location-select" class="text-gray-100 font-semibold text-sm whitespace-nowrap">เลือกสถานที่ 🔎:</label>
-      <select id="location-select" class="toolbar-select w-50">
-        <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
-        <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
-        <option value="betong">ไมโครกริดอำเภอเบตง</option>
-      </select>
+  <div class="card row mb-4 flex flex-wrap items-center justify-start gap-3 px-4 py-3 bg-white rounded-xl shadow-sm"> 
+     <div class="flex items-center gap-2"> 
+        <label for="location-select" class="text-slate-700 font-semibold text-sm whitespace-nowrap">เลือกสถานที่ 🔎:</label>
+        <select id="location-select" class="toolbar-select w-50"></select> <select id="location-select-real" class="hidden">
+            <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
+            <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
+            <option value="betong">ไมโครกริดอำเภอเบตง</option>
+        </select>
     </div>
 
 <div id="authContainer" class="ml-4">
-        <button id="loginButton" class="btn btn-ghost border-yellow-500/50 text-yellow-400">🔒Login with Google</button>
+        <button id="loginButton" class="btn btn-ghost border-yellow-500 text-yellow-600 hover:bg-yellow-50">🔒 Login with Google</button>
         <div id="userInfo" class="hidden items-center gap-2">
-            <span id="userNameDisplay" class="text-sm text-gray-200 font-medium"></span>
-            <span id="userRoleDisplay" class="tag tag-ok text-xs">Viewer</span> <button id="manageUsersBtn" class="btn btn-warning hidden" onclick="openUserManagement()">⚙️ จัดการผู้ใช้</button> <button id="logoutButton" class="btn btn-danger"> Logout</button>
+            <span id="userNameDisplay" class="text-sm text-slate-700 font-medium"></span>
+            <span id="userRoleDisplay" class="tag tag-ok text-xs">Viewer</span> 
+            <button id="manageUsersBtn" class="btn btn-warning text-white hidden" onclick="openUserManagement()">⚙️ จัดการผู้ใช้</button> 
+            <button id="logoutButton" class="btn btn-danger text-white">Logout</button>
         </div>
 </div>
-   <button class="btn btn-rgb" onclick="showSummary()">📊 Status</button>
-      <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
+   <div class="spacer"></div>
+   <button class="btn btn-ghost border border-gray-300" onclick="showSummary()">📊 Status List</button>
+   <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
     <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
-    <label class="btn btn-warning" id="importButtonLabel">📥 Import
+    <label class="btn btn-warning text-white" id="importButtonLabel">📥 Import
       <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
     </label>
   
@@ -127,52 +240,52 @@ h1,h2,h3,th { font-weight: 600; }
 
     
 <div id="map-ko-phaluay" class="map-container" style="position:relative;">
-  <img class="device-img" src="phaluay.png" usemap="#netmap" width="1903" height="1041" alt="Topology" />
- <map name="netmap">
-  <area alt="HMI Server 1" coords="203,375,282,444" shape="rect" href="" onclick="openForm('HMI Server 1'); return false;">
-  <area alt="HMI Server 2" coords="370,368,452,442" shape="rect" href="" onclick="openForm('HMI Server 2'); return false;">
-  <area alt="Operation Station" coords="536,368,616,442" shape="rect" href="" onclick="openForm('Operation Station'); return false;">
-  <area alt="Printer" coords="692,370,774,432" shape="rect" href="" onclick="openForm('Printer'); return false;">
-  <area alt="Time Server" coords="57,449,136,487" shape="rect" href="" onclick="openForm('Time Server'); return false;">
-  <area alt="MGC" coords="54,578,133,620" shape="rect" href="" onclick="openForm('MGC'); return false;">
-  <area alt="Switch 1" coords="155,531,585,606" shape="rect" href="" onclick="openForm('Switch 1'); return false;">
-  <area alt="Switch 2" coords="1083,531,1513,601" shape="rect" href="" onclick="openForm('Switch 2'); return false;">
-  <area alt="Switch 3" coords="1184,647,1282,691" shape="rect" href="" onclick="openForm('Switch 3'); return false;">
-  <area alt="Switch 4" coords="1292,647,1377,689" shape="rect" href="" onclick="openForm('Switch 4'); return false;">
-  <area alt="Switch 5" coords="1208,738,1313,773" shape="rect" href="" onclick="openForm('Switch 5'); return false;">
-  <area alt="Switch 6" coords="1214,856,1308,886" shape="rect" href="" onclick="openForm('Switch 6'); return false;">
-  <area alt="Switch 7" coords="1369,741,1471,777" shape="rect" href="" onclick="openForm('Switch 7'); return false;">
-  <area alt="Switch 8" coords="1372,849,1465,888" shape="rect" href="" onclick="openForm('Switch 8'); return false;">
-  <area alt="COV 1" coords="620,527,779,590" shape="rect" href="" onclick="openForm('COV 1'); return false;">
-  <area alt="COV 2" coords="823,533,986,585" shape="rect" href="" onclick="openForm('COV 2'); return false;">
-  <area alt="BCP" coords="287,723,375,757" shape="rect" href="" onclick="openForm('BCP'); return false;">
-  <area alt="PCS" coords="395,723,487,755" shape="rect" href="" onclick="openForm('PCS'); return false;">
-  <area alt="Inverter 1" coords="872,728,964,757" shape="rect" href="" onclick="openForm('Inverter 1'); return false;">
-  <area alt="Inverter 2" coords="872,768,961,795" shape="rect" href="" onclick="openForm('Inverter 2'); return false;">
-  <area alt="Inverter 3" coords="872,804,966,830" shape="rect" href="" onclick="openForm('Inverter 3'); return false;">
-  <area alt="Inverter 4" coords="873,842,959,869" shape="rect" href="" onclick="openForm('Inverter 4'); return false;">
-  <area alt="Inverter 5" coords="868,882,961,906" shape="rect" href="" onclick="openForm('Inverter 5'); return false;">
-  <area alt="Inverter 6" coords="1013,731,1097,755" shape="rect" href="" onclick="openForm('Inverter 6'); return false;">
-  <area alt="Inverter 7" coords="1008,768,1093,790" shape="rect" href="" onclick="openForm('Inverter 7'); return false;">
-  <area alt="Inverter 8" coords="1011,804,1093,829" shape="rect" href="" onclick="openForm('Inverter 8'); return false;">
-  <area alt="Inverter 9" coords="1006,841,1097,866" shape="rect" href="" onclick="openForm('Inverter 9'); return false;">
-  <area alt="Inverter 10" coords="1008,882,1093,903" shape="rect" href="" onclick="openForm('Inverter 10'); return false;">
-  <area alt="DG 1" coords="1582,757,1663,790" shape="rect" href="" onclick="openForm('DG 1'); return false;">
-  <area alt="DG 2" coords="1688,765,1765,792" shape="rect" href="" onclick="openForm('DG 2'); return false;">
-  <area alt="DG Master" coords="1690,889,1772,921" shape="rect" href="" onclick="openForm('DG Master'); return false;">
-  <area alt="Gateway 1" coords="1098,429,1181,466" shape="rect" href="" onclick="openForm('Gateway 1'); return false;">
-  <area alt="Gateway 2" coords="1213,429,1295,468" shape="rect" href="" onclick="openForm('Gateway 2'); return false;">
-  <area alt="Firewall 1" coords="1088,384,1181,417" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
-  <area alt="Firewall 2" coords="1216,384,1292,411" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
-  <area alt="Firewall 3" coords="1429,416,1513,446" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
-</map>
-<div id="overlay-container-ko-phaluay" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
+  <img class="device-img bg-white" src="phaluay.png" usemap="#netmap" width="1903" height="1041" alt="Topology" />
+  <map name="netmap">
+      <area alt="HMI Server 1" coords="203,375,282,444" shape="rect" href="" onclick="openForm('HMI Server 1'); return false;">
+      <area alt="HMI Server 2" coords="370,368,452,442" shape="rect" href="" onclick="openForm('HMI Server 2'); return false;">
+      <area alt="Operation Station" coords="536,368,616,442" shape="rect" href="" onclick="openForm('Operation Station'); return false;">
+      <area alt="Printer" coords="692,370,774,432" shape="rect" href="" onclick="openForm('Printer'); return false;">
+      <area alt="Time Server" coords="57,449,136,487" shape="rect" href="" onclick="openForm('Time Server'); return false;">
+      <area alt="MGC" coords="54,578,133,620" shape="rect" href="" onclick="openForm('MGC'); return false;">
+      <area alt="Switch 1" coords="155,531,585,606" shape="rect" href="" onclick="openForm('Switch 1'); return false;">
+      <area alt="Switch 2" coords="1083,531,1513,601" shape="rect" href="" onclick="openForm('Switch 2'); return false;">
+      <area alt="Switch 3" coords="1184,647,1282,691" shape="rect" href="" onclick="openForm('Switch 3'); return false;">
+      <area alt="Switch 4" coords="1292,647,1377,689" shape="rect" href="" onclick="openForm('Switch 4'); return false;">
+      <area alt="Switch 5" coords="1208,738,1313,773" shape="rect" href="" onclick="openForm('Switch 5'); return false;">
+      <area alt="Switch 6" coords="1214,856,1308,886" shape="rect" href="" onclick="openForm('Switch 6'); return false;">
+      <area alt="Switch 7" coords="1369,741,1471,777" shape="rect" href="" onclick="openForm('Switch 7'); return false;">
+      <area alt="Switch 8" coords="1372,849,1465,888" shape="rect" href="" onclick="openForm('Switch 8'); return false;">
+      <area alt="COV 1" coords="620,527,779,590" shape="rect" href="" onclick="openForm('COV 1'); return false;">
+      <area alt="COV 2" coords="823,533,986,585" shape="rect" href="" onclick="openForm('COV 2'); return false;">
+      <area alt="BCP" coords="287,723,375,757" shape="rect" href="" onclick="openForm('BCP'); return false;">
+      <area alt="PCS" coords="395,723,487,755" shape="rect" href="" onclick="openForm('PCS'); return false;">
+      <area alt="Inverter 1" coords="872,728,964,757" shape="rect" href="" onclick="openForm('Inverter 1'); return false;">
+      <area alt="Inverter 2" coords="872,768,961,795" shape="rect" href="" onclick="openForm('Inverter 2'); return false;">
+      <area alt="Inverter 3" coords="872,804,966,830" shape="rect" href="" onclick="openForm('Inverter 3'); return false;">
+      <area alt="Inverter 4" coords="873,842,959,869" shape="rect" href="" onclick="openForm('Inverter 4'); return false;">
+      <area alt="Inverter 5" coords="868,882,961,906" shape="rect" href="" onclick="openForm('Inverter 5'); return false;">
+      <area alt="Inverter 6" coords="1013,731,1097,755" shape="rect" href="" onclick="openForm('Inverter 6'); return false;">
+      <area alt="Inverter 7" coords="1008,768,1093,790" shape="rect" href="" onclick="openForm('Inverter 7'); return false;">
+      <area alt="Inverter 8" coords="1011,804,1093,829" shape="rect" href="" onclick="openForm('Inverter 8'); return false;">
+      <area alt="Inverter 9" coords="1006,841,1097,866" shape="rect" href="" onclick="openForm('Inverter 9'); return false;">
+      <area alt="Inverter 10" coords="1008,882,1093,903" shape="rect" href="" onclick="openForm('Inverter 10'); return false;">
+      <area alt="DG 1" coords="1582,757,1663,790" shape="rect" href="" onclick="openForm('DG 1'); return false;">
+      <area alt="DG 2" coords="1688,765,1765,792" shape="rect" href="" onclick="openForm('DG 2'); return false;">
+      <area alt="DG Master" coords="1690,889,1772,921" shape="rect" href="" onclick="openForm('DG Master'); return false;">
+      <area alt="Gateway 1" coords="1098,429,1181,466" shape="rect" href="" onclick="openForm('Gateway 1'); return false;">
+      <area alt="Gateway 2" coords="1213,429,1295,468" shape="rect" href="" onclick="openForm('Gateway 2'); return false;">
+      <area alt="Firewall 1" coords="1088,384,1181,417" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
+      <area alt="Firewall 2" coords="1216,384,1292,411" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
+      <area alt="Firewall 3" coords="1429,416,1513,446" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
+      </map>
+  <div id="overlay-container-ko-phaluay" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
 </div>
 
 <div id="map-mae-sariang" class="map-container hidden " style="position:relative; ">
-    <img class="device-img" src="mae-sariang.bmp" usemap="#netmap-mae-sariang" width="1918" height="959" alt="Topology" />
+    <img class="device-img bg-white" src="mae-sariang.bmp" usemap="#netmap-mae-sariang" width="1918" height="959" alt="Topology" />
     <map name="netmap-mae-sariang">
-            <area alt="FireWall 1" coords="208,317,340,343" shape="rect" href="" onclick="openForm('FireWall 1'); return false;">
+       <area alt="FireWall 1" coords="208,317,340,343" shape="rect" href="" onclick="openForm('FireWall 1'); return false;">
       <area alt="PCS-9893(2nd)" coords="207,432,344,460" shape="rect" href="" onclick="openForm('PCS-9893(2nd)'); return false;">
       <area alt="HMI Display 1" coords="689,283,736,338" shape="rect" href="" onclick="openForm('HMI Display 1'); return false;">
       <area alt="HMI Display 2" coords="574,283,621,336" shape="rect" href="" onclick="openForm('HMI Display 2'); return false;">
@@ -220,10 +333,10 @@ h1,h2,h3,th { font-weight: 600; }
   </div>
 
  <div id="map-betong" class="map-container hidden" style="position:relative;">
-    <h4 id="betong-map-title" </h4> 
-       <img id="map-img-betong" class="device-img" src="betong.jpg" usemap="#map-areas-betong" width="1917" height="919" alt="Topology" />
+    <h4 id="betong-map-title"></h4> 
+       <img id="map-img-betong" class="device-img bg-white" src="betong.jpg" usemap="#map-areas-betong" width="1917" height="919" alt="Topology" />
         <map name="map-areas-betong" id="map-areas-betong">
-            <area alt="Operator HMI 24" coords="202,76,364,197" shape="rect" href="" onclick="openForm('Operator HMI 24'); return false;">
+          <area alt="Operator HMI 24" coords="202,76,364,197" shape="rect" href="" onclick="openForm('Operator HMI 24'); return false;">
       <area alt="Operator HMI 27" coords="378,75,755,198" shape="rect" href="" onclick="openForm('Operator HMI 27'); return false;">
       <area alt="ETH Switch 1" coords="835,608,1011,640" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
     <area alt="ETH Switch 2" coords="1046,606,1222,638" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;"> 
@@ -239,33 +352,33 @@ h1,h2,h3,th { font-weight: 600; }
 <div id="summaryPage" class="hidden">
 
   <div class="card toolbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 items-center mt-4">
-    <button class="btn btn-warning mb-1" onclick="showTopology()">⬅️ กลับหน้าหลัก</button>
+    <button class="btn btn-warning mb-1 text-white" onclick="showTopology()">⬅️ กลับหน้าหลัก</button>
 
     <div class="col-span-1 md:col-span-1">
-      <input id="searchInput" type="search" placeholder="🔍 ค้นหาอุปกรณ์..." oninput="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm"/>
+      <input id="searchInput" type="search" placeholder="🔍 ค้นหาอุปกรณ์..." oninput="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-blue-500"/>
     </div>
     <div class="col-span-1 md:col-span-1">
-      <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm">
+      <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm">
         <option value="desc">📉 ชำรุด มาก → น้อย</option>
         <option value="asc">📈 ชำรุด น้อย → มาก</option>
       </select>
     </div>
     <div class="col-span-1 md:col-span-1">
-      <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm">
+      <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm">
         <option value="all">ทั้งหมด</option>
-    <option value="currently-down">⚠️ อุปกรณ์ที่ยังชำรุด</option>
+        <option value="currently-down">⚠️ อุปกรณ์ที่ยังชำรุด</option>
         <option value="down">❎ เคยชำรุด</option>
         <option value="clean">✅ ไม่เคยชำรุด</option>
       </select>
     </div>
     <div class="col-span-1 md:col-span-1">
-      <input id="fromDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm"/>
+      <input id="fromDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm"/>
     </div>
     <div class="col-span-1 md:col-span-1">
-      <input id="toDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-400 shadow-sm"/>
+      <input id="toDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm"/>
     </div>
     <div class="col-span-1 md:col-span-1">
-      <button onclick="resetFilters()" class="btn btn-warning w-full px-3 py-2 rounded-lg shadow-sm">♻️ เคลียร์การตั้งค่า</button>
+      <button onclick="resetFilters()" class="btn btn-warning text-white w-full px-3 py-2 rounded-lg shadow-sm">♻️ เคลียร์การตั้งค่า</button>
     </div>
   </div>
 
@@ -287,7 +400,7 @@ h1,h2,h3,th { font-weight: 600; }
   </div>
 
   <div class="card mt-4">
-    <h3 class="mb-1">📈 กราฟจำนวนครั้งที่ชำรุด</h3>
+    <h3 class="mb-1 text-slate-800">📈 กราฟจำนวนครั้งที่ชำรุด</h3>
     <canvas id="chart" height="100"></canvas>
   </div>
 </div>
@@ -296,92 +409,92 @@ h1,h2,h3,th { font-weight: 600; }
 <div id="overlay" onclick="closeForm()"></div>
 <div id="formModal">
     <div class="row mb-2">
-    <h3 id="formTitle" class="m-0">บันทึกข้อมูล</h3>
+    <h3 id="formTitle" class="m-0 text-xl font-bold text-slate-800">บันทึกข้อมูล</h3>
     <span class="spacer"></span>
-    <button class="btn btn-ghost" onclick="closeForm()">✖ ปิด</button>
+    <button class="btn btn-ghost text-gray-500 hover:text-red-500" onclick="closeForm()">✖ ปิด</button>
     </div>
 
-    <div class="mb-3 p-3 bg-gray-700/50 border border-gray-600 rounded-lg">
+    <div class="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
         <div class="flex justify-between items-center">
             <div>
-                <div id="warrantyStatusDisplay" class="text-sm font-bold">-</div>
-                <div id="assetInfoDisplay" class="text-xs text-gray-400 mt-1">-</div>
+                <div id="warrantyStatusDisplay" class="text-sm font-bold text-slate-700">-</div>
+                <div id="assetInfoDisplay" class="text-xs text-gray-500 mt-1">-</div>
             </div>
-            <button class="btn btn-ghost text-xs" onclick="openAssetModal()">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
+            <button class="btn btn-ghost text-xs border border-gray-200" onclick="openAssetModal()">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
         </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label>ชื่อผู้บันทึก</label>
+        <label class="text-sm font-semibold text-gray-700">ชื่อผู้บันทึก</label>
         <input type="text" id="userName" class="w-full" readOnly/>
       </div>
       <div>
-        <label>สถานะ</label>
+        <label class="text-sm font-semibold text-gray-700">สถานะ</label>
         <select id="status" class="w-full">
           <option value="ok">✅ ใช้งานได้</option>
           <option value="down">❎ ชำรุด</option>
         </select>
       </div>
       <div>
-        <label>วันที่ชำรุด</label>
+        <label class="text-sm font-semibold text-gray-700">วันที่ชำรุด</label>
         <input type="date" id="brokenDate" class="w-full"/>
       </div>
       <div>
-        <label>วันที่ซ่อมแซม</label>
+        <label class="text-sm font-semibold text-gray-700">วันที่ซ่อมแซม</label>
         <input type="date" id="fixedDate" class="w-full"/>
       </div>
       <div class="sm:col-span-2">
-        <label>รายละเอียด</label>
+        <label class="text-sm font-semibold text-gray-700">รายละเอียด</label>
         <textarea id="description" rows="3" class="w-full"></textarea>
       </div>
     </div>
-    <div class="row mt-3">
+    <div class="row mt-4">
     <button class="btn btn-brand" onclick="saveData()" id="saveDataButton">💾 บันทึก</button>
-    <button class="btn btn-warning" onclick="clearCurrentDevice()" id="clearDeviceButton">🗑️ ล้างข้อมูลอุปกรณ์นี้</button>
+    <button class="btn btn-warning text-white" onclick="clearCurrentDevice()" id="clearDeviceButton">🗑️ ล้างข้อมูลอุปกรณ์นี้</button>
     <span class="spacer"></span>
-    <div id="editHint" class="muted hidden">กำลังแก้ไขรายการเดิม…</div>
+    <div id="editHint" class="muted hidden text-orange-600">กำลังแก้ไขรายการเดิม…</div>
     </div>
-    <hr class="border-white/8 mt-3 mb-2">
-    <h3 class="mt-2 mb-1">📜 ประวัติ</h3>
+    <hr class="border-gray-200 mt-4 mb-3">
+    <h3 class="mt-2 mb-2 text-lg text-slate-800">📜 ประวัติ</h3>
     <div id="historySection"></div>
 </div>
 
 <div id="assetModal" >
     <div class="row mb-3">
-        <h3 id="assetFormTitle" class="m-0 text-lg">📋 ข้อมูลทะเบียนทรัพย์สิน</h3>
+        <h3 id="assetFormTitle" class="m-0 text-lg font-bold text-slate-800">📋 ข้อมูลทะเบียนทรัพย์สิน</h3>
         <span class="spacer"></span>
-        <button class="btn btn-ghost" onclick="closeAssetModal()">✖ ปิด</button>
+        <button class="btn btn-ghost hover:text-red-500" onclick="closeAssetModal()">✖ ปิด</button>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-            <label>Serial Number (S/N)</label>
+            <label class="text-sm font-semibold text-gray-700">Serial Number (S/N)</label>
             <input type="text" id="assetSerial" class="w-full"/>
         </div>
         <div>
-            <label>รุ่น (Model)</label>
+            <label class="text-sm font-semibold text-gray-700">รุ่น (Model)</label>
             <input type="text" id="assetModel" class="w-full"/>
         </div>
         <div class="sm:col-span-2">
-            <label>ผู้ผลิต (Manufacturer)</label>
+            <label class="text-sm font-semibold text-gray-700">ผู้ผลิต (Manufacturer)</label>
             <input type="text" id="assetManufacturer" class="w-full"/>
         </div>
-        <hr class="sm:col-span-2 border-white/10 my-1">
+        <hr class="sm:col-span-2 border-gray-200 my-1">
         <div>
-            <label>วันที่เริ่มรับประกัน</label>
+            <label class="text-sm font-semibold text-gray-700">วันที่เริ่มรับประกัน</label>
             <input type="date" id="assetWarrantyStart" class="w-full"/>
         </div>
         <div>
-            <label>จำนวนปีรับประกัน</label>
+            <label class="text-sm font-semibold text-gray-700">จำนวนปีรับประกัน</label>
             <input type="number" id="assetWarrantyYears" class="w-full" min="0" step="1"/>
         </div>
         <div>
-            <label>วันที่หมดรับประกัน</label>
+            <label class="text-sm font-semibold text-gray-700">วันที่หมดรับประกัน</label>
             <input type="date" id="assetWarrantyEnd" class="w-full"/>
         </div>
          <div>
-            <label>สถานะประกัน </label>
-            <input type="text" id="assetWarrantyStatus" class="w-full bg-gray-200! text-gray-700!" readOnly/>
+            <label class="text-sm font-semibold text-gray-700">สถานะประกัน </label>
+            <input type="text" id="assetWarrantyStatus" class="w-full bg-gray-100 text-gray-600" readOnly/>
         </div>
     </div>
     <div class="row mt-4">
@@ -391,14 +504,14 @@ h1,h2,h3,th { font-weight: 600; }
 
 <div id="userModal">
     <div class="row mb-3">
-        <h3 class="m-0 text-lg">⚙️ จัดการสิทธิ์ผู้ใช้งาน</h3>
+        <h3 class="m-0 text-lg font-bold text-slate-800">⚙️ จัดการสิทธิ์ผู้ใช้งาน</h3>
         <span class="spacer"></span>
-        <button class="btn btn-ghost" onclick="closeUserManagement()">✖ ปิด</button>
+        <button class="btn btn-ghost hover:text-red-500" onclick="closeUserManagement()">✖ ปิด</button>
     </div>
-    <div class="text-sm text-gray-400 mb-2">รายชื่อผู้ใช้ทั้งหมดที่เคยเข้าสู่ระบบ</div>
+    <div class="text-sm text-gray-500 mb-2">รายชื่อผู้ใช้ทั้งหมดที่เคยเข้าสู่ระบบ</div>
     
-    <div id="userListContainer" class="flex-1 overflow-y-auto border border-gray-700 rounded-lg p-2 bg-gray-800/50">
-        <div class="text-center py-4 text-gray-500">กำลังโหลดรายชื่อ...</div>
+    <div id="userListContainer" class="flex-1 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
+        <div class="text-center py-4 text-gray-400">กำลังโหลดรายชื่อ...</div>
     </div>
 </div>
 
@@ -414,9 +527,3 @@ h1,h2,h3,th { font-weight: 600; }
 <script src="main.js"></script>
 </body>
 </html>
-
-
-
-
-
-
