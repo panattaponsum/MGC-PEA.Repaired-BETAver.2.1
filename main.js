@@ -273,7 +273,8 @@ function clearForm() {
     fixedDateInput.value = '';
     fixedDateInput.disabled = true; 
     fixedDateInput.placeholder = "บันทึกข้อมูลชำรุดก่อน จึงจะระบุวันซ่อมได้";
-    fixedDateInput.classList.add('bg-gray-600', 'cursor-not-allowed');
+    // --- เปลี่ยนสี Disabled ---
+    fixedDateInput.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
 
     document.getElementById('brokenDate').value = '';
     document.getElementById('description').value = '';
@@ -281,7 +282,6 @@ function clearForm() {
     editIndex = -1;
     document.getElementById('editHint').classList.add('hidden');
 }
-
 function isValidDate(str) {
 if (!str) return false;
 const d = new Date(str);
@@ -404,75 +404,75 @@ infoEl.innerHTML = 'กรุณาคลิก "ดู/แก้ไขข้อ
 }
 
 async function loadHistory() {
-const container = document.getElementById('historySection');
-container.innerHTML = '';
-if (!currentDevice) return;
+    const container = document.getElementById('historySection');
+    container.innerHTML = '';
+    if (!currentDevice) return;
 
-const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
-let docData = null, records = [], assetInfo = null;
+    const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
+    let docData = null, records = [], assetInfo = null;
 
-try {   const snap = await docRef.get({ source: 'server' }); 
-if (snap.exists) { docData = snap.data(); records = docData.records || []; assetInfo = docData.assetInfo || null; }
-} catch (e) { console.error("Error fetching device:", e); container.innerHTML = '<p>Error loading data</p>'; return; }
+    try {   const snap = await docRef.get({ source: 'server' }); 
+    if (snap.exists) { docData = snap.data(); records = docData.records || []; assetInfo = docData.assetInfo || null; }
+    } catch (e) { console.error("Error fetching device:", e); container.innerHTML = '<p>Error loading data</p>'; return; }
 
-updateAssetDisplays(assetInfo);
-records.sort((a, b) => b.ts - a.ts); 
-if (records.length === 0) {
-container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>';
-return;
-}
-
-// Check perms for buttons in history
-const canEdit = (currentUserRole === 'editor' || currentUserRole === 'admin') ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
-
-let isCurrentBrokenFound = false; 
-const totalRecords = records.length;
-
-records.forEach((r, index) => {
-    const recordSequence = totalRecords - index; 
-    let duration = '-';
-    if (r.brokenDate) {
-        if (r.fixedDate) {
-            const days = calculateDaysDifference(r.brokenDate, r.fixedDate);
-            duration = formatDuration(days);
-        } else if (!r.fixedDate && !isCurrentBrokenFound) { 
-            const days = calculateDaysDifference(r.brokenDate, null);
-            duration = formatDuration(days) + ' <span class="text-sm text-red-400 font-semibold">(ชำรุด)</span>';
-            isCurrentBrokenFound = true; 
-        } else {
-            const days = calculateDaysDifference(r.brokenDate, null);
-            duration = formatDuration(days);
-        }
+    updateAssetDisplays(assetInfo);
+    records.sort((a, b) => b.ts - a.ts); 
+    if (records.length === 0) {
+    container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>';
+    return;
     }
 
-    const statusClass = r.status === 'ok' ? 'tag-ok' : 'tag-bad';
-    const statusText = r.status === 'ok' ? '✅ ใช้งานได้' : '❎ ชำรุด';
-    const div = document.createElement('div');
-    div.className = 'p-4 mb-3 border border-gray-700 bg-gray-800 rounded-lg shadow-md'; 
+    const canEdit = (currentUserRole === 'editor' || currentUserRole === 'admin') ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
 
-    div.innerHTML = `
-           <div class="flex justify-between items-start border-b border-gray-700 pb-2 mb-2">
-               <div class="text-lg font-bold text-white">
-                   <span class="tag ${statusClass}">${statusText}</span>
-                    <span class="ml-2 text-base text-gray-300"> | ครั้งที่ ${recordSequence}</span>
-               </div>
-               <div class="text-sm text-gray-400">
-                   โดย: <span class="font-semibold text-white">${escapeHtml(r.user || 'ไม่ระบุ')}</span>
-               </div>
-           </div>
-           <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-300">
-               <div>วันที่ชำรุด: ${r.brokenDate || '-'}</div>
-               <div>วันที่ซ่อม: ${r.fixedDate || '-'}</div>
-               <div class="col-span-2 text-red-300">ระยะเวลา: ${duration}</div>
-           </div>
-           <div class="mt-3 text-sm text-gray-300 italic">"${escapeHtml(r.description || '-')}"</div>
-           <div class="mt-4 flex justify-end space-x-2">
-               <button class="btn btn-ghost text-yellow-500 hover:bg-gray-700" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
-               <button class="btn btn-danger text-white-500 hover:bg-gray-700" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
-           </div>
-       `;
-    container.appendChild(div);
-});
+    let isCurrentBrokenFound = false; 
+    const totalRecords = records.length;
+
+    records.forEach((r, index) => {
+        const recordSequence = totalRecords - index; 
+        let duration = '-';
+        if (r.brokenDate) {
+            if (r.fixedDate) {
+                const days = calculateDaysDifference(r.brokenDate, r.fixedDate);
+                duration = formatDuration(days);
+            } else if (!r.fixedDate && !isCurrentBrokenFound) { 
+                const days = calculateDaysDifference(r.brokenDate, null);
+                duration = formatDuration(days) + ' <span class="text-sm text-red-500 font-semibold">(ชำรุด)</span>';
+                isCurrentBrokenFound = true; 
+            } else {
+                const days = calculateDaysDifference(r.brokenDate, null);
+                duration = formatDuration(days);
+            }
+        }
+
+        const statusClass = r.status === 'ok' ? 'tag-ok' : 'tag-bad';
+        const statusText = r.status === 'ok' ? '✅ ใช้งานได้' : '❎ ชำรุด';
+        const div = document.createElement('div');
+        // --- เปลี่ยน Class ตรงนี้ให้เป็น Light Theme ---
+        div.className = 'p-4 mb-3 border border-gray-200 bg-white rounded-lg shadow-sm'; 
+
+        div.innerHTML = `
+            <div class="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
+                <div class="text-lg font-bold text-slate-800">
+                    <span class="tag ${statusClass}">${statusText}</span>
+                        <span class="ml-2 text-base text-gray-500"> | ครั้งที่ ${recordSequence}</span>
+                </div>
+                <div class="text-sm text-gray-500">
+                    โดย: <span class="font-semibold text-slate-700">${escapeHtml(r.user || 'ไม่ระบุ')}</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
+                <div>วันที่ชำรุด: ${r.brokenDate || '-'}</div>
+                <div>วันที่ซ่อม: ${r.fixedDate || '-'}</div>
+                <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
+            </div>
+            <div class="mt-3 text-sm text-gray-700 italic">"${escapeHtml(r.description || '-')}"</div>
+            <div class="mt-4 flex justify-end space-x-2">
+                <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
+                <button class="btn btn-ghost text-red-600 hover:bg-red-50" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
 }
 
 window.deleteRecord = async function(ts) {
@@ -510,7 +510,7 @@ window.editRecord = async function(ts) {
     statusSelect.value = r.status || 'down';
     statusSelect.disabled = false; 
     fixedDateInput.disabled = false;
-    fixedDateInput.classList.remove('bg-gray-600', 'cursor-not-allowed');
+    fixedDateInput.classList.remove('bg-gray-200', 'cursor-not-allowed');
     fixedDateInput.placeholder = "";
     document.getElementById('brokenDate').value = r.brokenDate || '';
     document.getElementById('fixedDate').value = r.fixedDate || '';
@@ -682,7 +682,7 @@ window.loadUsers = async function() {
             const isMe = (email === currentUser.email);
             
             const div = document.createElement('div');
-            div.className = 'user-item bg-gray-900/50 rounded mb-2';
+            div.className = 'user-item bg-white rounded mb-2 shadow-sm border border-gray-100';
             
             // Dropdown options
             const roleOptions = `
@@ -828,19 +828,20 @@ window.updateDeviceSummary = async function() {
     tbody.innerHTML = '';
 
     if (summary.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-400">ไม่พบข้อมูลอุปกรณ์ตามเงื่อนไขที่เลือก</td></tr>'; 
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">ไม่พบข้อมูลอุปกรณ์ตามเงื่อนไขที่เลือก</td></tr>'; 
     } else {
         pageData.forEach(s => {
             const tr = document.createElement('tr');
-            tr.className = 'border-t border-white/10 hover:bg-white/5 cursor-pointer'; 
+            // --- เปลี่ยน Class Table Row ---
+            tr.className = 'border-t border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors'; 
             tr.innerHTML = `
-                <td class="text-left font-medium">${escapeHtml(s.device)}</td>
+                <td class="text-left font-medium text-slate-800">${escapeHtml(s.device)}</td>
                 <td><span class="${s.count > 0 ? 'tag tag-bad' : 'tag tag-ok'}">${s.count} / ${s.remaining}</span></td> 
                 <td>${s.brokenDate}</td>
                 <td>${s.fixedDate}</td>
                 <td><span class="${s.status.includes('ชำรุด') ? 'tag tag-bad' : 'tag tag-ok'}">${s.status}</span></td>
-                <td class="font-semibold text-center">${s.latestBrokenDuration}</td>
-                <td class="text-left text-sm text-gray-300 max-w-[200px] whitespace-normal">${escapeHtml(s.latestDescription || '-')}</td>
+                <td class="font-semibold text-center text-slate-700">${s.latestBrokenDuration}</td>
+                <td class="text-left text-sm text-gray-500 max-w-[200px] whitespace-normal">${escapeHtml(s.latestDescription || '-')}</td>
             `;
             tr.addEventListener('click', () => window.openForm(s.device)); 
             tbody.appendChild(tr);
@@ -1443,5 +1444,6 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
