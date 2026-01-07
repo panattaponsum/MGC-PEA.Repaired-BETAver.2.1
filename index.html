@@ -228,22 +228,30 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
             <button id="logoutButton" class="btn btn-danger text-white">Logout</button>
         </div>
 </div>
-      <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-3/4 max-h-[80vh] overflow-y-auto">
-        <h2 class="text-xl font-bold mb-4">📜 Log</h2>
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-gray-100">
-                    <th class="p-2 border">วัน-เวลา</th>
-                    <th class="p-2 border">ผู้ใช้งาน</th>
-                    <th class="p-2 border">การกระทำ</th>
-                    <th class="p-2 border">รายละเอียด</th>
-                </tr>
-            </thead>
-            <tbody id="logTableBody">
-                </tbody>
-        </table>
-        <button onclick="closeLogModal()" class="mt-4 btn btn-secondary">ปิด</button>
+     <button id="showLogBtn" class="btn btn-secondary hidden" onclick="showActivityLogs()">📜Log</button>
+
+<div id="logModal" class="hidden fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-3/4 max-h-[80vh] flex flex-col">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📜 ประวัติการใช้งานระบบ (Log)</h2>
+        
+        <div class="overflow-y-auto flex-1 border border-gray-200 rounded-lg">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-gray-100 shadow-sm">
+                    <tr>
+                        <th class="p-2 border text-sm">วัน-เวลา</th>
+                        <th class="p-2 border text-sm">ผู้ใช้งาน</th>
+                        <th class="p-2 border text-sm">การกระทำ</th>
+                        <th class="p-2 border text-sm">รายละเอียด</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody" class="divide-y divide-gray-100">
+                    </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-4 flex justify-end">
+            <button onclick="closeLogModal()" class="btn btn-secondary">ปิดหน้าต่าง</button>
+        </div>
     </div>
 </div>
    <div class="spacer"></div>
@@ -545,6 +553,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
