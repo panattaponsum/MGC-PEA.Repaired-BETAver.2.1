@@ -249,10 +249,6 @@ async function createLog(action, details) {
         details: details,
         siteKey: currentSiteKey
     });
-    console.log("Activity logged successfully");
-    } catch (error) {
-        console.error("Error creating log: ", error);
-    }
 }
 
 // ลบ Log ที่เก่ากว่า 6 เดือน (Retention Policy)
@@ -1573,6 +1569,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
