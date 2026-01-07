@@ -423,7 +423,7 @@ window.saveData = async function() {
     }
 
     Swal.fire("บันทึกเรียบร้อย", "", "success");
-    await createLog("UPDATE_STATUS", "เปลี่ยนสถานะ " + deviceName + " เป็น " + status);
+    await createLog("UPDATE_STATUS", "เปลี่ยนสถานะ " + currentDevice + " เป็น " + (status === 'down' ? 'ชำรุด' : 'ใช้งานได้'));
     return true;
     
 };
@@ -796,14 +796,14 @@ window.changeUserRole = async function(email, newRole) {
         await db.collection('users').doc(email).update({ role: newRole });
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
         Toast.fire({ icon: 'success', title: `ปรับสิทธิ์ ${email} เป็น ${newRole} แล้ว` });
-        
+     await createLog("USER_MANAGEMENT", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole}`);
         // Reload list to confirm
         loadUsers(); 
     } catch (error) {
         Swal.fire('ผิดพลาด', error.message, 'error');
         loadUsers();
     }
-   await createLog("USER_MANAGEMENT", "แก้ไขสิทธิ์ของ " + targetEmail);
+  
 }
 
 
@@ -1569,6 +1569,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
