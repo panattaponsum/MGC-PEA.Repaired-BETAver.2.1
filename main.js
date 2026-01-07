@@ -295,6 +295,12 @@ function getActionClass(action) {
     if (action.includes('DELETE')) return 'bg-red-100 text-red-700';
     return 'bg-gray-100 text-gray-700';
 }
+window.closeLogModal = function() {
+    const modal = document.getElementById('logModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+};
 
 // =========================================================================
 // UI and Form Functions
@@ -1569,6 +1575,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
