@@ -612,6 +612,7 @@ window.deleteRecord = async function(ts) {
     if (idx < 0) return;
     records.splice(idx, 1);
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
+    await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${deletedData.brokenDate || '-'})`);
     loadHistory();
     window.updateDeviceSummary(); 
     window.updateDeviceStatusOverlays(currentSiteKey); 
@@ -1653,6 +1654,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
