@@ -236,9 +236,14 @@ Swal.fire('Login ผิดพลาด', error.message, 'error');
 });
 }
 
-function logout() {
-auth.signOut();
-}
+window.logout = async function() {
+    if (currentUser) {
+        await createLog("AUTH_LOGOUT", "ผู้ใช้กดออกจากระบบ");
+    }
+    auth.signOut().then(() => {
+        location.reload(); // รีเฟรชหน้าเพื่อเคลียร์สถานะ
+    });
+};
 
 // บันทึกกิจกรรม
 async function createLog(action, details) {
@@ -263,6 +268,7 @@ async function cleanOldLogs() {
     const batch = db.batch();
     snapshot.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
+    await createLog("SYSTEM_CLEANUP", `ล้างข้อมูล Log เก่าที่เกิน 6 เดือน (ลบออก ${snapshot.size} รายการ)`);
 }
 window.showActivityLogs = async function() {
     const modal = document.getElementById('logModal');
@@ -462,7 +468,15 @@ window.saveData = async function() {
     }
 
     Swal.fire("บันทึกเรียบร้อย", "", "success");
-    await createLog("UPDATE_STATUS", "เปลี่ยนสถานะ " + currentDevice + " เป็น " + (status === 'down' ? 'ชำรุด' : 'ใช้งานได้'));
+   let logAction = (editIndex >= 0) ? "EDIT_RECORD" : "ADD_RECORD";
+    let logDetail = (editIndex >= 0) ? `แก้ไขข้อมูลประวัติของ ${currentDevice}` : `เพิ่มประวัติการชำรุดใหม่ให้ ${currentDevice}`;
+    
+    // บันทึก Log การบันทึกข้อมูล
+    await createLog(logAction, logDetail);
+
+    // บันทึก Log การเปลี่ยนสถานะ (ถ้ามี)
+    const logStatusText = (statusVal === 'down') ? 'ชำรุด' : 'ใช้งานได้';
+    await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มีสถานะเป็น: ${logStatusText}`);
     return true;
     
 };
@@ -835,7 +849,7 @@ window.changeUserRole = async function(email, newRole) {
         await db.collection('users').doc(email).update({ role: newRole });
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
         Toast.fire({ icon: 'success', title: `ปรับสิทธิ์ ${email} เป็น ${newRole} แล้ว` });
-     await createLog("ADMIN", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole}`);
+     await createLog("ADMIN_MANAGEMENT", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole}`);
         // Reload list to confirm
         loadUsers(); 
     } catch (error) {
@@ -1454,7 +1468,10 @@ auth.onAuthStateChanged(async user => {
             
             // Hardcoded Override (Just in case DB is messed up)
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
+            await createLog("AUTH_LOGIN", `ผู้ใช้เข้าสู่ระบบด้วยสิทธิ์: ${currentUserRole.toUpperCase()}`);
             
+            // ✅ เริ่มนับเวลา Auto Logout 15 นาที
+            startAutoLogoutTimer();
         } catch (e) {
             console.error("Error fetching user role:", e);
             currentUserRole = 'viewer'; // Fallback
@@ -1468,6 +1485,7 @@ auth.onAuthStateChanged(async user => {
         document.getElementById('userInfo').classList.add('hidden');
         document.getElementById('loginButton').classList.remove('hidden');
         toggleWriteAccess(false);
+        stopAutoLogoutTimer();
     }
 });
 
@@ -1489,6 +1507,33 @@ switchSite(initialSiteKey);
 
 });
 
+let logoutTimer;
+
+function startAutoLogoutTimer() {
+    // ล้าง Timer เก่าถ้ามี (ป้องกันการรันซ้อน)
+    if (logoutTimer) clearTimeout(logoutTimer);
+    
+    const fifteenMinutes = 15 * 60 * 1000; // 15 นาที เป็นมิลลิวินาที
+
+    logoutTimer = setTimeout(async () => {
+        if (currentUser) {
+            await createLog("AUTH_TIMEOUT", "ออกจากระบบอัตโนมัติเนื่องจากใช้งานเกิน 15 นาที");
+            
+            Swal.fire({
+                title: 'หมดเวลาใช้งาน',
+                text: 'คุณถูกออกจากระบบอัตโนมัติเนื่องจากเข้าใช้งานครบ 15 นาที',
+                icon: 'warning',
+                confirmButtonText: 'ตกลง'
+            }).then(() => {
+                auth.signOut(); // สั่ง Logout จาก Firebase
+            });
+        }
+    }, fifteenMinutes);
+}
+
+function stopAutoLogoutTimer() {
+    if (logoutTimer) clearTimeout(logoutTimer);
+}
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     Swal.fire({ title: 'กำลังสร้างรายงาน...', didOpen: () => { Swal.showLoading(); } });
@@ -1608,6 +1653,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
