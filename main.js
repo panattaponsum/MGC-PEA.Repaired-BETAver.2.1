@@ -597,6 +597,7 @@ async function loadHistory() {
 window.deleteRecord = async function(ts) {
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') return;
     if (!currentDevice) return;
+
     const result = await Swal.fire({
         title: 'ลบรายการนี้?',
         text: "คุณต้องการลบรายการประวัตินี้จริงหรือไม่?",
@@ -606,18 +607,34 @@ window.deleteRecord = async function(ts) {
         confirmButtonText: 'ใช่, ลบ!',
         cancelButtonText: 'ยกเลิก'
     });
+
     if (!result.isConfirmed) return;
+
     let records = await getDeviceRecords(currentSiteKey, currentDevice);
     const idx = records.findIndex(r => String(r.ts) === String(ts));
+    
     if (idx < 0) return;
+
+    // 1. เก็บข้อมูลรายการที่จะลบไว้ก่อน (เพื่อเอาไปลง Log)
+    const recordToDelete = records[idx];
+    const dateRef = recordToDelete.brokenDate || recordToDelete.fixedDate || "ไม่ระบุวันที่";
+
+    // 2. ลบรายการออกจาก Array
     records.splice(idx, 1);
+
+    // 3. บันทึกกลับลง Firestore
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
-    await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${deletedData.brokenDate || '-'})`);
+
+    // 4. ✅ บันทึก LOG การลบข้อมูล
+    await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${dateRef}) โดยผู้ใช้ ${currentUser.email}`);
+
+    // 5. อัปเดตหน้าจอ
     loadHistory();
     window.updateDeviceSummary(); 
     window.updateDeviceStatusOverlays(currentSiteKey); 
-}
 
+    Swal.fire('ลบข้อมูลเรียบร้อย', '', 'success');
+}
 window.editRecord = async function(ts) {
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') return;
     if (!currentDevice) return;
@@ -1654,6 +1671,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
