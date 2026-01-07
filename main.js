@@ -264,30 +264,63 @@ async function cleanOldLogs() {
     snapshot.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
 }
-async function showActivityLogs() {
-    const logContainer = document.getElementById('logTableBody');
-    logContainer.innerHTML = '<tr><td colspan="4" class="text-center p-4">กำลังโหลด...</td></tr>';
-    document.getElementById('logModal').classList.remove('hidden');
+window.showActivityLogs = async function() {
+    const modal = document.getElementById('logModal');
+    const tableBody = document.getElementById('logTableBody');
+    const filterValue = document.getElementById('logSiteFilter').value; // ดึงค่าจากตัวกรอง
+    
+    if (!modal || !tableBody) return;
 
-    const snapshot = await db.collection("activity_logs")
-        .orderBy("timestamp", "desc")
-        .limit(50) // ดึง 50 รายการล่าสุด
-        .get();
+    modal.classList.remove('hidden');
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>';
 
-    logContainer.innerHTML = '';
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        const time = data.timestamp ? data.timestamp.toDate().toLocaleString('th-TH') : '-';
-        logContainer.innerHTML += `
-            <tr>
-                <td class="p-2 border text-sm">${time}</td>
-                <td class="p-2 border text-sm">${data.userEmail}</td>
-                <td class="p-2 border"><span class="px-2 py-1 rounded text-xs ${getActionClass(data.action)}">${data.action}</span></td>
-                <td class="p-2 border text-sm">${data.details}</td>
-            </tr>
-        `;
-    });
-}
+    try {
+        let query = db.collection("activity_logs").orderBy("timestamp", "desc");
+
+        // ถ้าเลือกไซต์ใดไซต์หนึ่ง ให้ทำการ Filter เพิ่ม
+        if (filterValue !== "all") {
+            query = query.where("siteKey", "==", filterValue);
+        }
+
+        const snapshot = await query.limit(100).get();
+
+        if (snapshot.empty) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-400">ไม่พบประวัติการใช้งาน</td></tr>';
+            return;
+        }
+
+        let html = '';
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
+            
+            // กำหนดสีให้ SiteKey เพื่อให้อ่านง่าย
+            let siteBadge = 'text-gray-500';
+            if(d.siteKey === 'ko-phaluay') siteBadge = 'text-blue-600 font-bold';
+            if(d.siteKey === 'mae-sariang') siteBadge = 'text-green-600 font-bold';
+            if(d.siteKey === 'betong') siteBadge = 'text-orange-600 font-bold';
+
+            html += `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-2 text-xs text-slate-500">${time}</td>
+                    <td class="p-2 text-sm">${d.userEmail || 'System'}</td>
+                    <td class="p-2 text-xs ${siteBadge}">${d.siteKey || '-'}</td> 
+                    <td class="p-2 text-xs">
+                        <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-bold uppercase">${d.action}</span>
+                    </td>
+                    <td class="p-2 text-sm text-slate-600">${d.details}</td>
+                </tr>
+            `;
+        });
+        tableBody.innerHTML = html;
+
+    } catch (error) {
+        console.error("Log error:", error);
+        // หากเกิด Error เกี่ยวกับ Index (เพราะมีการ Filter + Sort) 
+        // ให้กดลิงก์ใน Console เพื่อสร้าง Index เพิ่มเติมได้เลยครับ
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">Error: ${error.message}</td></tr>`;
+    }
+};
 
 function getActionClass(action) {
     if (action.includes('UPDATE')) return 'bg-blue-100 text-blue-700';
@@ -1575,6 +1608,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
