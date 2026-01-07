@@ -626,7 +626,7 @@ window.deleteRecord = async function(ts) {
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
 
     // 4. ✅ บันทึก LOG การลบข้อมูล
-    await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${dateRef}) โดยผู้ใช้ ${currentUser.email}`);
+    await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${dateRef})`);
 
     // 5. อัปเดตหน้าจอ
     loadHistory();
@@ -1671,6 +1671,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
