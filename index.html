@@ -228,6 +228,24 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
             <button id="logoutButton" class="btn btn-danger text-white">Logout</button>
         </div>
 </div>
+      <div id="logModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-3/4 max-h-[80vh] overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">📜 Log</h2>
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="p-2 border">วัน-เวลา</th>
+                    <th class="p-2 border">ผู้ใช้งาน</th>
+                    <th class="p-2 border">การกระทำ</th>
+                    <th class="p-2 border">รายละเอียด</th>
+                </tr>
+            </thead>
+            <tbody id="logTableBody">
+                </tbody>
+        </table>
+        <button onclick="closeLogModal()" class="mt-4 btn btn-secondary">ปิด</button>
+    </div>
+</div>
    <div class="spacer"></div>
    <button class="btn btn-ghost border border-gray-300" onclick="showSummary()">📊Status</button>
    <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
@@ -527,6 +545,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
