@@ -207,63 +207,59 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 </header>
 
 <main class="max-w-[1400px] mx-auto px-4 py-6">
-
-<div id="topologyPage" >
-  <div class="card row mb-2 flex flex-wrap items-center justify-start gap-2 px-4 py-3 bg-white rounded-xl shadow-sm"> 
-     <div class="flex items-center gap-2"> 
+  <div id="topologyPage">
+    <div class="card row mb-2 flex flex-wrap items-center justify-start gap-2 px-4 py-3 bg-white rounded-xl shadow-sm">
+      
+      <div class="flex items-center gap-2">
         <label for="location-select" class="text-slate-700 font-semibold text-sm whitespace-nowrap">เลือกสถานที่ 🔎:</label>
-        <select id="location-select" class="toolbar-select w-50"> 
-            <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
-            <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
-            <option value="betong">ไมโครกริดอำเภอเบตง</option>
+        <select id="location-select" class="toolbar-select w-50">
+          <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
+          <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
+          <option value="betong">ไมโครกริดอำเภอเบตง</option>
         </select>
-    </div>
+      </div>
 
-<div id="authContainer" class="ml-4">
+      <div id="authContainer" class="flex items-center gap-2">
         <button id="loginButton" class="btn btn-ghost border-yellow-500 text-yellow-600 hover:bg-yellow-50">🔒 Login with Google</button>
-        <div id="userInfo" class="hidden items-center gap-2">
-            <span id="userNameDisplay" class="text-sm text-slate-700 font-medium"></span>
-            <span id="userRoleDisplay" class="tag tag-ok text-xs">Viewer</span> 
-            <button id="manageUsersBtn" class="btn btn-warning text-white hidden" onclick="openUserManagement()">⚙️จัดการ</button> 
-            <button id="logoutButton" class="btn btn-danger text-white">Logout</button>
+        <div id="userInfo" class="hidden flex items-center gap-2">
+          <span id="userNameDisplay" class="text-sm text-slate-700 font-medium"></span>
+          <span id="userRoleDisplay" class="tag tag-ok text-xs">Viewer</span>
+          <button id="manageUsersBtn" class="btn btn-warning text-white hidden" onclick="openUserManagement()">⚙️จัดการ</button>
+          <button id="logoutButton" class="btn btn-danger text-white">Logout</button>
         </div>
+      </div>
 
-     <button id="showLogBtn" class="btn btn-secondary" onclick="showActivityLogs()">📜Log</button>
+      <button id="showLogBtn" class="btn btn-secondary hidden" onclick="showActivityLogs()">📜 Log</button>
+      <button class="btn btn-ghost border border-gray-300" onclick="showSummary()">📊 Status</button>
+      <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
+      <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
+      <label class="btn btn-warning text-white cursor-pointer" id="importButtonLabel">📥 Import
+        <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
+      </label>
 
-<div id="logModal" class="hidden fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-3/4 max-h-[80vh] flex flex-col">
+    </div> <div id="logModal" class="hidden fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white p-6 rounded-lg w-3/4 max-h-[80vh] flex flex-col">
         <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📜 ประวัติการใช้งานระบบ (Log)</h2>
-        
         <div class="overflow-y-auto flex-1 border border-gray-200 rounded-lg">
-            <table class="w-full text-left border-collapse">
-                <thead class="sticky top-0 bg-gray-100 shadow-sm">
-                    <tr>
-                        <th class="p-2 border text-sm">วัน-เวลา</th>
-                        <th class="p-2 border text-sm">ผู้ใช้งาน</th>
-                        <th class="p-2 border text-sm">การกระทำ</th>
-                        <th class="p-2 border text-sm">รายละเอียด</th>
-                    </tr>
-                </thead>
-                <tbody id="logTableBody" class="divide-y divide-gray-100">
-                    </tbody>
-            </table>
+          <table class="w-full text-left border-collapse">
+            <thead class="sticky top-0 bg-gray-100 shadow-sm">
+              <tr>
+                <th class="p-2 border text-sm">วัน-เวลา</th>
+                <th class="p-2 border text-sm">ผู้ใช้งาน</th>
+                <th class="p-2 border text-sm">การกระทำ</th>
+                <th class="p-2 border text-sm">รายละเอียด</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody" class="divide-y divide-gray-100"></tbody>
+          </table>
         </div>
-        
         <div class="mt-4 flex justify-end">
-            <button onclick="closeLogModal()" class="btn btn-secondary">ปิดหน้าต่าง</button>
+          <button onclick="closeLogModal()" class="btn btn-secondary">ปิดหน้าต่าง</button>
         </div>
+      </div>
     </div>
-</div>
-   
-   <button class="btn btn-ghost border border-gray-300" onclick="showSummary()">📊Status</button>
-   <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
-    <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
-    <label class="btn btn-warning text-white" id="importButtonLabel">📥 Import
-      <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
-    </label>
-  </div>
-  </div>
 
+  </div> </main>
     
 <div id="map-ko-phaluay" class="map-container" style="position:relative;">
   <img class="device-img bg-white" src="phaluay.png" usemap="#netmap" width="1903" height="1041" alt="Topology" />
@@ -553,6 +549,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
