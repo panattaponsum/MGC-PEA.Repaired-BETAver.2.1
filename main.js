@@ -75,22 +75,30 @@ return recs;
 
 /** Saves the updated records array back to Firestore. */
 async function saveDeviceRecords(siteKey, device, records) {
-for (const r of records) {
-if (typeof r.counted === 'undefined') r.counted = (r.status === 'down');
-}
-records.sort((a, b) => a.ts - b.ts);
-const latestRecord = records[records.length - 1];
-const downCount = records.filter(r => r.counted).length;
-const currentStatus = latestRecord ? latestRecord.status : 'ok';
-const docRef = getSiteCollection(siteKey).doc(device);
+    // 1. ตรวจสอบว่ามี Down ที่ยังไม่ได้แก้หรือไม่ (Logic ใหม่)
+    const hasUnresolvedIssues = records.some(r => {
+        // เช็คว่าเป็นสถานะ Down และ ไม่มีวันที่ซ่อม
+        return r.status === 'down' && 
+               (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null');
+    });
 
-await docRef.set({ 
-records, 
-downCount,
-currentStatus: currentStatus 
-}, { merge: true });
-}
+    for (const r of records) {
+        if (typeof r.counted === 'undefined') r.counted = (r.status === 'down');
+    }
+    
+    records.sort((a, b) => a.ts - b.ts);
+    // ใหม่: ถ้ามีรายการค้าง (Unresolved) ให้สถานะเป็น down ทันที, ถ้าไม่มีให้เป็น ok
+    const currentStatus = hasUnresolvedIssues ? 'down' : 'ok';
+    
+    const downCount = records.filter(r => r.counted).length;
+    const docRef = getSiteCollection(siteKey).doc(device);
 
+    await docRef.set({ 
+        records, 
+        downCount,
+        currentStatus: currentStatus 
+    }, { merge: true });
+}
 async function getAllDevicesDocs(siteKey) {
 return await getSiteCollection(siteKey).get();
 }
@@ -996,23 +1004,24 @@ async function processAndSaveImport(assetsToImport, recordsToImport) {
             const finalRecords = Array.from(finalRecordsMap.values());
             finalRecords.sort((a, b) => a.ts - b.ts);
             const downCount = finalRecords.filter(r => r.counted).length; 
-            const isUnresolved = (r) => {
+          const isUnresolved = (r) => {
                 if (r.status !== 'down') return false; 
                 return !r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null';
             };
-            const remainingDownRecords = finalRecords.filter(r => isUnresolved(r));
-            let currentStatus = 'ok';
-            if (remainingDownRecords.length > 0) currentStatus = 'down'; 
-            else {
-                const latestRecord = finalRecords.length > 0 ? finalRecords[finalRecords.length - 1] : null;
-                currentStatus = latestRecord ? latestRecord.status : 'ok';
-            }
+            
+            // เช็คว่ามีรายการค้างหรือไม่
+            const hasUnresolvedIssues = finalRecords.some(r => isUnresolved(r));
+            
+            // ถ้ามีค้าง ให้เป็น down, ถ้าไม่มี ให้เป็น ok
+            const currentStatus = hasUnresolvedIssues ? 'down' : 'ok';
+            // ------------------------
+
             batch.set(docRef, {
                 assetInfo: finalAssetInfo,
                 records: finalRecords,
                 downCount: downCount,
                 currentStatus: currentStatus
-            }); 
+            });
         }
         await batch.commit();
         window.updateDeviceSummary();
@@ -1448,6 +1457,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
