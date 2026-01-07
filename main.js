@@ -409,7 +409,7 @@ window.saveData = async function() {
     let statusVal = document.getElementById('status').value;
     const brokenDate = document.getElementById('brokenDate').value;
     const fixedDate = document.getElementById('fixedDate').value;
-
+    const isEditing = editIndex >= 0;
     if (isValidDate(brokenDate) && isValidDate(fixedDate)) {
         statusVal = 'ok';
     }
@@ -468,17 +468,17 @@ window.saveData = async function() {
     }
 
     Swal.fire("บันทึกเรียบร้อย", "", "success");
-   let logAction = (editIndex >= 0) ? "EDIT_RECORD" : "ADD_RECORD";
-    let logDetail = (editIndex >= 0) ? `แก้ไขข้อมูลประวัติของ ${currentDevice}` : `เพิ่มประวัติการชำรุดใหม่ให้ ${currentDevice}`;
     
-    // บันทึก Log การบันทึกข้อมูล
+  let logAction = isEditing ? "EDIT_RECORD" : "ADD_RECORD";
+    let logDetail = isEditing 
+        ? `แก้ไขข้อมูลประวัติของ ${currentDevice}` 
+        : `เพิ่มประวัติการชำรุดใหม่ให้ ${currentDevice}`;
+    
     await createLog(logAction, logDetail);
 
-    // บันทึก Log การเปลี่ยนสถานะ (ถ้ามี)
     const logStatusText = (statusVal === 'down') ? 'ชำรุด' : 'ใช้งานได้';
     await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มีสถานะเป็น: ${logStatusText}`);
     return true;
-    
 };
 
 window.clearCurrentDevice = async function() {
@@ -1653,6 +1653,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
