@@ -796,7 +796,7 @@ window.changeUserRole = async function(email, newRole) {
         await db.collection('users').doc(email).update({ role: newRole });
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
         Toast.fire({ icon: 'success', title: `ปรับสิทธิ์ ${email} เป็น ${newRole} แล้ว` });
-     await createLog("USER_MANAGEMENT", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole}`);
+     await createLog("ADMIN", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole}`);
         // Reload list to confirm
         loadUsers(); 
     } catch (error) {
@@ -1569,6 +1569,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
