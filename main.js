@@ -240,6 +240,66 @@ function logout() {
 auth.signOut();
 }
 
+// บันทึกกิจกรรม
+async function createLog(action, details) {
+    await db.collection("activity_logs").add({
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        userEmail: currentUser ? currentUser.email : "Unknown",
+        action: action,
+        details: details,
+        siteKey: currentSiteKey
+    });
+    console.log("Activity logged successfully");
+    } catch (error) {
+        console.error("Error creating log: ", error);
+    }
+}
+
+// ลบ Log ที่เก่ากว่า 6 เดือน (Retention Policy)
+async function cleanOldLogs() {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const snapshot = await db.collection("activity_logs")
+        .where("timestamp", "<", sixMonthsAgo)
+        .get();
+
+    const batch = db.batch();
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+}
+async function showActivityLogs() {
+    const logContainer = document.getElementById('logTableBody');
+    logContainer.innerHTML = '<tr><td colspan="4" class="text-center p-4">กำลังโหลด...</td></tr>';
+    document.getElementById('logModal').classList.remove('hidden');
+
+    const snapshot = await db.collection("activity_logs")
+        .orderBy("timestamp", "desc")
+        .limit(50) // ดึง 50 รายการล่าสุด
+        .get();
+
+    logContainer.innerHTML = '';
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        const time = data.timestamp ? data.timestamp.toDate().toLocaleString('th-TH') : '-';
+        logContainer.innerHTML += `
+            <tr>
+                <td class="p-2 border text-sm">${time}</td>
+                <td class="p-2 border text-sm">${data.userEmail}</td>
+                <td class="p-2 border"><span class="px-2 py-1 rounded text-xs ${getActionClass(data.action)}">${data.action}</span></td>
+                <td class="p-2 border text-sm">${data.details}</td>
+            </tr>
+        `;
+    });
+}
+
+function getActionClass(action) {
+    if (action.includes('UPDATE')) return 'bg-blue-100 text-blue-700';
+    if (action.includes('EDIT')) return 'bg-yellow-100 text-yellow-700';
+    if (action.includes('DELETE')) return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-700';
+}
+
 // =========================================================================
 // UI and Form Functions
 // =========================================================================
@@ -358,7 +418,7 @@ window.saveData = async function() {
     await loadHistory();
     window.updateDeviceSummary(); 
     window.updateDeviceStatusOverlays(currentSiteKey); 
-
+   
     if (statusVal === 'down' && editIndex < 0) { 
         sendEmailNotify('down', currentDevice, baseRec.description, baseRec.user, baseRec.brokenDate, records.filter(r => r.counted).length);
     }
@@ -367,7 +427,9 @@ window.saveData = async function() {
     }
 
     Swal.fire("บันทึกเรียบร้อย", "", "success");
+    await createLog("UPDATE_STATUS", "เปลี่ยนสถานะ " + deviceName + " เป็น " + status);
     return true;
+    
 };
 
 window.clearCurrentDevice = async function() {
@@ -609,6 +671,7 @@ window.saveAssetData = async function() {
         console.error("Error saving asset:", e);
         Swal.fire('ผิดพลาด', e.message, 'error');
     }
+    await createLog("EDIT_ASSET", "แก้ไขรายละเอียดทรัพย์สินของ " + currentDevice);
 }
 
 function updateAssetWarrantyStatusField() {
@@ -744,6 +807,7 @@ window.changeUserRole = async function(email, newRole) {
         Swal.fire('ผิดพลาด', error.message, 'error');
         loadUsers();
     }
+   await createLog("USER_MANAGEMENT", "แก้ไขสิทธิ์ของ " + targetEmail);
 }
 
 
@@ -1139,69 +1203,121 @@ window.importData = function(event) {
 };
 
 window.exportAllDataExcel = async function() {
-const siteData = sites[currentSiteKey];
-if (!siteData || siteData.devices.length === 0) {
-Swal.fire('แจ้งเตือน', 'ไม่พบอุปกรณ์', 'warning');
-return;
-}
-const docsSnap = await getAllDevicesDocs(currentSiteKey);
-const dataMap = {};
-docsSnap.forEach(d => dataMap[d.id] = d.data());
-const recordsHeader = ['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการชำรุด (ครั้งที่ N)', 'วันที่ชำรุด', 'วันที่ซ่อมแซม', 'ระยะเวลาชำรุด', 'สถานะ', 'คำอธิบาย', 'ผู้บันทึก'];
-const recordsData = [recordsHeader]; 
-const assetHeader = ['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
-const assetData = [assetHeader]; 
+    const siteData = sites[currentSiteKey];
+    if (!siteData || siteData.devices.length === 0) {
+        Swal.fire('แจ้งเตือน', 'ไม่พบอุปกรณ์', 'warning');
+        return;
+    }
 
-for (const devName of siteData.devices) {
-const docData = dataMap[devName];
-const assetInfo = docData?.assetInfo || {}; 
-const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
-let warrantyStatusText = 'N/A';
-switch(warrantyStatus) {
-case 'ok': warrantyStatusText = 'รับประกัน'; break;
-case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break;
-case 'bad': warrantyStatusText = 'หมดประกัน'; break;
-}
-assetData.push([
-devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.manufacturer || '-',
-(assetInfo.warrantyStart || '-').replace(/-/g, '/'), 
-(assetInfo.warrantyEnd || '-').replace(/-/g, '/'),   
-warrantyStatusText
-]);
-if (!docData) continue; 
-const records = docData.records || [];
-records.sort((a, b) => a.ts - b.ts);
-let downCount = 0; 
-records.forEach(r => {
-let duration = '-', sequenceNumber = '-'; 
-if (r.counted) { downCount++; sequenceNumber = downCount; }
-if (r.brokenDate) {
-if (r.fixedDate) {
-const days = calculateDaysDifference(r.brokenDate, r.fixedDate);
-duration = formatDuration(days);
-} else if (r.status === 'down') {
-const days = calculateDaysDifference(r.brokenDate, null); 
-duration = formatDuration(days) + ' (ชำรุด)';
-}
-}
-recordsData.push([
-r.ts || '-', devName, sequenceNumber,
-(r.brokenDate || '-').replace(/-/g, '/'), 
-(r.fixedDate || '-').replace(/-/g, '/'),  
-duration, r.status === 'down' ? 'ชำรุด' : 'ใช้งานได้', r.description || '-', r.user || '-', 
-]);
-});
-}
-if (recordsData.length <= 1 && assetData.length <= 1) {
-Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลใดๆ', 'warning');
-return;
-}
-const wb = XLSX.utils.book_new();
-if (recordsData.length > 1) { const ws_records = XLSX.utils.aoa_to_sheet(recordsData); XLSX.utils.book_append_sheet(wb, ws_records, "ประวัติการชำรุด"); }
-if (assetData.length > 1) { const ws_assets = XLSX.utils.aoa_to_sheet(assetData); XLSX.utils.book_append_sheet(wb, ws_assets, "ข้อมูลทรัพย์สิน"); }
-const fileName = `Device_Export_${siteData.name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-XLSX.writeFile(wb, fileName);
-Swal.fire('ส่งออกสำเร็จ', `ไฟล์ ${fileName} ถูกบันทึกแล้ว`, "success");
+    // --- ส่วนที่ 1: ดึงข้อมูล Asset และ History (เดิม) ---
+    const docsSnap = await getAllDevicesDocs(currentSiteKey);
+    const dataMap = {};
+    docsSnap.forEach(d => dataMap[d.id] = d.data());
+
+    const recordsHeader = ['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการชำรุด (ครั้งที่ N)', 'วันที่ชำรุด', 'วันที่ซ่อมแซม', 'ระยะเวลาชำรุด', 'สถานะ', 'คำอธิบาย', 'ผู้บันทึก'];
+    const recordsData = [recordsHeader]; 
+    const assetHeader = ['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
+    const assetData = [assetHeader]; 
+
+    for (const devName of siteData.devices) {
+        const docData = dataMap[devName];
+        const assetInfo = docData?.assetInfo || {}; 
+        const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
+        let warrantyStatusText = 'N/A';
+        switch(warrantyStatus) {
+            case 'ok': warrantyStatusText = 'รับประกัน'; break;
+            case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break;
+            case 'bad': warrantyStatusText = 'หมดประกัน'; break;
+        }
+        assetData.push([
+            devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.manufacturer || '-',
+            (assetInfo.warrantyStart || '-').replace(/-/g, '/'), 
+            (assetInfo.warrantyEnd || '-').replace(/-/g, '/'),   
+            warrantyStatusText
+        ]);
+
+        if (!docData) continue; 
+        const records = docData.records || [];
+        records.sort((a, b) => a.ts - b.ts);
+        let downCount = 0; 
+        records.forEach(r => {
+            let duration = '-', sequenceNumber = '-'; 
+            if (r.counted) { downCount++; sequenceNumber = downCount; }
+            if (r.brokenDate) {
+                if (r.fixedDate) {
+                    const days = calculateDaysDifference(r.brokenDate, r.fixedDate);
+                    duration = formatDuration(days);
+                } else if (r.status === 'down') {
+                    const days = calculateDaysDifference(r.brokenDate, null); 
+                    duration = formatDuration(days) + ' (ชำรุด)';
+                }
+            }
+            recordsData.push([
+                r.ts || '-', devName, sequenceNumber,
+                (r.brokenDate || '-').replace(/-/g, '/'), 
+                (r.fixedDate || '-').replace(/-/g, '/'),  
+                duration, r.status === 'down' ? 'ชำรุด' : 'ใช้งานได้', r.description || '-', r.user || '-', 
+            ]);
+        });
+    }
+
+    // --- ส่วนที่ 2: เพิ่มการดึงข้อมูล Log (ใหม่สำหรับ Sheet 3) ---
+    const logHeader = ['วัน-เวลา', 'ผู้ใช้งาน', 'การกระทำ', 'รายละเอียด', 'ไซต์'];
+    const logData = [logHeader];
+
+    try {
+        // ดึง Log เฉพาะของไซต์ปัจจุบัน (หรือทั้งหมดตามต้องการ) เรียงจากใหม่ไปเก่า
+        const logSnap = await db.collection("activity_logs")
+            .where("siteKey", "==", currentSiteKey)
+            .orderBy("timestamp", "desc")
+            .limit(1000) // จำกัดไว้ที่ 1,000 รายการล่าสุด
+            .get();
+
+        logSnap.forEach(doc => {
+            const d = doc.data();
+            const timeStr = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
+            logData.push([
+                timeStr,
+                d.userEmail || '-',
+                d.action || '-',
+                d.details || '-',
+                d.siteKey || '-'
+            ]);
+        });
+    } catch (error) {
+        console.error("Error fetching logs for export:", error);
+        // ถ้าดึง Log ไม่ได้ (เช่น สิทธิ์ไม่ถึง) จะข้ามส่วนนี้ไปเพื่อให้ Export ส่วนอื่นได้ต่อ
+    }
+
+    // --- ส่วนที่ 3: สร้างไฟล์ Excel ---
+    if (recordsData.length <= 1 && assetData.length <= 1 && logData.length <= 1) {
+        Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลใดๆ', 'warning');
+        return;
+    }
+
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: ประวัติการชำรุด
+    if (recordsData.length > 1) {
+        const ws_records = XLSX.utils.aoa_to_sheet(recordsData);
+        XLSX.utils.book_append_sheet(wb, ws_records, "ประวัติการชำรุด");
+    }
+
+    // Sheet 2: ข้อมูลทรัพย์สิน
+    if (assetData.length > 1) {
+        const ws_assets = XLSX.utils.aoa_to_sheet(assetData);
+        XLSX.utils.book_append_sheet(wb, ws_assets, "ข้อมูลทรัพย์สิน");
+    }
+
+    // Sheet 3: ประวัติการใช้งาน (Logs)
+    if (logData.length > 1) {
+        const ws_logs = XLSX.utils.aoa_to_sheet(logData);
+        XLSX.utils.book_append_sheet(wb, ws_logs, "ประวัติการใช้งาน");
+    }
+
+    const fileName = `Device_Export_${siteData.name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    Swal.fire('ส่งออกสำเร็จ', `ไฟล์ ${fileName} ถูกบันทึกแล้ว พร้อมข้อมูลประวัติการใช้งาน`, "success");
 };
 
 window.resetFilters = function() {
@@ -1457,6 +1573,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
