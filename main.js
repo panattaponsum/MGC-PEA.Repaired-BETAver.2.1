@@ -1506,15 +1506,13 @@ auth.onAuthStateChanged(async user => {
         document.getElementById('loginButton').classList.add('hidden');
         document.getElementById('userNameDisplay').textContent = `${user.email}`; 
         
-        // Fetch Role from 'users' collection
         try {
             const userRef = db.collection('users').doc(user.email);
             const userSnap = await userRef.get();
             
             if (!userSnap.exists) {
-                // First login: create default 'viewer' record
                 let initialRole = 'viewer';
-                if (user.email === ADMIN_EMAIL) initialRole = 'admin'; // Safety fallback
+                if (user.email === ADMIN_EMAIL) initialRole = 'admin';
                 
                 await userRef.set({
                     email: user.email,
@@ -1526,20 +1524,31 @@ auth.onAuthStateChanged(async user => {
                 currentUserRole = userSnap.data().role || 'viewer';
             }
             
-            // Hardcoded Override (Just in case DB is messed up)
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
-            await createLog("AUTH_LOGIN", `ผู้ใช้เข้าสู่ระบบด้วยสิทธิ์: ${currentUserRole.toUpperCase()}`);
+
+            // --- ส่วนที่แก้ไข: ป้องกัน Log ซ้ำตอน Refresh ---
+            const sessionLogKey = `logged_in_${user.uid}`;
+            if (!sessionStorage.getItem(sessionLogKey)) {
+                await createLog("AUTH_LOGIN", `ผู้ใช้เข้าสู่ระบบด้วยสิทธิ์: ${currentUserRole.toUpperCase()}`);
+                // บันทึกตัวแปรลง Session (หายไปเมื่อปิดแท็บเบราว์เซอร์)
+                sessionStorage.setItem(sessionLogKey, "true");
+            }
+            // ------------------------------------------
             
-            // ✅ เริ่มนับเวลา Auto Logout 15 นาที
             startAutoLogoutTimer();
         } catch (e) {
             console.error("Error fetching user role:", e);
-            currentUserRole = 'viewer'; // Fallback
+            currentUserRole = 'viewer';
         }
 
         toggleWriteAccess(true);
         
     } else {
+        // เมื่อ Logout ให้ลบ Session ล็อคอินทิ้งด้วย เพื่อให้ล็อคอินครั้งหน้าบันทึก Log ใหม่ได้
+        if (currentUser) {
+            sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
+        }
+        
         currentUser = null;
         currentUserRole = 'viewer';
         document.getElementById('userInfo').classList.add('hidden');
@@ -1713,6 +1722,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
