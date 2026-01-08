@@ -278,41 +278,36 @@ async function cleanOldLogs() {
 window.showActivityLogs = async function() {
     const modal = document.getElementById('logModal');
     const tableBody = document.getElementById('logTableBody');
-    const siteFilter = document.getElementById('logSiteFilter').value;
-    const actionFilter = document.getElementById('logActionFilter').value; // ค่าจากตัวกรองใหม่
+    const siteFilter = document.getElementById('logSiteFilter').value; // ค่า 'all', 'ko-phaluay', ฯลฯ
+    const actionFilter = document.getElementById('logActionFilter').value;
     
     if (!modal || !tableBody) return;
-
     modal.classList.remove('hidden');
-    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-500">กำลังค้นหาประวัติ...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลด...</td></tr>';
 
     try {
-        let query = db.collection("activity_logs"); // อย่าเพิ่ง orderBy ตรงนี้
+        let query = db.collection("activity_logs");
 
-        // 1. กรองตามสถานที่
+        // 1. จัดการเรื่อง Filter สถานที่ (siteKey)
         if (siteFilter !== "all") {
             query = query.where("siteKey", "==", siteFilter);
         }
 
-        // 2. กรองตามการกระทำ และจัดการเรื่อง orderBy
+        // 2. จัดการเรื่อง Filter การกระทำ (action)
         if (actionFilter !== "all") {
             if (actionFilter === "AUTH") {
-                // เมื่อใช้ >= กับ action ต้อง orderBy action ก่อนเสมอตามกฎ Firestore
                 query = query.where("action", ">=", "AUTH_")
                              .where("action", "<=", "AUTH_\uf8ff")
-                             .orderBy("action") 
-                             .orderBy("timestamp", "desc");
+                             .orderBy("action"); // ต้อง orderBy action ก่อนตามกฎ Firestore
             } else {
-                // ถ้าใช้ == (Equality) สามารถ orderBy timestamp ได้เลยปกติ
-                query = query.where("action", "==", actionFilter)
-                             .orderBy("timestamp", "desc");
+                query = query.where("action", "==", actionFilter);
             }
-        } else {
-            // กรณีเลือก "ทุกการกระทำ"
-            query = query.orderBy("timestamp", "desc");
         }
 
-        const snapshot = await query.limit(100).get();
+        // 3. ตบท้ายด้วยการเรียงเวลา
+        query = query.orderBy("timestamp", "desc").limit(100);
+
+        const snapshot = await query.get();
         if (snapshot.empty) {
             tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic font-light">ไม่พบประวัติการใช้งานตามเงื่อนไขที่เลือก</td></tr>';
             return;
@@ -1577,60 +1572,48 @@ switchSite(initialSiteKey);
 });
 let logoutTimer; // ตัวแปรสำหรับฟังก์ชัน logout เดิม
 let countdownInterval; // ตัวแปรใหม่สำหรับนับถอยหลังวินาที
-const LOGOUT_TIME_LIMIT = 15 * 60 * 1000; // 15 นาที ในรูปแบบมิลลิวินาที
+const LOGOUT_TIME_LIMIT = 15 * 60 * 1000; // 15 นาที
 
 window.startAutoLogoutTimer = function() {
-    // ลบ Timer เก่าก่อนเริ่มใหม่
     stopAutoLogoutTimer();
 
-    let timeLeft = LOGOUT_TIME_LIMIT / 1000; // แปลงเป็นวินาที (900 วินาที)
+    // 1. เช็คว่ามีเวลาที่บันทึกไว้เดิมไหม ถ้าไม่มีให้สร้างใหม่ (Now + 15 min)
+    let expirationTime = localStorage.getItem('logoutExpiration');
+    if (!expirationTime) {
+        expirationTime = Date.now() + LOGOUT_TIME_LIMIT;
+        localStorage.setItem('logoutExpiration', expirationTime);
+    }
 
-    // ฟังก์ชันอัปเดตหน้าจอทุกวินาที
     countdownInterval = setInterval(() => {
-        timeLeft--;
-        
+        const now = Date.now();
+        let timeLeftMs = expirationTime - now;
+        let timeLeft = Math.ceil(timeLeftMs / 1000);
+
+        if (timeLeft <= 0) {
+            stopAutoLogoutTimer();
+            localStorage.removeItem('logoutExpiration'); // ล้างค่าเมื่อหมดเวลา
+            logout();
+            return;
+        }
+
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
 
-        // อัปเดตตัวเลขบนหน้าเว็บ
         const minElem = document.getElementById('timerMinutes');
         const secElem = document.getElementById('timerSeconds');
-        
         if (minElem && secElem) {
             minElem.textContent = minutes.toString().padStart(2, '0');
             secElem.textContent = seconds.toString().padStart(2, '0');
         }
-
-        // แจ้งเตือนเมื่อเหลือ 1 นาทีสุดท้าย (เปลี่ยนสีเป็นสีแดงเข้มขึ้น)
-        if (timeLeft <= 60) {
-            const display = document.getElementById('logoutTimerDisplay');
-            if (display) display.classList.add('animate-pulse', 'bg-red-200');
-        }
-
-        if (timeLeft <= 0) {
-            stopAutoLogoutTimer();
-            logout(); // เรียกฟังก์ชัน Logout ที่คุณมีอยู่แล้ว
-        }
     }, 1000);
-
-    // Timer หลักสำหรับสั่ง Logout (กันเหนียว)
-    logoutTimer = setTimeout(() => {
-        logout();
-    }, LOGOUT_TIME_LIMIT);
 };
 
 window.stopAutoLogoutTimer = function() {
-    if (logoutTimer) clearTimeout(logoutTimer);
     if (countdownInterval) clearInterval(countdownInterval);
-    
-    // Reset ตัวเลขหน้าจอ
-    const minElem = document.getElementById('timerMinutes');
-    const secElem = document.getElementById('timerSeconds');
-    if (minElem && secElem) {
-        minElem.textContent = "15";
-        secElem.textContent = "00";
-    }
+    localStorage.removeItem('logoutExpiration');
 };
+
+
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     Swal.fire({ title: 'กำลังสร้างรายงาน...', didOpen: () => { Swal.showLoading(); } });
@@ -1750,6 +1733,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
