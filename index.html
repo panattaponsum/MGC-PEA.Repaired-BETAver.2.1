@@ -240,17 +240,32 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     </div> 
     <div id="logModal" class="hidden fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center">
     <div class="bg-white p-6 rounded-lg w-3/4 max-h-[80vh] flex flex-col">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-wrap items-center justify-between mb-4 gap-4">
             <h2 class="text-xl font-bold flex items-center gap-2">📜 ประวัติการใช้งานระบบ (Log)</h2>
             
-            <div class="flex items-center gap-2 bg-slate-100 p-2 rounded-lg">
-                <label class="text-xs font-bold text-slate-600">กรองตามสถานที่:</label>
-                <select id="logSiteFilter" class="text-sm border-none bg-transparent focus:ring-0" onchange="showActivityLogs()">
-                    <option value="all">ทั้งหมด</option>
-                    <option value="ko-phaluay">เกาะพะลวย</option>
-                    <option value="mae-sariang">แม่สะเรียง</option>
-                    <option value="betong">เบตง</option>
-                </select>
+            <div class="flex flex-wrap items-center gap-2 bg-slate-100 p-2 rounded-lg shadow-sm">
+                <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">สถานที่:</label>
+                    <select id="logSiteFilter" class="text-sm border-none bg-transparent focus:ring-0 cursor-pointer" onchange="showActivityLogs()">
+                        <option value="all">ทุกสถานที่</option>
+                        <option value="ko-phaluay">เกาะพะลวย</option>
+                        <option value="mae-sariang">แม่สะเรียง</option>
+                        <option value="betong">เบตง</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-1 pl-1">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">การกระทำ:</label>
+                    <select id="logActionFilter" class="text-sm border-none bg-transparent focus:ring-0 cursor-pointer" onchange="showActivityLogs()">
+                        <option value="all">ทุกการกระทำ</option>
+                        <option value="AUTH">🔐 การเข้า-ออกระบบ</option>
+                        <option value="UPDATE_STATUS">🔄 เปลี่ยนสถานะอุปกรณ์</option>
+                        <option value="ADD_RECORD">➕ เพิ่มข้อมูลใหม่</option>
+                        <option value="EDIT_RECORD">✏️ แก้ไขข้อมูล</option>
+                        <option value="DELETE_RECORD">❌ การลบข้อมูล</option>
+                        
+                    </select>
+                </div>
             </div>
         </div>
         
@@ -265,10 +280,11 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
                         <th class="p-2 border text-center">รายละเอียด</th>
                     </tr>
                 </thead>
-                <tbody id="logTableBody" class="divide-y divide-gray-100">
-                    </tbody>
+                <tbody id="logTableBody"></tbody>
             </table>
         </div>
+        </div>
+</div>
         
         <div class="mt-4 flex justify-end">
             <button onclick="closeLogModal()" class="btn btn-secondary">ปิดหน้าต่าง</button>
@@ -563,6 +579,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
