@@ -556,29 +556,48 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
   </div>
 </div>
 
-  <div class="card mt-3 overflow-x-auto">
-    <table class="table w-full" id="summaryTable">
+<div class="card bg-white rounded-2xl shadow-sm border border-slate-100 mt-6 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse" id="summaryTable">
       <thead>
-        <tr>
-          <th>อุปกรณ์</th>
-          <th>จำนวนครั้งชำรุด (ทั้งหมด / คงเหลือ)</th>
-           <th>วันที่ชำรุด</th>
-          <th>วันที่ซ่อมแซม</th>
-          <th>สถานะ</th>
-    <th>⚠️ ระยะเวลาชำรุด</th>
-          <th>รายละเอียด</th>
-        </tr> </thead>
-      <tbody id="summaryBody"></tbody>
+        <tr class="bg-slate-800 text-white text-[12px] uppercase tracking-wider font-bold">
+          <th class="p-4 border-b border-slate-700">🛠️ อุปกรณ์</th>
+          <th class="p-4 border-b border-slate-700 text-center">ชำรุด (รวม/ค้าง)</th>
+          <th class="p-4 border-b border-slate-700 text-center">วันที่ชำรุด</th>
+          <th class="p-4 border-b border-slate-700 text-center">วันที่ซ่อม</th>
+          <th class="p-4 border-b border-slate-700 text-center">สถานะ</th>
+          <th class="p-4 border-b border-slate-700 text-center">⚠️ ระยะเวลา</th>
+          <th class="p-4 border-b border-slate-700">รายละเอียด</th>
+        </tr>
+      </thead>
+      <tbody id="summaryBody" class="divide-y divide-slate-100 text-sm">
+        </tbody>
     </table>
-    <div id="pagination"></div>
   </div>
+  
+  <div id="pagination" class="bg-slate-50 px-6 py-3 flex justify-center border-t border-slate-100">
+    </div>
+</div>
 
-  <div class="card mt-4">
-    <h3 class="mb-1 text-slate-800">📈 กราฟจำนวนครั้งที่ชำรุด</h3>
+<div class="card bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mt-6">
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        </svg>
+      </div>
+      <div>
+        <h3 class="font-bold text-slate-800">กราฟวิเคราะห์จำนวนครั้งที่ชำรุด</h3>
+        <p class="text-xs text-slate-400 font-medium uppercase tracking-tighter">Failure Frequency Analysis by Device</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="relative w-full bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-200">
     <canvas id="chart" height="100"></canvas>
   </div>
 </div>
-
 
 <div id="overlay" onclick="closeForm()"></div>
 <div id="formModal">
@@ -701,6 +720,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
