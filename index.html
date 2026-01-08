@@ -491,36 +491,70 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 
 <div id="summaryPage" class="hidden">
 
-  <div class="card toolbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 items-center mt-4">
-    <button class="btn btn-warning mb-1 text-white" onclick="showTopology()">⬅️ กลับหน้าหลัก</button>
-
-    <div class="col-span-1 md:col-span-1">
-      <input id="searchInput" type="search" placeholder="🔍 ค้นหาอุปกรณ์..." oninput="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-blue-500"/>
+<div class="card bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mt-6 overflow-visible">
+  <div class="flex items-center justify-between mb-4 border-b border-slate-50 pb-3">
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-6 bg-amber-400 rounded-full"></div>
+      <h3 class="font-bold text-slate-700">ตัวกรองและค้นหาข้อมูล</h3>
     </div>
-    <div class="col-span-1 md:col-span-1">
-      <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm">
+    <button onclick="showTopology()" class="flex items-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      กลับหน้าหลัก
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+    
+    <div class="lg:col-span-1">
+      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Search</label>
+      <div class="relative">
+        <input id="searchInput" type="search" placeholder="ชื่ออุปกรณ์..." oninput="updateDeviceSummary()" 
+          class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"/>
+        <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Sort By</label>
+      <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer">
         <option value="desc">📉 ชำรุด มาก → น้อย</option>
         <option value="asc">📈 ชำรุด น้อย → มาก</option>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-1">
-      <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm">
+
+    <div>
+      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Status</label>
+      <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer">
         <option value="all">ทั้งหมด</option>
-        <option value="currently-down">⚠️ อุปกรณ์ที่ยังชำรุด</option>
+        <option value="currently-down">⚠️ ยังชำรุดอยู่</option>
         <option value="down">❎ เคยชำรุด</option>
-        <option value="clean">✅ ไม่เคยชำรุด</option>
+        <option value="clean">✅ ปกติ/ไม่เคยชำรุด</option>
       </select>
     </div>
-    <div class="col-span-1 md:col-span-1">
-      <input id="fromDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm"/>
+
+    <div>
+      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">From Date</label>
+      <input id="fromDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:ring-2 focus:ring-blue-500/20"/>
     </div>
-    <div class="col-span-1 md:col-span-1">
-      <input id="toDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 rounded-lg border border-gray-300 shadow-sm"/>
+
+    <div>
+      <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">To Date</label>
+      <input id="toDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:ring-2 focus:ring-blue-500/20"/>
     </div>
-    <div class="col-span-1 md:col-span-1">
-      <button onclick="resetFilters()" class="btn btn-warning text-white w-full px-3 py-2 rounded-lg shadow-sm">♻️ เคลียร์การตั้งค่า</button>
+
+    <div>
+      <button onclick="resetFilters()" class="w-full bg-slate-100 hover:bg-amber-100 hover:text-amber-700 text-slate-500 font-bold py-2 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        ล้างค่า
+      </button>
     </div>
+
   </div>
+</div>
 
   <div class="card mt-3 overflow-x-auto">
     <table class="table w-full" id="summaryTable">
@@ -667,6 +701,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
