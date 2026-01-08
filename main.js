@@ -246,19 +246,30 @@ window.logout = async function() {
 };
 
 // บันทึกกิจกรรม
-async function createLog(action, details, siteKey = null) {
+window.createLog = async function(action, details, siteKey = null) {
+    if (!currentUser) return;
     try {
+        let finalSiteKey = "";
+
+        // ถ้าเป็นรายการเกี่ยวกับ AUTH ไม่ต้องดึงสถานที่ปัจจุบันมาใส่
+        if (action.startsWith("AUTH")) {
+            finalSiteKey = "SYSTEM"; // หรือปล่อยว่าง ""
+        } else {
+            // ถ้าเป็นรายการอื่นๆ ให้ใช้ siteKey ที่ส่งมา หรือใช้สถานที่ปัจจุบันที่หน้าเว็บเปิดอยู่
+            finalSiteKey = siteKey || window.currentSiteKey || "";
+        }
+
         await db.collection("activity_logs").add({
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            userEmail: currentUser ? currentUser.email : "Unknown",
+            userEmail: currentUser.email,
             action: action,
             details: details,
-            siteKey: (siteKey !== null) ? siteKey : (window.currentSiteKey || ""),
+            siteKey: finalSiteKey 
         });
     } catch (e) {
         console.error("Error creating log:", e);
     }
-}
+};
 
 // ลบ Log ที่เก่ากว่า 6 เดือน (Retention Policy)
 async function cleanOldLogs() {
@@ -283,20 +294,19 @@ window.showActivityLogs = async function() {
     
     if (!modal || !tableBody) return;
     modal.classList.remove('hidden');
-    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลดประวัติ...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลด...</td></tr>';
 
     try {
         let query = db.collection("activity_logs");
 
-        // 1. กรองสถานที่ (siteKey) - ต้องสะกดให้ตรงกับที่บันทึก
+        // 1. กรองสถานที่
         if (siteFilter !== "all") {
             query = query.where("siteKey", "==", siteFilter);
         }
 
-        // 2. กรองการกระทำ (action)
+        // 2. กรองการกระทำ
         if (actionFilter !== "all") {
             if (actionFilter === "AUTH") {
-                // ถ้าใช้ช่วงคำสั่ง >= ต้องเรียงลำดับฟิลด์นั้นก่อนเสมอ
                 query = query.where("action", ">=", "AUTH_")
                              .where("action", "<=", "AUTH_\uf8ff")
                              .orderBy("action");
@@ -305,13 +315,12 @@ window.showActivityLogs = async function() {
             }
         }
 
-        // 3. เรียงลำดับเวลา (ต้องมี Composite Index ใน Firebase)
+        // 3. เรียงลำดับเวลา (ต้องใช้ Composite Index)
         query = query.orderBy("timestamp", "desc").limit(100);
 
         const snapshot = await query.get();
-        
         if (snapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic">ไม่พบประวัติข้อมูล</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic">ไม่พบประวัติการใช้งาน</td></tr>';
             return;
         }
 
@@ -320,8 +329,16 @@ window.showActivityLogs = async function() {
             const d = doc.data();
             const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
             
-            // ตรวจสอบชื่อสถานที่จาก Object sites ที่เรามี
-            const siteName = (d.siteKey && sites[d.siteKey]) ? sites[d.siteKey].name.split(' ')[0] : (d.siteKey || '-');
+            // --- แปลง ID สถานที่เป็นชื่อภาษาไทยสั้นๆ ---
+          // ส่วนหนึ่งใน loop snapshot.forEach ของฟังก์ชัน showActivityLogs
+let siteDisplay = "-";
+if (d.siteKey === "SYSTEM") {
+    siteDisplay = `<span class="text-slate-400 italic">ระบบ</span>`; // แสดงว่ามาจากระบบส่วนกลาง
+} else if (d.siteKey && sites[d.siteKey]) {
+    siteDisplay = sites[d.siteKey].name.split(' ')[0].replace('ไมโครกริด', '');
+} else if (d.siteKey) {
+                siteDisplay = d.siteKey;
+            }
 
             let badgeClass = 'bg-slate-100 text-slate-600';
             if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
@@ -330,23 +347,23 @@ window.showActivityLogs = async function() {
             if (d.action.includes("ADD") || d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
 
             html += `
-                <tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="p-2 border text-[11px] text-center">${time}</td>
+                <tr class="hover:bg-slate-50 border-b border-slate-100 text-center">
+                    <td class="p-2 border text-[10px]">${time}</td>
                     <td class="p-2 border text-xs">${d.userEmail || 'System'}</td>
-                    <td class="p-2 border text-xs text-center font-semibold text-blue-600">${siteName}</td>
-                    <td class="p-2 border text-center">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeClass}">${d.action}</span>
+                    <td class="p-2 border text-xs font-semibold text-blue-600">${siteDisplay}</td>
+                    <td class="p-2 border">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${d.action}</span>
                     </td>
-                    <td class="p-2 border text-xs text-slate-600">${d.details}</td>
+                    <td class="p-2 border text-xs text-left text-slate-600">${d.details}</td>
                 </tr>`;
         });
         tableBody.innerHTML = html;
 
     } catch (error) {
         console.error("Log error:", error);
-        // ถ้าขึ้น Error เกี่ยวกับ Index ให้คลิกลิงก์ใน Console (F12)
         tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-red-500 text-xs text-center">
-            เกิดข้อผิดพลาดในการดึงข้อมูล (ตรวจสอบ Index ใน Console)<br>${error.message}
+            เกิดข้อผิดพลาด: ${error.message} <br>
+            <span class="text-blue-500">หากเพิ่งเปิดใช้การกรองครั้งแรก ให้คลิกลิงก์ใน Console เพื่อสร้าง Index</span>
         </td></tr>`;
     }
 };
@@ -1735,6 +1752,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
