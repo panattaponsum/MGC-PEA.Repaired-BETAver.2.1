@@ -1575,34 +1575,62 @@ switchSite(initialSiteKey);
 }
 
 });
+let logoutTimer; // ตัวแปรสำหรับฟังก์ชัน logout เดิม
+let countdownInterval; // ตัวแปรใหม่สำหรับนับถอยหลังวินาที
+const LOGOUT_TIME_LIMIT = 15 * 60 * 1000; // 15 นาที ในรูปแบบมิลลิวินาที
 
-let logoutTimer;
+window.startAutoLogoutTimer = function() {
+    // ลบ Timer เก่าก่อนเริ่มใหม่
+    stopAutoLogoutTimer();
 
-function startAutoLogoutTimer() {
-    // ล้าง Timer เก่าถ้ามี (ป้องกันการรันซ้อน)
-    if (logoutTimer) clearTimeout(logoutTimer);
-    
-    const fifteenMinutes = 15 * 60 * 1000; // 15 นาที เป็นมิลลิวินาที
+    let timeLeft = LOGOUT_TIME_LIMIT / 1000; // แปลงเป็นวินาที (900 วินาที)
 
-    logoutTimer = setTimeout(async () => {
-        if (currentUser) {
-            await createLog("AUTH_TIMEOUT", "ออกจากระบบอัตโนมัติเนื่องจากใช้งานเกิน 15 นาที");
-            
-            Swal.fire({
-                title: 'หมดเวลาใช้งาน',
-                text: 'คุณถูกออกจากระบบอัตโนมัติเนื่องจากเข้าใช้งานครบ 15 นาที',
-                icon: 'warning',
-                confirmButtonText: 'ตกลง'
-            }).then(() => {
-                auth.signOut(); // สั่ง Logout จาก Firebase
-            });
+    // ฟังก์ชันอัปเดตหน้าจอทุกวินาที
+    countdownInterval = setInterval(() => {
+        timeLeft--;
+        
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+
+        // อัปเดตตัวเลขบนหน้าเว็บ
+        const minElem = document.getElementById('timerMinutes');
+        const secElem = document.getElementById('timerSeconds');
+        
+        if (minElem && secElem) {
+            minElem.textContent = minutes.toString().padStart(2, '0');
+            secElem.textContent = seconds.toString().padStart(2, '0');
         }
-    }, fifteenMinutes);
-}
 
-function stopAutoLogoutTimer() {
+        // แจ้งเตือนเมื่อเหลือ 1 นาทีสุดท้าย (เปลี่ยนสีเป็นสีแดงเข้มขึ้น)
+        if (timeLeft <= 60) {
+            const display = document.getElementById('logoutTimerDisplay');
+            if (display) display.classList.add('animate-pulse', 'bg-red-200');
+        }
+
+        if (timeLeft <= 0) {
+            stopAutoLogoutTimer();
+            logout(); // เรียกฟังก์ชัน Logout ที่คุณมีอยู่แล้ว
+        }
+    }, 1000);
+
+    // Timer หลักสำหรับสั่ง Logout (กันเหนียว)
+    logoutTimer = setTimeout(() => {
+        logout();
+    }, LOGOUT_TIME_LIMIT);
+};
+
+window.stopAutoLogoutTimer = function() {
     if (logoutTimer) clearTimeout(logoutTimer);
-}
+    if (countdownInterval) clearInterval(countdownInterval);
+    
+    // Reset ตัวเลขหน้าจอ
+    const minElem = document.getElementById('timerMinutes');
+    const secElem = document.getElementById('timerSeconds');
+    if (minElem && secElem) {
+        minElem.textContent = "15";
+        secElem.textContent = "00";
+    }
+};
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     Swal.fire({ title: 'กำลังสร้างรายงาน...', didOpen: () => { Swal.showLoading(); } });
@@ -1722,6 +1750,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
