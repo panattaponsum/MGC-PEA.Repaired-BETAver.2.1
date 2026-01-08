@@ -251,17 +251,11 @@ window.createLog = async function(action, details, siteKey = null) {
     try {
         let finalSiteKey = "";
 
-        // 1. ถ้าเป็นการ AUTH (Login/Logout) ให้บันทึกเป็น SYSTEM เสมอ
         if (action.startsWith("AUTH")) {
             finalSiteKey = "SYSTEM";
-        } 
-        // 2. ถ้ามีการส่ง siteKey มาโดยตรง (เช่น จากฟังก์ชันเฉพาะ) ให้ใช้ค่านั้น
-        else if (siteKey) {
-            finalSiteKey = siteKey;
-        }
-        // 3. ถ้าไม่มีการส่งมา ให้ดึงจาก window.currentSiteKey ที่หน้าเว็บเปิดอยู่ขณะนั้น
-        else {
-            finalSiteKey = window.currentSiteKey || "";
+        } else {
+            // ดึงค่าอังกฤษ (เช่น ko-phaluay) จากตัวแปร currentSiteKey
+            finalSiteKey = siteKey || currentSiteKey || "";
         }
 
         await db.collection("activity_logs").add({
@@ -275,7 +269,6 @@ window.createLog = async function(action, details, siteKey = null) {
         console.error("Error creating log:", e);
     }
 };
-
 // ลบ Log ที่เก่ากว่า 6 เดือน (Retention Policy)
 async function cleanOldLogs() {
     const sixMonthsAgo = new Date();
@@ -331,28 +324,19 @@ window.showActivityLogs = async function() {
             return;
         }
 
-        let html = '';
+     let html = '';
         snapshot.forEach(doc => {
             const d = doc.data();
             const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
             
-            // --- แก้ไขจุดแสดงชื่อสถานที่ ---
+            // --- ดึงชื่อสถานที่ (แสดงผลเป็น Key ภาษาอังกฤษ) ---
             let siteDisplay = "-";
-            
-            // 1. เช็คว่าเป็นระบบหรือไม่
             if (d.siteKey === "SYSTEM") {
-                siteDisplay = `<span class="text-slate-400 italic">ระบบส่วนกลาง</span>`;
-            } 
-            // 2. เช็คว่าเป็น Site ที่มีอยู่ในตัวแปร sites หรือไม่
-            else if (d.siteKey && sites[d.siteKey]) {
-                // ดึงชื่อออกมาและตัดคำว่าไมโครกริดออก
-                siteDisplay = sites[d.siteKey].name.split(' ')[0].replace('ไมโครกริด', '');
-            } 
-            // 3. ถ้ามี key แต่หาชื่อไม่เจอ (เช่น ข้อมูลเก่า หรือ key ผิด) ให้โชว์ key ไปเลย
-            else if (d.siteKey) {
-                 siteDisplay = `<span class="text-gray-500">${d.siteKey}</span>`;
+                siteDisplay = `<span class="text-slate-400 font-medium italic">SYSTEM</span>`;
+            } else if (d.siteKey) {
+                // แสดงผลชื่อภาษาอังกฤษตรงๆ (เช่น ko-phaluay) และทำให้เป็นตัวพิมพ์ใหญ่เพื่อความสวยงาม
+                siteDisplay = `<span class="font-mono text-blue-600 font-bold">${d.siteKey.toUpperCase()}</span>`;
             }
-            // ---------------------------
 
             let badgeClass = 'bg-slate-100 text-slate-600';
             if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
@@ -362,13 +346,13 @@ window.showActivityLogs = async function() {
 
             html += `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 text-center">
-                    <td class="p-2 border text-[10px]">${time}</td>
-                    <td class="p-2 border text-xs">${d.userEmail || 'System'}</td>
-                    <td class="p-2 border text-xs font-semibold text-blue-600">${siteDisplay}</td>
+                    <td class="p-2 border text-[10px] font-mono">${time}</td>
+                    <td class="p-2 border text-[11px]">${d.userEmail || 'System'}</td>
+                    <td class="p-2 border text-[11px]">${siteDisplay}</td>
                     <td class="p-2 border">
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${d.action}</span>
                     </td>
-                    <td class="p-2 border text-xs text-left text-slate-600">${d.details}</td>
+                    <td class="p-2 border text-left text-[11px] text-slate-600">${d.details}</td>
                 </tr>`;
         });
         tableBody.innerHTML = html;
@@ -1763,6 +1747,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
