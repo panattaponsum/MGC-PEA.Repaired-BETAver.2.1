@@ -943,18 +943,18 @@ window.updateDeviceSummary = async function() {
         const remainingDownRecords = records.filter(r => isUnresolved(r));
         const remainingDownCount = remainingDownRecords.length;
 
-        let latestBrokenDuration = '-', latestBrokenDays = 0, earliestBrokenDate = '-', latestFixedDate = '-', currentStatusDisplay = 'ok';
+        let latestBrokenDuration = '-', latestBrokenDays = 0, earliestBrokenDate = '-', latestFixedDate = '-', currentStatusDisplay = 'ใช้งานได้';
         const latestRecord = records.length > 0 ? records[records.length - 1] : null;
 
         if (remainingDownCount > 0) {
-            currentStatusDisplay = '❎ ชำรุด';
+            currentStatusDisplay = 'ชำรุด';
             const oldestIssue = remainingDownRecords[0]; 
             earliestBrokenDate = oldestIssue.brokenDate || '-';
             latestFixedDate = '-'; 
             latestBrokenDays = calculateDaysDifference(earliestBrokenDate, null);
-            latestBrokenDuration = formatDuration(latestBrokenDays) + ' (ยังไม่ได้แก้ไข)';
+            latestBrokenDuration = formatDuration(latestBrokenDays);
         } else {
-            currentStatusDisplay = '✅ ใช้งานได้'; 
+            currentStatusDisplay = 'ปกติ'; 
             if (latestRecord && latestRecord.brokenDate) {
                  earliestBrokenDate = latestRecord.brokenDate;
                  latestFixedDate = latestRecord.fixedDate || '-'; 
@@ -1007,31 +1007,58 @@ window.updateDeviceSummary = async function() {
     tbody.innerHTML = '';
 
     if (summary.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">ไม่พบข้อมูลอุปกรณ์ตามเงื่อนไขที่เลือก</td></tr>'; 
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-slate-400 italic"> ไม่พบข้อมูลอุปกรณ์ตามเงื่อนไขที่เลือก </td></tr>'; 
     } else {
         pageData.forEach(s => {
+            const isDown = s.status === 'ชำรุด';
             const tr = document.createElement('tr');
-            // --- เปลี่ยน Class Table Row ---
-            tr.className = 'border-t border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors'; 
+            tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer'; 
             tr.innerHTML = `
-                <td class="text-left font-medium text-slate-800">${escapeHtml(s.device)}</td>
-                <td><span class="${s.count > 0 ? 'tag tag-bad' : 'tag tag-ok'}">${s.count} / ${s.remaining}</span></td> 
-                <td>${s.brokenDate}</td>
-                <td>${s.fixedDate}</td>
-                <td><span class="${s.status.includes('ชำรุด') ? 'tag tag-bad' : 'tag tag-ok'}">${s.status}</span></td>
-                <td class="font-semibold text-center text-slate-700">${s.latestBrokenDuration}</td>
-                <td class="text-left text-sm text-gray-500 max-w-[200px] whitespace-normal">${escapeHtml(s.latestDescription || '-')}</td>
+                <td class="p-4">
+                    <div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${escapeHtml(s.device)}</div>
+                </td>
+                <td class="p-4 text-center">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">
+                        ${s.count} / ${s.remaining}
+                    </span>
+                </td> 
+                <td class="p-4 text-center text-xs text-slate-500 font-mono">${s.brokenDate}</td>
+                <td class="p-4 text-center text-xs text-slate-500 font-mono">${s.fixedDate}</td>
+                <td class="p-4 text-center">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider ${isDown ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-600 border border-green-100'}">
+                        <span class="w-1.5 h-1.5 rounded-full ${isDown ? 'bg-red-500 animate-pulse' : 'bg-green-500'}"></span>
+                        ${s.status}
+                    </span>
+                </td>
+                <td class="p-4 text-center">
+                    <span class="text-xs font-bold ${isDown ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span>
+                </td>
+                <td class="p-4">
+                    <p class="text-xs text-slate-500 truncate max-w-[180px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p>
+                </td>
             `;
-            tr.addEventListener('click', () => window.openForm(s.device)); 
+            tr.onclick = () => window.openForm(s.device);
             tbody.appendChild(tr);
         });
     }
 
-    document.getElementById('pagination').innerHTML = `
-        <div class="flex justify-center items-center gap-2 mt-2">
-            <button class="btn" onclick="changePage(-1)" ${currentPage===1?'disabled':''}>⬅️ ก่อนหน้า</button>
-            <span>หน้า ${currentPage} / ${totalPages}</span>
-            <button class="btn" onclick="changePage(1)" ${currentPage===totalPages?'disabled':''}>ถัดไป ➡️</button>
+    // ปรับปรุง Pagination สไตล์ Modern
+    const pagination = document.getElementById('pagination');
+    pagination.className = "flex items-center justify-between px-6 py-4 bg-slate-50/50";
+    pagination.innerHTML = `
+        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            Showing ${startIndex + 1} to ${Math.min(endIndex, summary.length)} of ${summary.length} entries
+        </div>
+        <div class="flex items-center gap-1">
+            <button onclick="changePage(-1)" ${currentPage===1?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <div class="px-4 py-1 bg-white rounded-lg shadow-sm border border-slate-200 text-sm font-bold text-blue-600">
+                ${currentPage} / ${totalPages}
+            </div>
+            <button onclick="changePage(1)" ${currentPage===totalPages?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
         </div>
     `;
 
@@ -1747,6 +1774,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
