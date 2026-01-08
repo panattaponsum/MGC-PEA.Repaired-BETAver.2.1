@@ -252,9 +252,12 @@ async function createLog(action, details) {
         userEmail: currentUser ? currentUser.email : "Unknown",
         action: action,
         details: details,
-        siteKey: currentSiteKey
+        siteKey: currentSiteKey || "",
     });
-}
+} catch (e) {
+        console.error("Error creating log:", e);
+    }
+};
 
 // ลบ Log ที่เก่ากว่า 6 เดือน (Retention Policy)
 async function cleanOldLogs() {
@@ -270,28 +273,40 @@ async function cleanOldLogs() {
     await batch.commit();
     await createLog("SYSTEM_CLEANUP", `ล้างข้อมูล Log เก่าที่เกิน 6 เดือน (ลบออก ${snapshot.size} รายการ)`);
 }
+
 window.showActivityLogs = async function() {
     const modal = document.getElementById('logModal');
     const tableBody = document.getElementById('logTableBody');
-    const filterValue = document.getElementById('logSiteFilter').value; // ดึงค่าจากตัวกรอง
+    const siteFilter = document.getElementById('logSiteFilter').value;
+    const actionFilter = document.getElementById('logActionFilter').value; // ค่าจากตัวกรองใหม่
     
     if (!modal || !tableBody) return;
 
     modal.classList.remove('hidden');
-    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-500">กำลังค้นหาประวัติ...</td></tr>';
 
     try {
         let query = db.collection("activity_logs").orderBy("timestamp", "desc");
 
-        // ถ้าเลือกไซต์ใดไซต์หนึ่ง ให้ทำการ Filter เพิ่ม
-        if (filterValue !== "all") {
-            query = query.where("siteKey", "==", filterValue);
+        // 1. กรองตามสถานที่ (ถ้าไม่ใช่ all)
+        if (siteFilter !== "all") {
+            query = query.where("siteKey", "==", siteFilter);
+        }
+
+        // 2. กรองตามการกระทำ (ถ้าไม่ใช่ all)
+        if (actionFilter !== "all") {
+            if (actionFilter === "AUTH") {
+                // กรณีเลือก AUTH ให้ดึงทั้ง AUTH_LOGIN, AUTH_LOGOUT, AUTH_TIMEOUT
+                query = query.where("action", ">=", "AUTH_").where("action", "<=", "AUTH_\uf8ff");
+            } else {
+                query = query.where("action", "==", actionFilter);
+            }
         }
 
         const snapshot = await query.limit(100).get();
 
         if (snapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-400">ไม่พบประวัติการใช้งาน</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic font-light">ไม่พบประวัติการใช้งานตามเงื่อนไขที่เลือก</td></tr>';
             return;
         }
 
@@ -300,31 +315,33 @@ window.showActivityLogs = async function() {
             const d = doc.data();
             const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
             
-            // กำหนดสีให้ SiteKey เพื่อให้อ่านง่าย
-            let siteBadge = 'text-gray-500';
-            if(d.siteKey === 'ko-phaluay') siteBadge = 'text-blue-600 font-bold';
-            if(d.siteKey === 'mae-sariang') siteBadge = 'text-green-600 font-bold';
-            if(d.siteKey === 'betong') siteBadge = 'text-orange-600 font-bold';
+            // กำหนดสี Badge ตามประเภทการกระทำ
+            let badgeClass = 'bg-slate-100 text-slate-600';
+            if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
+            if (d.action.includes("UPDATE")) badgeClass = 'bg-blue-100 text-blue-700';
+            if (d.action.includes("DELETE")) badgeClass = 'bg-red-100 text-red-700 border border-red-200';
+            if (d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
+            
+           
+const siteDisplay = d.siteKey ? d.siteKey : '<span class="text-slate-300">-</span>';
 
-            html += `
-                <tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="p-2 text-xs text-slate-500">${time}</td>
-                    <td class="p-2 text-sm">${d.userEmail || 'System'}</td>
-                    <td class="p-2 text-xs ${siteBadge}">${d.siteKey || '-'}</td> 
-                    <td class="p-2 text-xs">
-                        <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-bold uppercase">${d.action}</span>
-                    </td>
-                    <td class="p-2 text-sm text-slate-600">${d.details}</td>
-                </tr>
-            `;
+html += `
+    <tr class="hover:bg-slate-50 border-b border-slate-100">
+        <td class="p-2 border text-xs text-center">${time}</td>
+        <td class="p-2 border text-sm text-center">${d.userEmail || 'System'}</td>
+        <td class="p-2 border text-xs text-center">${siteDisplay}</td> <td class="p-2 border text-[10px] text-center">
+            <span class="px-2 py-0.5 rounded-full font-bold uppercase ${badgeClass}">${d.action}</span>
+        </td>
+        <td class="p-2 border text-sm text-slate-600 text-center">${d.details}</td>
+    </tr>
+`;
         });
         tableBody.innerHTML = html;
 
     } catch (error) {
         console.error("Log error:", error);
-        // หากเกิด Error เกี่ยวกับ Index (เพราะมีการ Filter + Sort) 
-        // ให้กดลิงก์ใน Console เพื่อสร้าง Index เพิ่มเติมได้เลยครับ
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">Error: ${error.message}</td></tr>`;
+        // หากเลือก SITE + ACTION พร้อมกันเป็นครั้งแรก จะต้องกดลิงก์ใน Console เพื่อสร้าง Index ตัวใหม่ครับ
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">เกิดข้อผิดพลาด: ${error.message}</td></tr>`;
     }
 };
 
@@ -855,26 +872,28 @@ window.loadUsers = async function() {
 
 window.changeUserRole = async function(email, newRole) {
     if (currentUserRole !== 'admin') return;
-    
-    // Prevent changing own role if it removes admin access (Safety check)
     if (email === ADMIN_EMAIL && newRole !== 'admin') {
         Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Admin หลักได้', 'error');
-        await loadUsers(); // Reset UI
+        await loadUsers(); 
         return;
     }
 
     try {
         await db.collection('users').doc(email).update({ role: newRole });
-        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+        
+        const Toast = Swal.mixin({ 
+            toast: true, 
+            position: 'top-end', 
+            showConfirmButton: false, 
+            timer: 2000 
+        });
         Toast.fire({ icon: 'success', title: `ปรับสิทธิ์ ${email} เป็น ${newRole} แล้ว` });
-     await createLog("ADMIN_MANAGEMENT", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole}`);
-        // Reload list to confirm
+        await createLog("USER_MANAGEMENT", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole.toUpperCase()}`, "");
         loadUsers(); 
     } catch (error) {
         Swal.fire('ผิดพลาด', error.message, 'error');
         loadUsers();
     }
-  
 }
 
 
@@ -1671,6 +1690,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
