@@ -251,12 +251,17 @@ window.createLog = async function(action, details, siteKey = null) {
     try {
         let finalSiteKey = "";
 
-        // ถ้าเป็นรายการเกี่ยวกับ AUTH ไม่ต้องดึงสถานที่ปัจจุบันมาใส่
+        // 1. ถ้าเป็นการ AUTH (Login/Logout) ให้บันทึกเป็น SYSTEM เสมอ
         if (action.startsWith("AUTH")) {
-            finalSiteKey = "SYSTEM"; // หรือปล่อยว่าง ""
-        } else {
-            // ถ้าเป็นรายการอื่นๆ ให้ใช้ siteKey ที่ส่งมา หรือใช้สถานที่ปัจจุบันที่หน้าเว็บเปิดอยู่
-            finalSiteKey = siteKey || window.currentSiteKey || "";
+            finalSiteKey = "SYSTEM";
+        } 
+        // 2. ถ้ามีการส่ง siteKey มาโดยตรง (เช่น จากฟังก์ชันเฉพาะ) ให้ใช้ค่านั้น
+        else if (siteKey) {
+            finalSiteKey = siteKey;
+        }
+        // 3. ถ้าไม่มีการส่งมา ให้ดึงจาก window.currentSiteKey ที่หน้าเว็บเปิดอยู่ขณะนั้น
+        else {
+            finalSiteKey = window.currentSiteKey || "";
         }
 
         await db.collection("activity_logs").add({
@@ -329,16 +334,15 @@ window.showActivityLogs = async function() {
             const d = doc.data();
             const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
             
-            // --- แปลง ID สถานที่เป็นชื่อภาษาไทยสั้นๆ ---
-          // ส่วนหนึ่งใน loop snapshot.forEach ของฟังก์ชัน showActivityLogs
-let siteDisplay = "-";
+           let siteDisplay = "-";
 if (d.siteKey === "SYSTEM") {
-    siteDisplay = `<span class="text-slate-400 italic">ระบบ</span>`; // แสดงว่ามาจากระบบส่วนกลาง
+    siteDisplay = `<span class="text-slate-400 italic">ระบบ</span>`;
 } else if (d.siteKey && sites[d.siteKey]) {
+    // แสดงชื่อสถานที่ภาษาไทย (ตัดคำว่าไมโครกริดออก)
     siteDisplay = sites[d.siteKey].name.split(' ')[0].replace('ไมโครกริด', '');
 } else if (d.siteKey) {
-                siteDisplay = d.siteKey;
-            }
+    siteDisplay = d.siteKey; 
+}
 
             let badgeClass = 'bg-slate-100 text-slate-600';
             if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
@@ -1752,6 +1756,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
