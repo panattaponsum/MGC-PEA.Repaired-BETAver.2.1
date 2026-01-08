@@ -894,7 +894,7 @@ window.changeUserRole = async function(email, newRole) {
         Swal.fire('ผิดพลาด', error.message, 'error');
         loadUsers();
     }
-}
+};
 
 
 // 💥💥💥 FUNCTION: updateDeviceSummary 💥💥💥
@@ -1690,6 +1690,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
