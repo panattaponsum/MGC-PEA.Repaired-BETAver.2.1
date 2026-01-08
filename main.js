@@ -278,76 +278,78 @@ async function cleanOldLogs() {
 window.showActivityLogs = async function() {
     const modal = document.getElementById('logModal');
     const tableBody = document.getElementById('logTableBody');
-    const siteFilter = document.getElementById('logSiteFilter').value; // ค่า 'all', 'ko-phaluay', ฯลฯ
+    const siteFilter = document.getElementById('logSiteFilter').value;
     const actionFilter = document.getElementById('logActionFilter').value;
     
     if (!modal || !tableBody) return;
     modal.classList.remove('hidden');
-    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลด...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลดประวัติ...</td></tr>';
 
     try {
         let query = db.collection("activity_logs");
 
-        // 1. จัดการเรื่อง Filter สถานที่ (siteKey)
+        // 1. กรองสถานที่ (siteKey) - ต้องสะกดให้ตรงกับที่บันทึก
         if (siteFilter !== "all") {
             query = query.where("siteKey", "==", siteFilter);
         }
 
-        // 2. จัดการเรื่อง Filter การกระทำ (action)
+        // 2. กรองการกระทำ (action)
         if (actionFilter !== "all") {
             if (actionFilter === "AUTH") {
+                // ถ้าใช้ช่วงคำสั่ง >= ต้องเรียงลำดับฟิลด์นั้นก่อนเสมอ
                 query = query.where("action", ">=", "AUTH_")
                              .where("action", "<=", "AUTH_\uf8ff")
-                             .orderBy("action"); // ต้อง orderBy action ก่อนตามกฎ Firestore
+                             .orderBy("action");
             } else {
                 query = query.where("action", "==", actionFilter);
             }
         }
 
-        // 3. ตบท้ายด้วยการเรียงเวลา
+        // 3. เรียงลำดับเวลา (ต้องมี Composite Index ใน Firebase)
         query = query.orderBy("timestamp", "desc").limit(100);
 
-snapshot.forEach(doc => {
-    const d = doc.data();
-    const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
-    
-    // --- จุดที่ต้องแก้/เพิ่ม ---
-    // ตรวจสอบว่าในข้อมูล d มี siteKey ไหม ถ้ามีให้เอาไปหาชื่อจาก Object sites
-    let siteDisplay = "-";
-    if (d.siteKey && sites[d.siteKey]) {
-        // ดึงเฉพาะชื่อสั้นๆ มาแสดง (เช่น "เกาะพะลวย")
-        siteDisplay = sites[d.siteKey].name.split(' ')[0].replace('ไมโครกริด', '');
-    } else if (d.siteKey) {
-        siteDisplay = d.siteKey; // ถ้าหาใน sites ไม่เจอให้โชว์ Key ตรงๆ
-    }
-    // -----------------------
+        const snapshot = await query.get();
+        
+        if (snapshot.empty) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic">ไม่พบประวัติข้อมูล</td></tr>';
+            return;
+        }
 
-    let badgeClass = 'bg-slate-100 text-slate-600';
-    if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
-    if (d.action.includes("UPDATE")) badgeClass = 'bg-blue-100 text-blue-700';
-    if (d.action.includes("DELETE")) badgeClass = 'bg-red-100 text-red-700';
-    if (d.action.includes("ADD") || d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
+        let html = '';
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
+            
+            // ตรวจสอบชื่อสถานที่จาก Object sites ที่เรามี
+            const siteName = (d.siteKey && sites[d.siteKey]) ? sites[d.siteKey].name.split(' ')[0] : (d.siteKey || '-');
 
-    html += `
-        <tr class="hover:bg-slate-50 border-b border-slate-100">
-            <td class="p-2 border text-[10px] text-center">${time}</td>
-            <td class="p-2 border text-xs text-center">${d.userEmail || 'System'}</td>
-            <td class="p-2 border text-xs text-center font-semibold text-blue-600">${siteDisplay}</td> 
-            <td class="p-2 border text-center">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${d.action}</span>
-            </td>
-            <td class="p-2 border text-xs text-slate-600">${d.details}</td>
-        </tr>`;
-});
+            let badgeClass = 'bg-slate-100 text-slate-600';
+            if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
+            if (d.action.includes("UPDATE")) badgeClass = 'bg-blue-100 text-blue-700';
+            if (d.action.includes("DELETE")) badgeClass = 'bg-red-100 text-red-700';
+            if (d.action.includes("ADD") || d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
+
+            html += `
+                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="p-2 border text-[11px] text-center">${time}</td>
+                    <td class="p-2 border text-xs">${d.userEmail || 'System'}</td>
+                    <td class="p-2 border text-xs text-center font-semibold text-blue-600">${siteName}</td>
+                    <td class="p-2 border text-center">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeClass}">${d.action}</span>
+                    </td>
+                    <td class="p-2 border text-xs text-slate-600">${d.details}</td>
+                </tr>`;
+        });
         tableBody.innerHTML = html;
 
     } catch (error) {
         console.error("Log error:", error);
-        // หากเลือก SITE + ACTION พร้อมกันเป็นครั้งแรก จะต้องกดลิงก์ใน Console เพื่อสร้าง Index ตัวใหม่ครับ
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">เกิดข้อผิดพลาด: ${error.message}</td></tr>`;
+        // ถ้าขึ้น Error เกี่ยวกับ Index ให้คลิกลิงก์ใน Console (F12)
+        tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-red-500 text-xs text-center">
+            เกิดข้อผิดพลาดในการดึงข้อมูล (ตรวจสอบ Index ใน Console)<br>${error.message}
+        </td></tr>`;
     }
 };
-
 function getActionClass(action) {
     if (action.includes('UPDATE')) return 'bg-blue-100 text-blue-700';
     if (action.includes('EDIT')) return 'bg-yellow-100 text-yellow-700';
@@ -1733,6 +1735,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
