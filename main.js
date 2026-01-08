@@ -307,38 +307,38 @@ window.showActivityLogs = async function() {
         // 3. ตบท้ายด้วยการเรียงเวลา
         query = query.orderBy("timestamp", "desc").limit(100);
 
-        const snapshot = await query.get();
-        if (snapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic font-light">ไม่พบประวัติการใช้งานตามเงื่อนไขที่เลือก</td></tr>';
-            return;
-        }
+snapshot.forEach(doc => {
+    const d = doc.data();
+    const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
+    
+    // --- จุดที่ต้องแก้/เพิ่ม ---
+    // ตรวจสอบว่าในข้อมูล d มี siteKey ไหม ถ้ามีให้เอาไปหาชื่อจาก Object sites
+    let siteDisplay = "-";
+    if (d.siteKey && sites[d.siteKey]) {
+        // ดึงเฉพาะชื่อสั้นๆ มาแสดง (เช่น "เกาะพะลวย")
+        siteDisplay = sites[d.siteKey].name.split(' ')[0].replace('ไมโครกริด', '');
+    } else if (d.siteKey) {
+        siteDisplay = d.siteKey; // ถ้าหาใน sites ไม่เจอให้โชว์ Key ตรงๆ
+    }
+    // -----------------------
 
-        let html = '';
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
-            
-            // กำหนดสี Badge ตามประเภทการกระทำ
-            let badgeClass = 'bg-slate-100 text-slate-600';
-            if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
-            if (d.action.includes("UPDATE")) badgeClass = 'bg-blue-100 text-blue-700';
-            if (d.action.includes("DELETE")) badgeClass = 'bg-red-100 text-red-700 border border-red-200';
-            if (d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
-            
-           
-const siteDisplay = d.siteKey ? d.siteKey : '<span class="text-slate-300">-</span>';
+    let badgeClass = 'bg-slate-100 text-slate-600';
+    if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
+    if (d.action.includes("UPDATE")) badgeClass = 'bg-blue-100 text-blue-700';
+    if (d.action.includes("DELETE")) badgeClass = 'bg-red-100 text-red-700';
+    if (d.action.includes("ADD") || d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
 
-html += `
-    <tr class="hover:bg-slate-50 border-b border-slate-100">
-        <td class="p-2 border text-xs text-center">${time}</td>
-        <td class="p-2 border text-sm text-center">${d.userEmail || 'System'}</td>
-        <td class="p-2 border text-xs text-center">${siteDisplay}</td> <td class="p-2 border text-[10px] text-center">
-            <span class="px-2 py-0.5 rounded-full font-bold uppercase ${badgeClass}">${d.action}</span>
-        </td>
-        <td class="p-2 border text-sm text-slate-600 text-center">${d.details}</td>
-    </tr>
-`;
-        });
+    html += `
+        <tr class="hover:bg-slate-50 border-b border-slate-100">
+            <td class="p-2 border text-[10px] text-center">${time}</td>
+            <td class="p-2 border text-xs text-center">${d.userEmail || 'System'}</td>
+            <td class="p-2 border text-xs text-center font-semibold text-blue-600">${siteDisplay}</td> 
+            <td class="p-2 border text-center">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${d.action}</span>
+            </td>
+            <td class="p-2 border text-xs text-slate-600">${d.details}</td>
+        </tr>`;
+});
         tableBody.innerHTML = html;
 
     } catch (error) {
@@ -1733,6 +1733,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
