@@ -298,18 +298,19 @@ window.showActivityLogs = async function() {
     const actionFilter = document.getElementById('logActionFilter').value;
     
     if (!modal || !tableBody) return;
+
     modal.classList.remove('hidden');
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลด...</td></tr>';
 
     try {
         let query = db.collection("activity_logs");
 
-        // 1. กรองสถานที่
+        // 1. กรอง Site
         if (siteFilter !== "all") {
             query = query.where("siteKey", "==", siteFilter);
         }
 
-        // 2. กรองการกระทำ
+        // 2. กรอง Action
         if (actionFilter !== "all") {
             if (actionFilter === "AUTH") {
                 query = query.where("action", ">=", "AUTH_")
@@ -320,12 +321,13 @@ window.showActivityLogs = async function() {
             }
         }
 
-        // 3. เรียงลำดับเวลา (ต้องใช้ Composite Index)
+        // 3. Order By Timestamp
         query = query.orderBy("timestamp", "desc").limit(100);
 
         const snapshot = await query.get();
+
         if (snapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic">ไม่พบประวัติการใช้งาน</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic">ไม่พบข้อมูลตามเงื่อนไข</td></tr>';
             return;
         }
 
@@ -334,15 +336,23 @@ window.showActivityLogs = async function() {
             const d = doc.data();
             const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
             
-           let siteDisplay = "-";
-if (d.siteKey === "SYSTEM") {
-    siteDisplay = `<span class="text-slate-400 italic">ระบบ</span>`;
-} else if (d.siteKey && sites[d.siteKey]) {
-    // แสดงชื่อสถานที่ภาษาไทย (ตัดคำว่าไมโครกริดออก)
-    siteDisplay = sites[d.siteKey].name.split(' ')[0].replace('ไมโครกริด', '');
-} else if (d.siteKey) {
-    siteDisplay = d.siteKey; 
-}
+            // --- แก้ไขจุดแสดงชื่อสถานที่ ---
+            let siteDisplay = "-";
+            
+            // 1. เช็คว่าเป็นระบบหรือไม่
+            if (d.siteKey === "SYSTEM") {
+                siteDisplay = `<span class="text-slate-400 italic">ระบบส่วนกลาง</span>`;
+            } 
+            // 2. เช็คว่าเป็น Site ที่มีอยู่ในตัวแปร sites หรือไม่
+            else if (d.siteKey && sites[d.siteKey]) {
+                // ดึงชื่อออกมาและตัดคำว่าไมโครกริดออก
+                siteDisplay = sites[d.siteKey].name.split(' ')[0].replace('ไมโครกริด', '');
+            } 
+            // 3. ถ้ามี key แต่หาชื่อไม่เจอ (เช่น ข้อมูลเก่า หรือ key ผิด) ให้โชว์ key ไปเลย
+            else if (d.siteKey) {
+                 siteDisplay = `<span class="text-gray-500">${d.siteKey}</span>`;
+            }
+            // ---------------------------
 
             let badgeClass = 'bg-slate-100 text-slate-600';
             if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
@@ -365,10 +375,7 @@ if (d.siteKey === "SYSTEM") {
 
     } catch (error) {
         console.error("Log error:", error);
-        tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-red-500 text-xs text-center">
-            เกิดข้อผิดพลาด: ${error.message} <br>
-            <span class="text-blue-500">หากเพิ่งเปิดใช้การกรองครั้งแรก ให้คลิกลิงก์ใน Console เพื่อสร้าง Index</span>
-        </td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">เกิดข้อผิดพลาด: ${error.message}</td></tr>`;
     }
 };
 function getActionClass(action) {
@@ -1756,6 +1763,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
