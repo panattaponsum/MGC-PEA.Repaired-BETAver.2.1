@@ -197,13 +197,30 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 .user-item:last-child { border-bottom: none; }
 </style>
 </head>
-<body class="bg-gray-50"> <header class="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200 px-5 py-4 z-40 shadow-sm">
-<div class="max-w-[1200px] mx-auto">
-<h1 class="text-2xl mb-1 text-slate-800">📊 แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</h1>
-<div class="text-sm text-gray-500">บันทึก/ติดตามสถานะอุปกรณ์ควบคุมระบบไมโครกริด, ประวัติการขัดข้อง, กราฟสรุปภาพรวม
-<h2 id="locationTitle" class="text-xl mt-3 mb-1 text-blue-700 font-bold"></h2>
-</div>
-</div>
+<body class="bg-gray-50"> 
+    <header class="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200 px-5 py-4 z-40 shadow-sm">
+  <div class="max-w-[1200px] mx-auto flex flex-wrap items-center justify-between">
+    
+    <div class="flex-1">
+      <h1 class="text-2xl mb-1 text-slate-800">📊 แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</h1>
+      <div class="text-sm text-gray-500">บันทึก/ติดตามสถานะอุปกรณ์ควบคุมระบบไมโครกริด, ประวัติการขัดข้อง, กราฟสรุปภาพรวม
+        <h2 id="locationTitle" class="text-xl mt-3 mb-1 text-blue-700 font-bold"></h2>
+      </div>
+    </div>
+
+    <div id="userInfo" class="hidden flex items-center gap-3">
+      <div id="logoutTimerDisplay" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg border border-red-100 text-sm font-mono font-bold flex items-center gap-2 shadow-sm">
+        <span class="animate-pulse">⏳</span> 
+        <span id="timerMinutes">15</span>:<span id="timerSeconds">00</span>
+      </div>
+      
+      <div class="text-right border-l pl-3 border-gray-200">
+        <div id="userNameDisplay" class="text-sm text-slate-700 font-bold"></div>
+        <div id="userRoleDisplay" class="text-[10px] uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full inline-block">Viewer</div>
+      </div>
+    </div>
+
+  </div>
 </header>
 
 <main class="max-w-[1400px] mx-auto px-4 py-6">
@@ -576,6 +593,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
