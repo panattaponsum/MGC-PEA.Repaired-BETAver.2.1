@@ -196,37 +196,61 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9; }
 .user-item:last-child { border-bottom: none; }
 </style>
-</head>
-<body class="bg-gray-50"> 
-  <header class="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200 px-5 py-4 z-40 shadow-sm">
-    <div class="max-w-[1200px] mx-auto flex flex-wrap items-center justify-between">
-      
-      <div class="flex-1">
-        <h1 class="text-2xl mb-1 text-slate-800">📊 แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</h1>
-        <div class="text-sm text-gray-500">บันทึก/ติดตามสถานะอุปกรณ์ควบคุมระบบไมโครกริด, ประวัติการขัดข้อง, กราฟสรุปภาพรวม
-          <h2 id="locationTitle" class="text-xl mt-3 mb-1 text-blue-700 font-bold"></h2>
+<header class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 z-40 shadow-sm">
+  <div class="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+    
+    <div class="flex items-center gap-4">
+      <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-slate-800 leading-tight">
+          <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+            Microgrid
+          </span> 
+          Asset Management
+        </h1>
+        <div class="flex items-center gap-2 mt-0.5">
+          <span class="text-[11px] font-medium text-slate-400 uppercase tracking-widest">ระบบจัดการอุปกรณ์โครงข่ายไฟฟ้า</span>
+          <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+          <h2 id="locationTitle" class="text-sm font-bold text-blue-600 italic"></h2>
         </div>
       </div>
-  
-      <div id="userInfo" class="hidden flex items-center gap-3 bg-white p-1 rounded-lg">
-        
-        <div id="logoutTimerDisplay" class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg border border-red-100 text-sm font-mono font-bold flex items-center gap-2 shadow-sm">
-          <span class="animate-pulse">⏳</span> 
-          <span id="timerMinutes">15</span>:<span id="timerSeconds">00</span>
-        </div>
-        
-        <div class="text-right border-l pl-3 border-gray-200">
-          <div id="userNameDisplay" class="text-sm text-slate-700 font-bold"></div>
-          <div id="userRoleDisplay" class="text-[10px] uppercase bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full inline-block">Viewer</div>
-        </div>
-  
-        <button id="logoutButton" class="ml-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-md text-xs font-bold transition-colors">
-            ออกจากระบบ
-        </button>
-
-      </div>
-  
     </div>
+
+    <div id="userInfo" class="hidden flex items-center gap-4">
+      
+      <div id="logoutTimerDisplay" class="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 shadow-inner">
+        <span class="flex h-2 w-2 relative">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+        </span>
+        <span class="text-xs font-mono font-bold text-red-600">
+          <span id="timerMinutes">15</span>:<span id="timerSeconds">00</span>
+        </span>
+      </div>
+
+      <div class="flex items-center gap-3 pl-4 border-l border-slate-200">
+        <div class="text-right hidden sm:block">
+          <div id="userNameDisplay" class="text-sm font-bold text-slate-700 leading-none"></div>
+          <div id="userRoleDisplay" class="text-[10px] mt-1 font-bold uppercase py-0.5 px-2 bg-blue-50 text-blue-600 rounded-md border border-blue-100 inline-block">
+            Viewer
+          </div>
+        </div>
+        
+        <button id="logoutButton" class="group flex items-center gap-2 bg-slate-800 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 shadow-md hover:shadow-red-200">
+          <span>Logout</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+  </div>
 </header>
 
 <main class="max-w-[1400px] mx-auto px-4 py-6">
@@ -599,6 +623,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
