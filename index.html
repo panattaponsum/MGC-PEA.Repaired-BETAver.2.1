@@ -277,23 +277,23 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
   <div class="flex flex-wrap items-center gap-2">
     <div class="flex bg-slate-100 p-1 rounded-xl mr-2">
       <button onclick="showActivityLogs()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm transition-all">
-        📜 Log
+        📜 Logs
       </button>
       <button onclick="showSummary()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm transition-all">
-        📊 Status
+        📊 Status Report
       </button>
     </div>
 
     <button onclick="window.printReport()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
-      <span class="text-blue-500">🖨️</span> PDF
+      <span class="text-blue-500">🖨️</span> Report PDF
     </button>
     
     <button onclick="exportAllDataExcel()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
-      <span class="text-green-500">📤</span> Export
+      <span class="text-green-500">📤</span> Export Excel
     </button>
 
     <label id="importButtonLabel" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm cursor-pointer">
-      <span class="text-amber-500">📥</span> Import
+      <span class="text-amber-500">📥</span> Import Excel
       <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
     </label>
 
@@ -667,6 +667,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
