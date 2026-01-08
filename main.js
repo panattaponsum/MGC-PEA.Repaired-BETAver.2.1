@@ -1117,13 +1117,28 @@ window.updateDeviceStatusOverlays = async function(siteKey) {
 let unsubscribe = null; 
 
 function setupRealtimeListener(siteKey) {
-if (unsubscribe) { unsubscribe(); }
-const currentDeviceCollection = db.collection(`sites`).doc(siteKey).collection(`devices`); 
-unsubscribe = currentDeviceCollection.onSnapshot(snapshot => { 
-window.updateDeviceSummary(); 
-}, (error) => {
-console.error("Listener Error:", error);
-});
+  // 1. ถ้ามี Listener ตัวเก่าให้หยุดทำงานก่อน
+  if (unsubscribe) { unsubscribe(); }
+
+  // 2. เช็คว่าล็อกอินหรือยัง? ถ้ายังไม่ต้องรัน Listener ต่อเพื่อเลี่ยง Error
+  if (!firebase.auth().currentUser) {
+    console.warn("ยังไม่ได้ล็อกอิน: ข้ามการรัน Realtime Listener");
+    return; 
+  }
+
+  const currentDeviceCollection = db.collection(`sites`).doc(siteKey).collection(`devices`); 
+
+  // 3. เริ่มดึงข้อมูล
+  unsubscribe = currentDeviceCollection.onSnapshot(snapshot => { 
+    window.updateDeviceSummary(); 
+  }, (error) => {
+    // 4. ถ้าเกิด Error เรื่องสิทธิ์ ให้จัดการอย่างสุภาพ
+    if (error.code === 'permission-denied') {
+        console.warn("สิทธิ์ไม่พอในการดึงข้อมูล (Permission Denied)");
+    } else {
+        console.error("Listener Error:", error);
+    }
+  });
 }
 
 async function processAndSaveImport(assetsToImport, recordsToImport) {
@@ -1691,6 +1706,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
