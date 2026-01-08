@@ -246,18 +246,19 @@ window.logout = async function() {
 };
 
 // บันทึกกิจกรรม
-async function createLog(action, details) {
-    await db.collection("activity_logs").add({
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        userEmail: currentUser ? currentUser.email : "Unknown",
-        action: action,
-        details: details,
-        siteKey: currentSiteKey || "",
-    });
-} catch (e) {
+async function createLog(action, details, siteKey = null) {
+    try {
+        await db.collection("activity_logs").add({
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            userEmail: currentUser ? currentUser.email : "Unknown",
+            action: action,
+            details: details,
+            siteKey: (siteKey !== null) ? siteKey : (window.currentSiteKey || ""),
+        });
+    } catch (e) {
         console.error("Error creating log:", e);
     }
-};
+}
 
 // ลบ Log ที่เก่ากว่า 6 เดือน (Retention Policy)
 async function cleanOldLogs() {
@@ -1690,6 +1691,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
