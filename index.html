@@ -255,84 +255,131 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 
 <main class="max-w-[1400px] mx-auto px-4 py-6">
   <div id="topologyPage">
-    <div class="card row mb-2 flex flex-wrap items-center justify-start gap-2 px-4 py-3 bg-white rounded-xl shadow-sm">
-      
-      <div class="flex items-center gap-2">
-        <label for="location-select" class="text-slate-700 font-semibold text-sm whitespace-nowrap">เลือกสถานที่ 🔎:</label>
-        <select id="location-select" class="toolbar-select w-50">
-          <option value="ko-phaluay">ไมโครกริดเกาะพะลวย</option>
-          <option value="mae-sariang">ไมโครกริดอำเภอแม่สะเรียง</option>
-          <option value="betong">ไมโครกริดอำเภอเบตง</option>
-        </select>
-      </div>
+    <div class="card flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-white rounded-2xl shadow-sm border border-slate-100 mb-6">
+  
+  <div class="flex items-center gap-3">
+    <div class="p-2 bg-blue-50 rounded-lg">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </div>
+    <div class="flex flex-col">
+      <label for="location-select" class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Location Selection</label>
+      <select id="location-select" class="bg-transparent text-slate-700 font-bold focus:outline-none cursor-pointer hover:text-blue-600 transition-colors">
+        <option value="ko-phaluay">📍 ไมโครกริดเกาะพะลวย</option>
+        <option value="mae-sariang">📍 ไมโครกริดอำเภอแม่สะเรียง</option>
+        <option value="betong">📍 ไมโครกริดอำเภอเบตง</option>
+      </select>
+    </div>
+  </div>
 
-      <div id="authContainer" class="flex items-center gap-2">
-        <button id="loginButton" class="btn btn-ghost border-yellow-500 text-yellow-600 hover:bg-yellow-50">🔒 Login with Google</button>
-        <div id="userInfo" class="hidden flex items-center gap-2">
-          <span id="userNameDisplay" class="text-sm text-slate-700 font-medium"></span>
-          <span id="userRoleDisplay" class="tag tag-ok text-xs">Viewer</span>
-          <button id="manageUsersBtn" class="btn btn-warning text-white hidden" onclick="openUserManagement()">⚙️จัดการ</button>
-          <button id="logoutButton" class="btn btn-danger text-white">Logout</button>
-        </div>
-      </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="flex bg-slate-100 p-1 rounded-xl mr-2">
+      <button onclick="showActivityLogs()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm transition-all">
+        📜 Log
+      </button>
+      <button onclick="showSummary()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm transition-all">
+        📊 Status
+      </button>
+    </div>
 
-      <button id="showLogBtn" class="btn btn-secondary " onclick="showActivityLogs()">📜 Log</button>
-      <button class="btn btn-ghost border border-gray-300" onclick="showSummary()">📊 Status</button>
-      <button onclick="window.printReport()" class="btn bg-blue-600 hover:bg-blue-700 text-white">🖨️ Report PDF</button>
-      <button class="btn btn-brand" onclick="exportAllDataExcel()">📤 Export</button>
-      <label class="btn btn-warning text-white cursor-pointer" id="importButtonLabel">📥 Import
-        <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
-      </label>
+    <button onclick="window.printReport()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+      <span class="text-blue-500">🖨️</span> PDF
+    </button>
+    
+    <button onclick="exportAllDataExcel()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+      <span class="text-green-500">📤</span> Export
+    </button>
 
-    </div> 
-    <div id="logModal" class="hidden fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-3/4 max-h-[80vh] flex flex-col">
-        <div class="flex flex-wrap items-center justify-between mb-4 gap-4">
-            <h2 class="text-xl font-bold flex items-center gap-2">📜 ประวัติการใช้งานระบบ (Log)</h2>
-            
-            <div class="flex flex-wrap items-center gap-2 bg-slate-100 p-2 rounded-lg shadow-sm">
-                <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">สถานที่:</label>
-                    <select id="logSiteFilter" class="text-sm border-none bg-transparent focus:ring-0 cursor-pointer" onchange="showActivityLogs()">
-                        <option value="all">ทุกสถานที่</option>
-                        <option value="ko-phaluay">เกาะพะลวย</option>
-                        <option value="mae-sariang">แม่สะเรียง</option>
-                        <option value="betong">เบตง</option>
+    <label id="importButtonLabel" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm cursor-pointer">
+      <span class="text-amber-500">📥</span> Import
+      <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
+    </label>
+
+    <button id="manageUsersBtn" class="hidden flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-extrabold hover:bg-indigo-100 transition-all" onclick="openUserManagement()">
+      ⚙️ Manage Users
+    </button>
+  </div>
+
+  <div id="authContainer">
+    <button id="loginButton" class="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-100 hover:scale-105 transition-all">
+      <span>🔒</span> Login with Google
+    </button>
+    </div>
+
+</div>
+   <div id="logModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-5xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+        
+        <div class="px-6 py-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-slate-50/50">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2 rounded-lg shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-800 tracking-tight">System Activity Logs</h2>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">บันทึกประวัติการใช้งานและกิจกรรมในระบบ</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-2 px-3 border-r border-slate-100">
+                    <span class="text-[10px] font-black text-indigo-500 uppercase">Site:</span>
+                    <select id="logSiteFilter" class="text-sm font-bold bg-transparent focus:outline-none cursor-pointer text-slate-700" onchange="showActivityLogs()">
+                        <option value="all">All (Global)</option>
+                        <option value="ko-phaluay">KO-PHALUAY</option>
+                        <option value="mae-sariang">MAE-SARIANG</option>
+                        <option value="betong">BETONG</option>
                     </select>
                 </div>
 
-                <div class="flex items-center gap-1 pl-1">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">การกระทำ:</label>
-                    <select id="logActionFilter" class="text-sm border-none bg-transparent focus:ring-0 cursor-pointer" onchange="showActivityLogs()">
-                        <option value="all">ทุกการกระทำ</option>
-                        <option value="AUTH">🔐 การเข้า-ออกระบบ</option>
-                        <option value="UPDATE_STATUS">🔄 เปลี่ยนสถานะอุปกรณ์</option>
-                        <option value="ADD_RECORD">➕ เพิ่มข้อมูลใหม่</option>
-                        <option value="EDIT_RECORD">✏️ แก้ไขข้อมูล</option>
-                        <option value="DELETE_RECORD">❌ การลบข้อมูล</option>
-                        
+                <div class="flex items-center gap-2 px-3">
+                    <span class="text-[10px] font-black text-indigo-500 uppercase">Action:</span>
+                    <select id="logActionFilter" class="text-sm font-bold bg-transparent focus:outline-none cursor-pointer text-slate-700" onchange="showActivityLogs()">
+                        <option value="all">All</option>
+                        <option value="AUTH">🔐 Access & Auth</option>
+                        <option value="UPDATE_STATUS">🔄 Status Change</option>
+                        <option value="ADD_RECORD">➕ New Entry</option>
+                        <option value="EDIT_RECORD">✏️ Modification</option>
+                        <option value="DELETE_RECORD">❌ Removal</option>
                     </select>
                 </div>
             </div>
-             <div class="mt-4 flex justify-end">
-            <button onclick="closeLogModal()" class="btn btn-ghost hover:text-red-500">✖ ปิด</button>
-             </div>
+
+            <button onclick="closeLogModal()" class="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
-        
-        <div class="overflow-y-auto flex-1 border border-gray-200 rounded-lg">
-            <table class="w-full text-left border-collapse">
-                <thead class="sticky top-0 bg-gray-100 shadow-sm text-sm">
-                    <tr>
-                        <th class="p-2 border text-center">วัน-เวลา</th>
-                        <th class="p-2 border text-center">ผู้ใช้งาน</th>
-                        <th class="p-2 border text-center">สถานที่</th> 
-                        <th class="p-2 border text-center">การกระทำ</th>
-                        <th class="p-2 border text-center">รายละเอียด</th>
-                    </tr>
-                </thead>
-                <tbody id="logTableBody"></tbody>
-            </table>
-        </div>   
+
+        <div class="flex-1 overflow-auto p-4 bg-slate-50/30">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-800 text-slate-200 text-[11px] uppercase tracking-widest font-bold">
+                            <th class="p-4 border-b border-slate-700 text-center w-40">วัน-เวลา</th>
+                            <th class="p-4 border-b border-slate-700 text-center">ผู้ดำเนินการ</th>
+                            <th class="p-4 border-b border-slate-700 text-center">สถานที่</th>
+                            <th class="p-4 border-b border-slate-700 text-center w-32">ประเภท</th>
+                            <th class="p-4 border-b border-slate-700">รายละเอียดกิจกรรม</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody" class="divide-y divide-slate-100">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 bg-white border-t border-slate-100 flex justify-between items-center">
+            <p class="text-[11px] text-slate-400 italic font-medium">* ระบบแสดงประวัติล่าสุด 100 รายการ</p>
+            <button onclick="closeLogModal()" class="px-6 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700 transition-all shadow-md">
+                ✖ ปิด
+            </button>
+        </div>
     </div>
 </div>
 <div id="map-ko-phaluay" class="map-container" style="position:relative;">
@@ -623,6 +670,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
