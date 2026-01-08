@@ -287,25 +287,32 @@ window.showActivityLogs = async function() {
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-500">กำลังค้นหาประวัติ...</td></tr>';
 
     try {
-        let query = db.collection("activity_logs").orderBy("timestamp", "desc");
+        let query = db.collection("activity_logs"); // อย่าเพิ่ง orderBy ตรงนี้
 
-        // 1. กรองตามสถานที่ (ถ้าไม่ใช่ all)
+        // 1. กรองตามสถานที่
         if (siteFilter !== "all") {
             query = query.where("siteKey", "==", siteFilter);
         }
 
-        // 2. กรองตามการกระทำ (ถ้าไม่ใช่ all)
+        // 2. กรองตามการกระทำ และจัดการเรื่อง orderBy
         if (actionFilter !== "all") {
             if (actionFilter === "AUTH") {
-                // กรณีเลือก AUTH ให้ดึงทั้ง AUTH_LOGIN, AUTH_LOGOUT, AUTH_TIMEOUT
-                query = query.where("action", ">=", "AUTH_").where("action", "<=", "AUTH_\uf8ff");
+                // เมื่อใช้ >= กับ action ต้อง orderBy action ก่อนเสมอตามกฎ Firestore
+                query = query.where("action", ">=", "AUTH_")
+                             .where("action", "<=", "AUTH_\uf8ff")
+                             .orderBy("action") 
+                             .orderBy("timestamp", "desc");
             } else {
-                query = query.where("action", "==", actionFilter);
+                // ถ้าใช้ == (Equality) สามารถ orderBy timestamp ได้เลยปกติ
+                query = query.where("action", "==", actionFilter)
+                             .orderBy("timestamp", "desc");
             }
+        } else {
+            // กรณีเลือก "ทุกการกระทำ"
+            query = query.orderBy("timestamp", "desc");
         }
 
         const snapshot = await query.limit(100).get();
-
         if (snapshot.empty) {
             tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic font-light">ไม่พบประวัติการใช้งานตามเงื่อนไขที่เลือก</td></tr>';
             return;
@@ -1706,6 +1713,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
