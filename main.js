@@ -432,7 +432,7 @@ return d instanceof Date && !isNaN(d);
 }
 
 window.saveData = async function() {
-    // 💥 RBAC CHECK: Editor or Admin Only
+    // 💥 RBAC CHECK
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') {
         Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor และ Admin เท่านั้นที่บันทึกข้อมูลได้', 'error');
         return false;
@@ -444,28 +444,41 @@ window.saveData = async function() {
     const brokenDate = document.getElementById('brokenDate').value;
     const fixedDate = document.getElementById('fixedDate').value;
     const isEditing = editIndex >= 0;
+
+    // --- ส่วนที่เพิ่ม: Confirmation Dialog ---
+    const confirmResult = await Swal.fire({
+        title: isEditing ? 'ยืนยันการแก้ไข?' : 'ยืนยันการเพิ่มข้อมูล?',
+        text: `คุณต้องการบันทึกสถานะของ ${currentDevice} เป็น "${statusVal === 'down' ? 'ชำรุด' : 'ใช้งานได้'}" ใช่หรือไม่?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'ยืนยันบันทึก',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (!confirmResult.isConfirmed) return false;
+
+    // --- ตรวจสอบเงื่อนไขวันที่ (Validation เดิมของคุณ) ---
     if (isValidDate(brokenDate) && isValidDate(fixedDate)) {
         statusVal = 'ok';
     }
-
     if (editIndex < 0 && statusVal === 'ok' && (!brokenDate || !fixedDate)) {
         Swal.fire({ title: "ไม่อนุญาต", text: "การเพิ่มรายการใหม่ต้องเป็นสถานะ 'ชำรุด' เท่านั้น", icon: "warning" });
         return false;
     }
-
     const now = new Date(); now.setHours(0, 0, 0, 0); 
     if (brokenDate && isValidDate(brokenDate) && new Date(brokenDate) > now) {
         Swal.fire("วันที่ผิดพลาด", "วันที่ชำรุดอนาคตไม่ได้", "warning"); return false;
     }
-    
     if (statusVal === 'down' && !isValidDate(brokenDate)) { Swal.fire("ข้อมูลไม่ครบ", "กรุณาเลือกวันที่ชำรุด", "warning"); return false; }
     if (statusVal === 'ok') {
         if (!isValidDate(brokenDate) || !isValidDate(fixedDate)) { Swal.fire("ข้อมูลไม่ครบ", "กรุณากรอกวันที่ให้ครบ", "warning"); return false; }
         if (new Date(brokenDate) > new Date(fixedDate)) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมต้องหลังวันที่ชำรุด", "warning"); return false; }
     }
 
+    // --- กระบวนการบันทึกข้อมูล ---
     let records = await getDeviceRecords(currentSiteKey, currentDevice); 
-
     const baseRec = {
         user: document.getElementById('userName').value || "ไม่ระบุ",
         status: statusVal, 
@@ -491,19 +504,19 @@ window.saveData = async function() {
     
     clearForm(); 
     await loadHistory();
-    window.updateDeviceSummary(); 
+    window.updateDeviceSummary(); // ฟังก์ชันนี้จะไปอัปเดต Status Cards ด้วย
     window.updateDeviceStatusOverlays(currentSiteKey); 
    
-    if (statusVal === 'down' && editIndex < 0) { 
+    if (statusVal === 'down' && !isEditing) { 
         sendEmailNotify('down', currentDevice, baseRec.description, baseRec.user, baseRec.brokenDate, records.filter(r => r.counted).length);
     }
-    if (statusVal === 'ok') { 
+    if (statusVal === 'ok' && !isEditing) { 
         sendEmailNotify('fixed', currentDevice, baseRec.description, baseRec.user, baseRec.fixedDate, null);
     }
 
     Swal.fire("บันทึกเรียบร้อย", "", "success");
     
-  let logAction = isEditing ? "EDIT_RECORD" : "ADD_RECORD";
+    let logAction = isEditing ? "EDIT_RECORD" : "ADD_RECORD";
     let logDetail = isEditing 
         ? `แก้ไขข้อมูลประวัติของ ${currentDevice}` 
         : `เพิ่มประวัติการชำรุดใหม่ให้ ${currentDevice}`;
@@ -837,7 +850,6 @@ window.closeUserManagement = function() {
 
 window.loadUsers = async function() {
     const listContainer = document.getElementById('userListContainer');
-    // เปลี่ยนสีข้อความสถานะ Loading เป็นสีเทาเข้มขึ้น
     listContainer.innerHTML = '<div class="text-center py-4 text-gray-500">กำลังโหลด...</div>';
     
     try {
@@ -853,9 +865,9 @@ window.loadUsers = async function() {
             const email = userData.email;
             const role = userData.role || 'viewer';
             const isMe = (email === currentUser.email);
+            const isAdminMain = (email === ADMIN_EMAIL); // เช็คว่าเป็น Admin หลักหรือไม่
             
             const div = document.createElement('div');
-            // ปรับ Background Item: สีขาว มีเส้นขอบล่าง
             div.className = 'user-item flex justify-between items-center p-3 border-b border-gray-200 hover:bg-gray-50 transition-colors';
             
             const roleOptions = `
@@ -864,18 +876,32 @@ window.loadUsers = async function() {
                 <option value="admin" ${role==='admin'?'selected':''}>Admin (ดูแลระบบ)</option>
             `;
 
+            // เพิ่มปุ่มลบ (แสดงเฉพาะถ้าไม่ใช่ Admin หลัก และ ไม่ใช่ตัวเอง)
+            let deleteBtn = '';
+            if (!isAdminMain && !isMe) {
+                deleteBtn = `
+                    <button onclick="deleteUser('${email}')" 
+                            class="ml-2 p-2 text-gray-400 hover:text-red-600 transition-colors" 
+                            title="ลบผู้ใช้">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>`;
+            }
+
             div.innerHTML = `
-                <div class="flex flex-col">
+                <div class="flex flex-col flex-1">
                     <span class="font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}">
                         ${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}
                     </span>
                     <span class="text-xs text-gray-500">สิทธิ์ปัจจุบัน: ${role}</span>
                 </div>
-                <div>
+                <div class="flex items-center">
                     <select onchange="changeUserRole('${email}', this.value)" 
                             class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 outline-none shadow-sm cursor-pointer">
                         ${roleOptions}
                     </select>
+                    ${deleteBtn}
                 </div>
             `;
             listContainer.appendChild(div);
@@ -886,7 +912,47 @@ window.loadUsers = async function() {
         listContainer.innerHTML = `<div class="text-red-500 text-center py-4">โหลดไม่สำเร็จ: ${error.message}</div>`;
     }
 }
+window.deleteUser = async function(email) {
+    // เช็คสิทธิ์ว่าคนลบเป็น admin หรือไม่
+    if (currentUserRole !== 'admin') {
+        Swal.fire('ปฏิเสธ', 'คุณไม่มีสิทธิ์ลบผู้ใช้งาน', 'error');
+        return;
+    }
 
+    const result = await Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: `คุณต้องการลบผู้ใช้ ${email} ออกจากระบบใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            // 1. ลบจาก Firestore
+            await db.collection('users').doc(email).delete();
+            
+            // 2. บันทึก Log เป็น SYSTEM ตามที่กำหนด
+            await createLog("USER_MANAGEMENT", `ลบผู้ใช้ ${email} ออกจากระบบ`, "SYSTEM");
+
+            Swal.fire({
+                icon: 'success',
+                title: 'ลบผู้ใช้สำเร็จ',
+                showConfirmButton: false,
+                timer: 1500
+            });
+
+            // 3. รีโหลดรายชื่อใหม่
+            loadUsers();
+        } catch (error) {
+            console.error("Delete user failed:", error);
+            Swal.fire('ผิดพลาด', 'ไม่สามารถลบผู้ใช้ได้: ' + error.message, 'error');
+        }
+    }
+};
 window.changeUserRole = async function(email, newRole) {
     if (currentUserRole !== 'admin') return;
     if (email === ADMIN_EMAIL && newRole !== 'admin') {
@@ -1776,6 +1842,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
