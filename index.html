@@ -355,24 +355,23 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
                 </svg>
             </button>
         </div>
-
-        <div class="flex-1 overflow-auto p-4 bg-slate-50/30">
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                       <tr class="bg-slate-700 text-white text-[12px] uppercase tracking-widest font-bold">
-    <th class="p-4 border-b border-slate-600 text-center w-40 shadow-sm">วัน-เวลา</th>
-    <th class="p-4 border-b border-slate-600 text-center">ผู้ดำเนินการ</th>
-    <th class="p-4 border-b border-slate-600 text-center">สถานที่</th>
-    <th class="p-4 border-b border-slate-600 text-center w-32">ประเภท</th>
-    <th class="p-4 border-b border-slate-600">รายละเอียดกิจกรรม</th>
-</tr>
-                    </thead>
-                    <tbody id="logTableBody" class="divide-y divide-slate-200">
-                        </tbody>
-                </table>
-            </div>
-        </div>
+<div class="flex-1 overflow-auto p-4 bg-slate-50/30">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-700 text-white text-[12px] uppercase tracking-widest font-bold">
+                    <th class="p-4 border-b border-slate-500 text-center w-40 shadow-sm text-white">วัน-เวลา</th>
+                    <th class="p-4 border-b border-slate-500 text-center text-white">ผู้ดำเนินการ</th>
+                    <th class="p-4 border-b border-slate-500 text-center text-white">สถานที่</th>
+                    <th class="p-4 border-b border-slate-500 text-center w-32 text-white">ประเภท</th>
+                    <th class="p-4 border-b border-slate-500 text-white">รายละเอียดกิจกรรม</th>
+                </tr>
+            </thead>
+            <tbody id="logTableBody" class="divide-y divide-slate-200">
+                </tbody>
+        </table>
+    </div>
+</div>
 
         <div class="px-6 py-4 bg-white border-t border-slate-100 flex justify-between items-center">
             <p class="text-[11px] text-slate-400 italic font-medium">* ระบบแสดงประวัติล่าสุด 200 รายการ</p>
@@ -559,17 +558,17 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <div class="card bg-white rounded-2xl shadow-sm border border-slate-100 mt-6 overflow-hidden">
   <div class="overflow-x-auto">
     <table class="w-full text-left border-collapse" id="summaryTable">
-      <thead>
-        <tr class="bg-slate-800 text-white text-[12px] uppercase tracking-wider font-bold">
-          <th class="p-4 border-b border-slate-700">🛠️ อุปกรณ์</th>
-          <th class="p-4 border-b border-slate-700 text-center">ชำรุด (รวม/ค้าง)</th>
-          <th class="p-4 border-b border-slate-700 text-center">วันที่ชำรุด</th>
-          <th class="p-4 border-b border-slate-700 text-center">วันที่ซ่อม</th>
-          <th class="p-4 border-b border-slate-700 text-center">สถานะ</th>
-          <th class="p-4 border-b border-slate-700 text-center">⚠️ ระยะเวลา</th>
-          <th class="p-4 border-b border-slate-700">รายละเอียด</th>
-        </tr>
-      </thead>
+     <thead>
+  <tr class="bg-slate-800 text-white text-[12px] uppercase tracking-wider font-bold">
+    <th class="p-4 border-b border-slate-700 text-white">🛠️ อุปกรณ์</th>
+    <th class="p-4 border-b border-slate-700 text-center text-white">ชำรุด (รวม/ค้าง)</th>
+    <th class="p-4 border-b border-slate-700 text-center text-white">วันที่ชำรุด</th>
+    <th class="p-4 border-b border-slate-700 text-center text-white">วันที่ซ่อม</th>
+    <th class="p-4 border-b border-slate-700 text-center text-white">สถานะ</th>
+    <th class="p-4 border-b border-slate-700 text-center text-white">⚠️ ระยะเวลา</th>
+    <th class="p-4 border-b border-slate-700 text-white">รายละเอียด</th>
+  </tr>
+</thead>
       <tbody id="summaryBody" class="divide-y divide-slate-100 text-sm">
         </tbody>
     </table>
@@ -721,6 +720,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
 
 
 
