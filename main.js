@@ -982,7 +982,7 @@ window.changeUserRole = async function(email, newRole) {
     }
 };
 
-// 💥💥💥 FUNCTION: updateDeviceSummary 💥💥💥
+
 window.updateDeviceSummary = async function() {
     const siteData = sites[currentSiteKey];
     if (!siteData) return;
@@ -997,6 +997,11 @@ window.updateDeviceSummary = async function() {
     docsSnap.forEach(d => dataMap[d.id] = d.data());
 
     let summary = [];
+    
+    // --- เพิ่มตัวแปรสำหรับ Status Cards ---
+    let totalDevices = siteData.devices.length;
+    let currentBrokenCount = 0;
+    let currentNormalCount = 0;
 
     for (const dev of siteData.devices) {
         const docData = dataMap[dev]; 
@@ -1016,6 +1021,7 @@ window.updateDeviceSummary = async function() {
 
         if (remainingDownCount > 0) {
             currentStatusDisplay = 'ชำรุด';
+            currentBrokenCount++; // นับอุปกรณ์ที่ยังซ่อมไม่เสร็จ
             const oldestIssue = remainingDownRecords[0]; 
             earliestBrokenDate = oldestIssue.brokenDate || '-';
             latestFixedDate = '-'; 
@@ -1023,6 +1029,7 @@ window.updateDeviceSummary = async function() {
             latestBrokenDuration = formatDuration(latestBrokenDays);
         } else {
             currentStatusDisplay = 'ปกติ'; 
+            currentNormalCount++; // นับอุปกรณ์ที่ปกติ
             if (latestRecord && latestRecord.brokenDate) {
                  earliestBrokenDate = latestRecord.brokenDate;
                  latestFixedDate = latestRecord.fixedDate || '-'; 
@@ -1033,6 +1040,7 @@ window.updateDeviceSummary = async function() {
             }
         }
         
+        // --- ส่วน Filter (เหมือนเดิม) ---
         let dateFilterSource = earliestBrokenDate !== '-' ? earliestBrokenDate : (latestRecord?.brokenDate);
         if (dateFilterSource && dateFilterSource !== '-') {
             const latestTs = new Date(dateFilterSource).getTime();
@@ -1058,6 +1066,12 @@ window.updateDeviceSummary = async function() {
         });
     }
 
+    // --- อัปเดตตัวเลขลง Status Cards ---
+    if (document.getElementById('cardTotal')) document.getElementById('cardTotal').innerText = totalDevices;
+    if (document.getElementById('cardNormal')) document.getElementById('cardNormal').innerText = currentNormalCount;
+    if (document.getElementById('cardBroken')) document.getElementById('cardBroken').innerText = currentBrokenCount;
+
+    // --- ส่วนการ Render ตารางและ Pagination (เหมือนเดิม) ---
     summary.sort((a, b) => {
         const countSort = sortOrder === 'desc' ? b.count - a.count : a.count - b.count;
         if (countSort !== 0) return countSort;
@@ -1110,29 +1124,30 @@ window.updateDeviceSummary = async function() {
         });
     }
 
-    // ปรับปรุง Pagination สไตล์ Modern
+    // Pagination (สไตล์ที่คุณเขียนไว้)
     const pagination = document.getElementById('pagination');
-    pagination.className = "flex items-center justify-between px-6 py-4 bg-slate-50/50";
-    pagination.innerHTML = `
-        <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">
-            Showing ${startIndex + 1} to ${Math.min(endIndex, summary.length)} of ${summary.length} entries
-        </div>
-        <div class="flex items-center gap-1">
-            <button onclick="changePage(-1)" ${currentPage===1?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-            </button>
-            <div class="px-4 py-1 bg-white rounded-lg shadow-sm border border-slate-200 text-sm font-bold text-blue-600">
-                ${currentPage} / ${totalPages}
+    if (pagination) {
+        pagination.className = "flex items-center justify-between px-6 py-4 bg-slate-50/50";
+        pagination.innerHTML = `
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Showing ${startIndex + 1} to ${Math.min(endIndex, summary.length)} of ${summary.length} entries
             </div>
-            <button onclick="changePage(1)" ${currentPage===totalPages?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-            </button>
-        </div>
-    `;
+            <div class="flex items-center gap-1">
+                <button onclick="changePage(-1)" ${currentPage===1?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <div class="px-4 py-1 bg-white rounded-lg shadow-sm border border-slate-200 text-sm font-bold text-blue-600">
+                    ${currentPage} / ${totalPages}
+                </div>
+                <button onclick="changePage(1)" ${currentPage===totalPages?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </button>
+            </div>
+        `;
+    }
 
-    updateChart(summary);
+    if (typeof updateChart === 'function') updateChart(summary);
 };
-
 
 function updateChart(summary) {
 const sorted = [...summary].sort((a, b) => b.count - a.count);
@@ -1842,6 +1857,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
