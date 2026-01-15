@@ -905,14 +905,16 @@ window.changeUserRole = async function(email, newRole) {
             timer: 2000 
         });
         Toast.fire({ icon: 'success', title: `ปรับสิทธิ์ ${email} เป็น ${newRole} แล้ว` });
-        await createLog("USER_MANAGEMENT", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole.toUpperCase()}`, "");
+
+        // --- แก้ไขบรรทัดนี้: เปลี่ยนจาก "" เป็น "SYSTEM" ---
+        await createLog("USER_MANAGEMENT", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole.toUpperCase()}`, "SYSTEM");
+        
         loadUsers(); 
     } catch (error) {
         Swal.fire('ผิดพลาด', error.message, 'error');
         loadUsers();
     }
 };
-
 
 // 💥💥💥 FUNCTION: updateDeviceSummary 💥💥💥
 window.updateDeviceSummary = async function() {
@@ -1774,6 +1776,7 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
