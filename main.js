@@ -1733,7 +1733,7 @@ switchSite(initialSiteKey);
 });
 let logoutTimer; // ตัวแปรสำหรับฟังก์ชัน logout เดิม
 let countdownInterval; // ตัวแปรใหม่สำหรับนับถอยหลังวินาที
-const LOGOUT_TIME_LIMIT = 15 * 60 * 1000; // 15 นาที
+const LOGOUT_TIME_LIMIT = 30 * 60 * 1000; // 30 นาที
 
 window.startAutoLogoutTimer = function() {
     stopAutoLogoutTimer();
@@ -1929,3 +1929,4 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
