@@ -1783,9 +1783,9 @@ window.printReport = async function() {
         title: 'เลือกประเภทรายงาน',
         input: 'radio',
         inputOptions: {
-            'all': 'รายงานอุปกรณ์ทั้งหมด',
-            'broken': 'รายงานเฉพาะอุปกรณ์ที่กำลังชำรุด',
-            'history_broken': 'รายงานอุปกรณ์ที่เคยชำรุดทั้งหมด (มีประวัติ)'
+            'all': 'อุปกรณ์ทั้งหมด',
+            'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด',
+            'history_broken': 'อุปกรณ์ที่เคยชำรุดทั้งหมด'
         },
         inputValidator: (value) => {
             if (!value) return 'กรุณาเลือกประเภทรายงาน';
@@ -1816,7 +1816,7 @@ window.printReport = async function() {
         
         // เช็คว่าอุปกรณ์นี้ชำรุดค้างอยู่หรือไม่
         const isCurrentlyDown = records.some(r => r.status === 'down' && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
-
+        const hasBrokenHistory = records.length > 0;
         // ถ้าเลือกรายงานเฉพาะที่ชำรุด แต่ตัวนี้ไม่ได้ชำรุด ให้ข้ามไป
         if (reportType === 'broken' && !isCurrentlyDown) continue;
         if (reportType === 'history_broken' && !hasBrokenHistory) continue;
@@ -1931,5 +1931,6 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
