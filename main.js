@@ -35,19 +35,22 @@ devices: [
 "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10",
 "DG 1", "DG 2", "DG Master",
 "Gateway 1", "Gateway 2",
-"Firewall 1", "Firewall 2", "Firewall 3"
+"Firewall 1", "Firewall 2", "Firewall 3",
+"The others"
 ]
 },
 "mae-sariang": {
 name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน",
 devices: [
-"FireWall 1", "PCS-9893(2nd)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "Cyber Security Manager", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892", "PCS-9893(1st)", "PCS-9799(1st)", "PCS-9799(2nd)", "MGC 1", "MGC 2", "ATS", "PCS-9794(1st)", "Diesel Local", "PCS-9794(2nd)", "PCS-9726", "PCS-9567C", "PCS 1", "PCS 2", "PCS 3", "PCS 4", "PCS 5", "PCS 6", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15"
+"FireWall 1", "PCS-9893(2nd)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "Cyber Security Manager", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892", "PCS-9893(1st)", "PCS-9799(1st)", "PCS-9799(2nd)", "MGC 1", "MGC 2", "ATS", "PCS-9794(1st)", "Diesel Local", "PCS-9794(2nd)", "PCS-9726", "PCS-9567C", "PCS 1", "PCS 2", "PCS 3", "PCS 4", "PCS 5", "PCS 6", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15",
+"The others"
 ]
 },
 "betong": {
 name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา",
 devices: [
-"Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 6", "ETH Switch 7"
+"Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 6", "ETH Switch 7",
+"The others"
 ]
 }
 };
@@ -421,6 +424,7 @@ function clearForm() {
 
     document.getElementById('brokenDate').value = '';
     document.getElementById('description').value = '';
+    document.getElementById('solution').value = ''; // เพิ่มการเคลียร์ฟิลด์ วิธีแก้ไข
     
     editIndex = -1;
     document.getElementById('editHint').classList.add('hidden');
@@ -485,6 +489,7 @@ window.saveData = async function() {
         brokenDate,
         fixedDate,
         description: document.getElementById('description').value,
+        solution: document.getElementById('solution').value, // เพิ่มบันทึก วิธีแก้ไข
         ts: Date.now(),
         counted: (statusVal === 'down') 
     };
@@ -562,6 +567,7 @@ statusEl.innerHTML = getWarrantyStatusHTML(status);
 let infoParts = [];
 if (assetInfo.model) infoParts.push(`รุ่น: ${escapeHtml(assetInfo.model)}`);
 if (assetInfo.serial) infoParts.push(`S/N: ${escapeHtml(assetInfo.serial)}`);
+if (assetInfo.peaNo) infoParts.push(`PEA: ${escapeHtml(assetInfo.peaNo)}`); // เพิ่มการแสดง PEA No.
 infoEl.innerHTML = infoParts.join(' | ') || 'ลงทะเบียนแล้ว';
 } else {
 statusEl.innerHTML = '<span class="tag tag-warranty-bad">🚫 ยังไม่ลงทะเบียน</span>';
@@ -569,7 +575,7 @@ infoEl.innerHTML = 'กรุณาคลิก "ดู/แก้ไขข้อ
 }
 }
 
-async function loadHistory() {
+window.loadHistory = async function() {
     const container = document.getElementById('historySection');
     container.innerHTML = '';
     if (!currentDevice) return;
@@ -577,24 +583,37 @@ async function loadHistory() {
     const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
     let docData = null, records = [], assetInfo = null;
 
-    try {   const snap = await docRef.get({ source: 'server' }); 
-    if (snap.exists) { docData = snap.data(); records = docData.records || []; assetInfo = docData.assetInfo || null; }
-    } catch (e) { console.error("Error fetching device:", e); container.innerHTML = '<p>Error loading data</p>'; return; }
+    try {   
+        const snap = await docRef.get({ source: 'server' }); 
+        if (snap.exists) { docData = snap.data(); records = docData.records || []; assetInfo = docData.assetInfo || null; }
+    } catch (e) { 
+        console.error("Error fetching device:", e); container.innerHTML = '<p>Error loading data</p>'; return; 
+    }
 
     updateAssetDisplays(assetInfo);
+    
+    // ตรวจสอบตัวกรองเฉพาะรายการค้างซ่อม (สถานะเป็น down และยังไม่มีวันที่ซ่อม)
+    const filterBrokenOnly = document.getElementById('filterBrokenHistory') ? document.getElementById('filterBrokenHistory').checked : false;
+    
+    if (filterBrokenOnly) {
+        records = records.filter(r => r.status === 'down' && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
+    }
+
     records.sort((a, b) => b.ts - a.ts); 
     if (records.length === 0) {
-    container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>';
-    return;
+        container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>';
+        return;
     }
 
     const canEdit = (currentUserRole === 'editor' || currentUserRole === 'admin') ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
 
     let isCurrentBrokenFound = false; 
-    const totalRecords = records.length;
+    const totalRecords = docData?.records?.length || records.length; // ใช้ความยาวดั้งเดิมเพื่อรันเลขครั้งที่ให้ถูก
 
     records.forEach((r, index) => {
-        const recordSequence = totalRecords - index; 
+        // คำนวณเลข Sequence จากข้อมูลเต็ม ถ้าเป็นตัวกรองอาจจะไม่เรียงกัน แต่ขออนุญาตใช้ Index ของลูปสำหรับแสดงผลให้ง่าย
+        const recordSequence = records.length - index; 
+        
         let duration = '-';
         if (r.brokenDate) {
             if (r.fixedDate) {
@@ -613,14 +632,13 @@ async function loadHistory() {
         const statusClass = r.status === 'ok' ? 'tag-ok' : 'tag-bad';
         const statusText = r.status === 'ok' ? '✅ ใช้งานได้' : '❎ ชำรุด';
         const div = document.createElement('div');
-        // --- เปลี่ยน Class ตรงนี้ให้เป็น Light Theme ---
         div.className = 'p-4 mb-3 border border-gray-200 bg-white rounded-lg shadow-sm'; 
 
         div.innerHTML = `
             <div class="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
                 <div class="text-lg font-bold text-slate-800">
                     <span class="tag ${statusClass}">${statusText}</span>
-                        <span class="ml-2 text-base text-gray-500"> | ครั้งที่ ${recordSequence}</span>
+                        <span class="ml-2 text-base text-gray-500"></span>
                 </div>
                 <div class="text-sm text-gray-500">
                     โดย: <span class="font-semibold text-slate-700">${escapeHtml(r.user || 'ไม่ระบุ')}</span>
@@ -631,7 +649,8 @@ async function loadHistory() {
                 <div>วันที่ซ่อม: ${r.fixedDate || '-'}</div>
                 <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
             </div>
-            <div class="mt-3 text-sm text-gray-700 italic">"${escapeHtml(r.description || '-')}"</div>
+            <div class="mt-3 text-sm text-gray-700 italic"><b>รายละเอียด:</b> "${escapeHtml(r.description || '-')}"</div>
+            <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข:</b> ${escapeHtml(r.solution || '-')}</div>
             <div class="mt-4 flex justify-end space-x-2">
                 <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
                 <button class="btn btn-ghost text-red-600 hover:bg-red-50" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
@@ -699,6 +718,7 @@ window.editRecord = async function(ts) {
     document.getElementById('brokenDate').value = r.brokenDate || '';
     document.getElementById('fixedDate').value = r.fixedDate || '';
     document.getElementById('description').value = r.description || '';
+    document.getElementById('solution').value = r.solution || ''; // ดึงข้อมูลวิธีแก้ไขมาแสดง
     editIndex = idx;
     document.getElementById('editHint').classList.remove('hidden');
 };
@@ -726,7 +746,7 @@ async function loadAssetData() {
     let assetInfo = {};
     if (snap.exists && snap.data().assetInfo) { assetInfo = snap.data().assetInfo; }
 
-    const inputIds = ['assetSerial', 'assetModel', 'assetManufacturer', 'assetWarrantyStart', 'assetWarrantyEnd'];
+    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetPrice', 'assetManufacturer', 'assetWarrantyStart', 'assetWarrantyEnd'];
     
     // 💥 RBAC CHECK: Admin Only for Assets
     const isAdmin = (currentUserRole === 'admin');
@@ -745,6 +765,8 @@ async function loadAssetData() {
 
     document.getElementById('assetSerial').value = assetInfo.serial || '';
     document.getElementById('assetModel').value = assetInfo.model || '';
+    document.getElementById('assetPeaNo').value = assetInfo.peaNo || ''; // โหลด PEA No.
+    document.getElementById('assetPrice').value = assetInfo.price || ''; // โหลด ราคา
     document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
     document.getElementById('assetWarrantyStart').value = assetInfo.warrantyStart || '';
     document.getElementById('assetWarrantyEnd').value = assetInfo.warrantyEnd || '';
@@ -770,6 +792,8 @@ window.saveAssetData = async function() {
     const assetInfo = {
         serial: document.getElementById('assetSerial').value,
         model: document.getElementById('assetModel').value,
+        peaNo: document.getElementById('assetPeaNo').value, // บันทึก PEA No.
+        price: document.getElementById('assetPrice').value, // บันทึก ราคา
         manufacturer: document.getElementById('assetManufacturer').value,
         warrantyStart: document.getElementById('assetWarrantyStart').value,
         warrantyEnd: document.getElementById('assetWarrantyEnd').value,
@@ -1061,6 +1085,7 @@ window.updateDeviceSummary = async function() {
             fixedDate: latestFixedDate,
             status: currentStatusDisplay,
             latestDescription: latestRecord?.description || '-',
+            latestSolution: latestRecord?.solution || '-', // เพิ่มข้อมูลวิธีแก้ไข
             latestBrokenDuration: latestBrokenDuration,
             latestBrokenDays: latestBrokenDays,
         });
@@ -1089,7 +1114,7 @@ window.updateDeviceSummary = async function() {
     tbody.innerHTML = '';
 
     if (summary.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-slate-400 italic"> ไม่พบข้อมูลอุปกรณ์ตามเงื่อนไขที่เลือก </td></tr>'; 
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-slate-400 italic"> ไม่พบข้อมูลอุปกรณ์ตามเงื่อนไขที่เลือก </td></tr>'; 
     } else {
         pageData.forEach(s => {
             const isDown = s.status === 'ชำรุด';
@@ -1116,7 +1141,10 @@ window.updateDeviceSummary = async function() {
                     <span class="text-xs font-bold ${isDown ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span>
                 </td>
                 <td class="p-4">
-                    <p class="text-xs text-slate-500 truncate max-w-[180px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p>
+                    <p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p>
+                </td>
+                <td class="p-4">
+                    <p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p>
                 </td>
             `;
             tr.onclick = () => window.openForm(s.device);
@@ -1192,15 +1220,16 @@ window.updateDeviceStatusOverlays = async function(siteKey) {
     const areaElements = mapElement.querySelectorAll('area');
     const MIN_DIMENSION = 10;
     
-    // 💥 แก้ไข: ลบ OFFSET_TOP ออก เพื่อแก้ปัญหาตำแหน่งเลื่อน
-    // const OFFSET_TOP = ... (ลบทิ้ง)
-
     areaElements.forEach(area => {
         const deviceName = area.getAttribute('alt');
+        if(!deviceName || deviceName === 'The others') return; // ไม่วาด overlay ให้ The others
+
         const isDown = downDevices[deviceName]; // เช็คว่าเสียหรือไม่
 
         // ดึงพิกัด
-        const coords = area.getAttribute('coords').split(',').map(c => parseInt(c.trim()));
+        const coordsAttr = area.getAttribute('coords');
+        if(!coordsAttr) return;
+        const coords = coordsAttr.split(',').map(c => parseInt(c.trim()));
         const shape = area.getAttribute('shape');
 
         let x, y, width, height;
@@ -1357,6 +1386,8 @@ window.importData = function(event) {
                         'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'),
                         'Serial Number': headers.indexOf('Serial Number'),
                         'Model': headers.indexOf('Model'),
+                        'PEA No.': headers.indexOf('PEA No.'), // เพิ่มดึงคอลัมน์ PEA No.
+                        'ราคา': headers.indexOf('ราคา'), // เพิ่มดึงคอลัมน์ ราคา
                         'Manufacturer': headers.indexOf('Manufacturer'),
                         'วันที่เริ่มประกัน': headers.indexOf('วันที่เริ่มประกัน'),
                         'วันที่หมดประกัน': headers.indexOf('วันที่หมดประกัน'),
@@ -1369,6 +1400,8 @@ window.importData = function(event) {
                             const assetInfo = {
                                 serial: row[headerMap['Serial Number']] || '',
                                 model: row[headerMap['Model']] || '',
+                                peaNo: (headerMap['PEA No.'] !== -1) ? (row[headerMap['PEA No.']] || '') : '',
+                                price: (headerMap['ราคา'] !== -1) ? (row[headerMap['ราคา']] || '') : '',
                                 manufacturer: row[headerMap['Manufacturer']] || '',
                                 warrantyStart: cleanDate(row[headerMap['วันที่เริ่มประกัน']]),
                                 warrantyEnd: cleanDate(row[headerMap['วันที่หมดประกัน']]),
@@ -1389,6 +1422,7 @@ window.importData = function(event) {
                         'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'),
                         'สถานะ': headers.indexOf('สถานะ'),
                         'คำอธิบาย': headers.indexOf('คำอธิบาย'),
+                        'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'), // เพิ่มดึงคอลัมน์วิธีแก้ไข
                         'ผู้บันทึก': headers.indexOf('ผู้บันทึก')
                     };
                     const requiredHeaders = ['ชื่ออุปกรณ์', 'วันที่ชำรุด', 'สถานะ'];
@@ -1409,6 +1443,7 @@ window.importData = function(event) {
                                 fixedDate: importedFixedDate || null, 
                                 status: finalStatus, 
                                 description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel',
+                                solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
                                 user: (row[headerMap['ผู้บันทึก']] || '').toString() || currentUser.email,
                                 counted: !!importedBrokenDate, 
                             };
@@ -1442,9 +1477,11 @@ window.exportAllDataExcel = async function() {
     const dataMap = {};
     docsSnap.forEach(d => dataMap[d.id] = d.data());
 
-    const recordsHeader = ['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการชำรุด (ครั้งที่ N)', 'วันที่ชำรุด', 'วันที่ซ่อมแซม', 'ระยะเวลาชำรุด', 'สถานะ', 'คำอธิบาย', 'ผู้บันทึก'];
+    // เพิ่ม วิธีแก้ไข ใน headers ของ records
+    const recordsHeader = ['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการชำรุด (ครั้งที่ N)', 'วันที่ชำรุด', 'วันที่ซ่อมแซม', 'ระยะเวลาชำรุด', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'ผู้บันทึก'];
     const recordsData = [recordsHeader]; 
-    const assetHeader = ['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
+    // เพิ่ม PEA No. และ ราคา ใน headers ของ assets
+    const assetHeader = ['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคา', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
     const assetData = [assetHeader]; 
 
     for (const devName of siteData.devices) {
@@ -1458,7 +1495,7 @@ window.exportAllDataExcel = async function() {
             case 'bad': warrantyStatusText = 'หมดประกัน'; break;
         }
         assetData.push([
-            devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.manufacturer || '-',
+            devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-',
             (assetInfo.warrantyStart || '-').replace(/-/g, '/'), 
             (assetInfo.warrantyEnd || '-').replace(/-/g, '/'),   
             warrantyStatusText
@@ -1484,7 +1521,7 @@ window.exportAllDataExcel = async function() {
                 r.ts || '-', devName, sequenceNumber,
                 (r.brokenDate || '-').replace(/-/g, '/'), 
                 (r.fixedDate || '-').replace(/-/g, '/'),  
-                duration, r.status === 'down' ? 'ชำรุด' : 'ใช้งานได้', r.description || '-', r.user || '-', 
+                duration, r.status === 'down' ? 'ชำรุด' : 'ใช้งานได้', r.description || '-', r.solution || '-', r.user || '-', 
             ]);
         });
     }
@@ -1740,6 +1777,26 @@ window.stopAutoLogoutTimer = function() {
 
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
+    
+    // แจ้งเตือนให้เลือกประเภทรายงาน (ทั้งหมด หรือ แค่ชำรุด)
+    const result = await Swal.fire({
+        title: 'เลือกประเภทรายงาน',
+        input: 'radio',
+        inputOptions: {
+            'all': 'รายงานอุปกรณ์ทั้งหมด',
+            'broken': 'รายงานเฉพาะอุปกรณ์ที่กำลังชำรุด'
+        },
+        inputValidator: (value) => {
+            if (!value) return 'กรุณาเลือกประเภทรายงาน';
+        },
+        showCancelButton: true,
+        confirmButtonText: 'สร้างรายงาน',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (!result.isConfirmed) return;
+    const reportType = result.value;
+
     Swal.fire({ title: 'กำลังสร้างรายงาน...', didOpen: () => { Swal.showLoading(); } });
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {};
@@ -1755,6 +1812,13 @@ window.printReport = async function() {
         let records = docData.records || [];
         records.sort((a, b) => b.ts - a.ts); 
         const assetInfo = docData.assetInfo || {};
+        
+        // เช็คว่าอุปกรณ์นี้ชำรุดค้างอยู่หรือไม่
+        const isCurrentlyDown = records.some(r => r.status === 'down' && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
+
+        // ถ้าเลือกรายงานเฉพาะที่ชำรุด แต่ตัวนี้ไม่ได้ชำรุด ให้ข้ามไป
+        if (reportType === 'broken' && !isCurrentlyDown) continue;
+
         const rowSpan = records.length > 0 ? records.length : 1;
         for (let i = 0; i < rowSpan; i++) {
             const r = records[i];
@@ -1779,16 +1843,24 @@ window.printReport = async function() {
                     <td class="text-center hist-text">${r.brokenDate || '-'}</td>
                     <td class="text-center hist-text">${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
                     <td class="text-left hist-text desc-cell">${r.description || '-'}</td>
-                    <td class="text-left hist-text user-cell">${r.user ? r.user.split('@')[0] : '-'}</td>
+                    <td class="text-left hist-text desc-cell">${r.solution || '-'}</td> <td class="text-left hist-text user-cell">${r.user ? r.user.split('@')[0] : '-'}</td>
                 `;
             } else {
-                tableContent += `<td colspan="5" class="empty-cell">No maintenance history recorded.</td>`;
+                tableContent += `<td colspan="6" class="empty-cell">No maintenance history recorded.</td>`;
             }
             tableContent += `</tr>`;
         }
     }
     Swal.close();
+    
+    // ถ้ากรองแล้วไม่พบข้อมูล
+    if (tableContent === '') {
+        Swal.fire('ไม่พบข้อมูล', 'ไม่มีอุปกรณ์ตามเงื่อนไขรายงานที่คุณเลือก', 'info');
+        return;
+    }
+
     const printWindow = window.open('', '', 'height=900,width=1300');
+    // เพิ่ม <th>Solutions</th> ลงในโครงสร้าง Report
     printWindow.document.write(`
         <html><head><title>MAINTENANCE_LOG_${printDate}</title>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -1831,10 +1903,10 @@ window.printReport = async function() {
         </head>
         <body>
             <div class="page-wrapper">
-                <div class="report-header"><div><h1>Asset Maintenance Report</h1><div class="site-name">PROJECT: ${siteData.name}</div></div>
+                <div class="report-header"><div><h1>Asset Maintenance Report</h1><div class="site-name">PROJECT: ${siteData.name} ${reportType==='broken'? '(เฉพาะที่กำลังชำรุด)' : ''}</div></div>
                     <div class="header-meta"><strong>DATE:</strong> ${printDate}<br><strong>TIME:</strong> ${printTime}<br><strong>OPERATOR:</strong> ${currentUser ? currentUser.email : 'ADMIN'}</div>
                 </div>
-                <table><thead><tr><th style="width: 40px;">No.</th><th style="width: 220px;">Device & Specs</th><th style="width: 50px;">Occ.</th><th style="width: 100px;">Down Date</th><th style="width: 100px;">Fixed Date</th><th>Description</th><th style="width: 120px;">Recorded By</th></tr></thead><tbody>${tableContent}</tbody></table>
+                <table><thead><tr><th style="width: 40px;">No.</th><th style="width: 220px;">Device & Specs</th><th style="width: 40px;">Occ.</th><th style="width: 90px;">Down Date</th><th style="width: 90px;">Fixed Date</th><th>Description</th><th style="width: 150px;">Solutions</th><th style="width: 100px;">Recorded By</th></tr></thead><tbody>${tableContent}</tbody></table>
                 <div class="report-footer">Generated by Microgrid Asset Management System</div>
             </div>
             <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 1200); }</script>
@@ -1846,7 +1918,7 @@ window.printReport = async function() {
 window.sendEmailNotify = async function(type, deviceName, description, user, dateVal, count) {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzLRfWeTwhZN_kU_8RD_eXiy30Mtt1duleN1Vxmw4RV7wB_mmTFhDPXObWCVoaUzF0GgQ/exec"; 
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์ชำรุด (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
-    const message = `หัวข้อ: ${title}\n------------------------------------------\n📍 สถานที่: ${sites[currentSiteKey].name}\n🛠️ อุปกรณ์: ${deviceName}\n📝 รายละเอียด: ${description || '-'}\n📅 วันที่ทำรายการ: ${dateVal}\n👤 ผู้บันทึก: ${user}\n🕒 เวลาที่บันทึกในระบบ: ${new Date().toLocaleString('th-TH')}\n------------------------------------------`;
+    const message = `หัวข้อ: ${title}\n------------------------------------------\n📍 สถานที่: ${sites[currentSiteKey].name}\n🛠️ อุปกรณ์: ${deviceName}\n📝 รายละเอียด: ${description || '-'}\n วิธีแก้ไข: ${solution || '-'}\n 📅 วันที่ทำรายการ: ${dateVal}\n👤 ผู้บันทึก: ${user}\n🕒 เวลาที่บันทึกในระบบ: ${new Date().toLocaleString('th-TH')}\n------------------------------------------`;
     try {
         await fetch(GAS_URL, {
             method: 'POST', mode: 'no-cors', cache: 'no-cache',
@@ -1857,37 +1929,3 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
