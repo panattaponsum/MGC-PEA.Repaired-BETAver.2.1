@@ -513,10 +513,10 @@ window.saveData = async function() {
     window.updateDeviceStatusOverlays(currentSiteKey); 
    
     if (statusVal === 'down' && !isEditing) { 
-        sendEmailNotify('down', currentDevice, baseRec.description, baseRec.user, baseRec.brokenDate, records.filter(r => r.counted).length);
+        sendEmailNotify('down', currentDevice, baseRec.description,baseRec.solution, baseRec.user, baseRec.brokenDate, records.filter(r => r.counted).length);
     }
     if (statusVal === 'ok' && !isEditing) { 
-        sendEmailNotify('fixed', currentDevice, baseRec.description, baseRec.user, baseRec.fixedDate, null);
+        sendEmailNotify('fixed', currentDevice, baseRec.description,baseRec.solution, baseRec.user, baseRec.fixedDate, null);
     }
 
     Swal.fire("บันทึกเรียบร้อย", "", "success");
@@ -638,7 +638,7 @@ window.loadHistory = async function() {
             <div class="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
                 <div class="text-lg font-bold text-slate-800">
                     <span class="tag ${statusClass}">${statusText}</span>
-                        <span class="ml-2 text-base text-gray-500"></span>
+                        <span class="ml-2 text-base text-gray-500">| ครั้งที่ ${recordSequence}</span>
                 </div>
                 <div class="text-sm text-gray-500">
                     โดย: <span class="font-semibold text-slate-700">${escapeHtml(r.user || 'ไม่ระบุ')}</span>
@@ -649,7 +649,7 @@ window.loadHistory = async function() {
                 <div>วันที่ซ่อม: ${r.fixedDate || '-'}</div>
                 <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
             </div>
-            <div class="mt-3 text-sm text-gray-700 italic"><b>รายละเอียด:</b> "${escapeHtml(r.description || '-')}"</div>
+            <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียด:</b> "${escapeHtml(r.description || '-')}"</div>
             <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข:</b> ${escapeHtml(r.solution || '-')}</div>
             <div class="mt-4 flex justify-end space-x-2">
                 <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
@@ -1784,7 +1784,8 @@ window.printReport = async function() {
         input: 'radio',
         inputOptions: {
             'all': 'รายงานอุปกรณ์ทั้งหมด',
-            'broken': 'รายงานเฉพาะอุปกรณ์ที่กำลังชำรุด'
+            'broken': 'รายงานเฉพาะอุปกรณ์ที่กำลังชำรุด',
+            'history_broken': 'รายงานอุปกรณ์ที่เคยชำรุดทั้งหมด (มีประวัติ)'
         },
         inputValidator: (value) => {
             if (!value) return 'กรุณาเลือกประเภทรายงาน';
@@ -1818,6 +1819,7 @@ window.printReport = async function() {
 
         // ถ้าเลือกรายงานเฉพาะที่ชำรุด แต่ตัวนี้ไม่ได้ชำรุด ให้ข้ามไป
         if (reportType === 'broken' && !isCurrentlyDown) continue;
+        if (reportType === 'history_broken' && !hasBrokenHistory) continue;
 
         const rowSpan = records.length > 0 ? records.length : 1;
         for (let i = 0; i < rowSpan; i++) {
@@ -1903,7 +1905,7 @@ window.printReport = async function() {
         </head>
         <body>
             <div class="page-wrapper">
-                <div class="report-header"><div><h1>Asset Maintenance Report</h1><div class="site-name">PROJECT: ${siteData.name} ${reportType==='broken'? '(เฉพาะที่กำลังชำรุด)' : ''}</div></div>
+                <div class="report-header"><div><h1>Asset Maintenance Report</h1><div class="site-name">PROJECT: ${siteData.name} ${reportType==='broken'? '(เฉพาะที่กำลังชำรุด)' : (reportType==='history_broken' ? '(ที่เคยชำรุดทั้งหมด)' : '')}</div></div>
                     <div class="header-meta"><strong>DATE:</strong> ${printDate}<br><strong>TIME:</strong> ${printTime}<br><strong>OPERATOR:</strong> ${currentUser ? currentUser.email : 'ADMIN'}</div>
                 </div>
                 <table><thead><tr><th style="width: 40px;">No.</th><th style="width: 220px;">Device & Specs</th><th style="width: 40px;">Occ.</th><th style="width: 90px;">Down Date</th><th style="width: 90px;">Fixed Date</th><th>Description</th><th style="width: 150px;">Solutions</th><th style="width: 100px;">Recorded By</th></tr></thead><tbody>${tableContent}</tbody></table>
@@ -1915,7 +1917,7 @@ window.printReport = async function() {
     printWindow.document.close();
 };
 
-window.sendEmailNotify = async function(type, deviceName, description, user, dateVal, count) {
+window.sendEmailNotify = async function(type, deviceName, description,solution, user, dateVal, count) {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzLRfWeTwhZN_kU_8RD_eXiy30Mtt1duleN1Vxmw4RV7wB_mmTFhDPXObWCVoaUzF0GgQ/exec"; 
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์ชำรุด (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
     const message = `หัวข้อ: ${title}\n------------------------------------------\n📍 สถานที่: ${sites[currentSiteKey].name}\n🛠️ อุปกรณ์: ${deviceName}\n📝 รายละเอียด: ${description || '-'}\n วิธีแก้ไข: ${solution || '-'}\n 📅 วันที่ทำรายการ: ${dateVal}\n👤 ผู้บันทึก: ${user}\n🕒 เวลาที่บันทึกในระบบ: ${new Date().toLocaleString('th-TH')}\n------------------------------------------`;
@@ -1929,4 +1931,5 @@ window.sendEmailNotify = async function(type, deviceName, description, user, dat
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
