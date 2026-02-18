@@ -417,6 +417,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
       <area alt="Firewall 1" coords="1088,384,1181,417" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
       <area alt="Firewall 2" coords="1216,384,1292,411" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
       <area alt="Firewall 3" coords="1429,416,1513,446" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
+      <area shape="default" alt="The others" href="#" onclick="openForm('The others'); return false;">
       </map>
   <div id="overlay-container-ko-phaluay" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
 </div>
@@ -467,6 +468,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <area alt="BMS 5" coords="1282,847,1360,866" shape="rect" href="" onclick="openForm('BMS 5'); return false;">
       <area alt="BMS 6" coords="1396,844,1477,866" shape="rect" href="" onclick="openForm('BMS 6'); return false;">
 <area alt="FRTU 1-15" coords="1492,679,1770,796" shape="rect" href="" onclick="openForm('FRTU 1-15'); return false;">
+      <area shape="default" alt="The others" href="#" onclick="openForm('The others'); return false;">
     </map>
     <div id="overlay-container-mae-sariang" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
   </div>
@@ -483,6 +485,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <area alt="ETH Switch 4" coords="1048,708,1222,738" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
     <area alt="ETH Switch 6" coords="464,374,510,451" shape="rect" href="" onclick="openForm('ETH Switch 6'); return false;">
     <area alt="ETH Switch 7" coords="657,371,703,452" shape="rect" href="" onclick="openForm('ETH Switch 7'); return false;">
+      <area shape="default" alt="The others" href="#" onclick="openForm('The others'); return false;">
     </map>
     <div id="overlay-container-betong" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
   </div>
@@ -589,6 +592,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <th class="p-4 border-b border-slate-700 text-center text-white">สถานะ</th>
     <th class="p-4 border-b border-slate-700 text-center text-white">⚠️ ระยะเวลา</th>
     <th class="p-4 border-b border-slate-700 text-white">รายละเอียด</th>
+    <th class="p-4 border-b border-slate-700 text-white">วิธีแก้ไข</th>
   </tr>
 </thead>
       <tbody id="summaryBody" class="divide-y divide-slate-100 text-sm">
@@ -661,7 +665,11 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
       </div>
       <div class="sm:col-span-2">
         <label class="text-sm font-semibold text-gray-700">รายละเอียด</label>
-        <textarea id="description" rows="3" class="w-full"></textarea>
+        <textarea id="description" rows="2" class="w-full"></textarea>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="text-sm font-semibold text-gray-700">วิธีแก้ไข</label>
+        <textarea id="solution" rows="2" class="w-full"></textarea>
       </div>
     </div>
     <div class="row mt-4">
@@ -671,7 +679,15 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <div id="editHint" class="muted hidden text-orange-600">กำลังแก้ไขรายการเดิม…</div>
     </div>
     <hr class="border-gray-200 mt-4 mb-3">
-    <h3 class="mt-2 mb-2 text-lg text-slate-800">📜 ประวัติ</h3>
+    
+    <div class="flex justify-between items-center mt-2 mb-2">
+        <h3 class="m-0 text-lg text-slate-800">📜 ประวัติ</h3>
+        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" id="filterBrokenHistory" onchange="loadHistory()" class="rounded border-gray-300">
+            <span>แสดงเฉพาะรายการชำรุด (ค้างซ่อม)</span>
+        </label>
+    </div>
+    
     <div id="historySection"></div>
 </div>
 
@@ -689,6 +705,14 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
         <div>
             <label class="text-sm font-semibold text-gray-700">รุ่น (Model)</label>
             <input type="text" id="assetModel" class="w-full"/>
+        </div>
+        <div>
+            <label class="text-sm font-semibold text-gray-700">PEA No.</label>
+            <input type="text" id="assetPeaNo" class="w-full"/>
+        </div>
+        <div>
+            <label class="text-sm font-semibold text-gray-700">ราคา (Price)</label>
+            <input type="number" id="assetPrice" class="w-full" step="0.01"/>
         </div>
         <div class="sm:col-span-2">
             <label class="text-sm font-semibold text-gray-700">ผู้ผลิต (Manufacturer)</label>
@@ -742,9 +766,3 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
-
-
-
-
-
-
