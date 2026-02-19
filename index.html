@@ -120,16 +120,62 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 /* --- Modals (Light Theme) --- */
 #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); z-index: 1000; }
 
-#formModal, #assetModal, #userModal {
+#formModal {
     overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
-    width: min(600px, 92vw);
-    background: #ffffff; /* White bg */
+    width: min(1100px, 95vw); /* กว้างขึ้นสำหรับ 2 คอลัมน์ */
+    max-height: 95vh; /* สูงเกือบเต็มจอ */
+    background: #ffffff; 
     border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 24px;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     display: none; flex-direction: column;
     color: var(--text);
+}
+
+/* Modals อื่นๆ ใช้ขนาดเดิม */
+#assetModal, #userModal {
+    overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
+    width: min(600px, 92vw);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    display: none; flex-direction: column;
+    color: var(--text);
+}
+
+/* --- Layout ใหม่สำหรับฟอร์ม (ซ้าย-ขวา) --- */
+.modal-split-layout {
+    display: flex;
+    gap: 24px;
+    flex: 1;
+    min-height: 0; /* สำคัญสำหรับการ scroll ภายใน */
+}
+
+.modal-left {
+    flex: 1; /* กินพื้นที่ส่วนซ้าย */
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* scroll ได้ถ้าเนื้อหาเยอะ */
+}
+
+.modal-right {
+    flex: 1; /* กินพื้นที่ส่วนขวา */
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #e2e8f0; /* เส้นแบ่ง */
+    padding-left: 24px;
+    min-width: 320px; /* ความกว้างขั้นต่ำของประวัติ */
+}
+
+/* Responsive: มือถือให้เรียงลงมา */
+@media (max-width: 1024px) {
+    #formModal { width: min(600px, 95vw); max-height: 90vh; }
+    .modal-split-layout { flex-direction: column; }
+    .modal-right { border-left: none; border-top: 1px solid #e2e8f0; padding-left: 0; padding-top: 20px; margin-top: 20px; min-width: 0; }
+    #historySection { max-height: 300px; }
 }
 
 #formModal input, #formModal select, #formModal textarea,
@@ -628,67 +674,71 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <div id="overlay" onclick="closeForm()"></div>
 <div id="formModal">
     <div class="row mb-2">
-    <h3 id="formTitle" class="m-0 text-xl font-bold text-slate-800">บันทึกข้อมูล</h3>
-    <span class="spacer"></span>
-    <button class="btn btn-ghost text-gray-500 hover:text-red-500" onclick="closeForm()">✖ ปิด</button>
+        <h3 id="formTitle" class="m-0 text-xl font-bold text-slate-800">บันทึกข้อมูล</h3>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost text-gray-500 hover:text-red-500" onclick="closeForm()">✖ ปิด</button>
     </div>
 
-    <div class="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-        <div class="flex justify-between items-center">
-            <div>
-                <div id="warrantyStatusDisplay" class="text-sm font-bold text-slate-700">-</div>
-                <div id="assetInfoDisplay" class="text-xs text-gray-500 mt-1">-</div>
+    <div class="modal-split-layout">
+        <div class="modal-left">
+            <div class="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div id="warrantyStatusDisplay" class="text-sm font-bold text-slate-700">-</div>
+                        <div id="assetInfoDisplay" class="text-xs text-gray-500 mt-1">-</div>
+                    </div>
+                    <button class="btn btn-ghost text-xs border border-gray-200" onclick="openAssetModal()">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
+                </div>
             </div>
-            <button class="btn btn-ghost text-xs border border-gray-200" onclick="openAssetModal()">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm font-semibold text-gray-700">ชื่อผู้บันทึก</label>
+                <input type="text" id="userName" class="w-full" readOnly/>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700">สถานะ</label>
+                <select id="status" class="w-full">
+                  <option value="ok">✅ ใช้งานได้</option>
+                  <option value="down">❎ ชำรุด</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700">วันที่ชำรุด</label>
+                <input type="date" id="brokenDate" class="w-full"/>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700">วันที่ซ่อมแซม</label>
+                <input type="date" id="fixedDate" class="w-full"/>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-sm font-semibold text-gray-700">รายละเอียด</label>
+                <textarea id="description" rows="2" class="w-full"></textarea>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-sm font-semibold text-gray-700">วิธีแก้ไข</label>
+                <textarea id="solution" rows="2" class="w-full"></textarea>
+              </div>
+            </div>
+            
+            <div class="row mt-4">
+                <button class="btn btn-brand" onclick="saveData()" id="saveDataButton">💾 บันทึกข้อมูล</button>
+                <span class="spacer"></span>
+                <div id="editHint" class="muted hidden text-orange-600">กำลังแก้ไขรายการเดิม…</div>
+            </div>
+        </div>
+
+        <div class="modal-right">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="m-0 text-lg text-slate-800">📜 ประวัติการชำรุด</h3>
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" id="filterBrokenHistory" onchange="loadHistory()" class="rounded border-gray-300">
+                    <span class="text-xs">ค้างซ่อม</span>
+                </label>
+            </div>
+            <div id="historySection"></div>
         </div>
     </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label class="text-sm font-semibold text-gray-700">ชื่อผู้บันทึก</label>
-        <input type="text" id="userName" class="w-full" readOnly/>
-      </div>
-      <div>
-        <label class="text-sm font-semibold text-gray-700">สถานะ</label>
-        <select id="status" class="w-full">
-          <option value="ok">✅ ใช้งานได้</option>
-          <option value="down">❎ ชำรุด</option>
-        </select>
-      </div>
-      <div>
-        <label class="text-sm font-semibold text-gray-700">วันที่ชำรุด</label>
-        <input type="date" id="brokenDate" class="w-full"/>
-      </div>
-      <div>
-        <label class="text-sm font-semibold text-gray-700">วันที่ซ่อมแซม</label>
-        <input type="date" id="fixedDate" class="w-full"/>
-      </div>
-      <div class="sm:col-span-2">
-        <label class="text-sm font-semibold text-gray-700">รายละเอียด</label>
-        <textarea id="description" rows="2" class="w-full"></textarea>
-      </div>
-      <div class="sm:col-span-2">
-        <label class="text-sm font-semibold text-gray-700">วิธีแก้ไข</label>
-        <textarea id="solution" rows="2" class="w-full"></textarea>
-      </div>
-    </div>
-    <div class="row mt-4">
-    <button class="btn btn-brand" onclick="saveData()" id="saveDataButton">💾 บันทึก</button>
-   
-    <span class="spacer"></span>
-    <div id="editHint" class="muted hidden text-orange-600">กำลังแก้ไขรายการเดิม…</div>
-    </div>
-    <hr class="border-gray-200 mt-4 mb-3">
-    
-    <div class="flex justify-between items-center mt-2 mb-2">
-        <h3 class="m-0 text-lg text-slate-800">📜 ประวัติ</h3>
-        <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input type="checkbox" id="filterBrokenHistory" onchange="loadHistory()" class="rounded border-gray-300">
-            <span>แสดงเฉพาะรายการชำรุด (ค้างซ่อม)</span>
-        </label>
-    </div>
-    
-    <div id="historySection"></div>
 </div>
 
 <div id="assetModal" >
@@ -766,3 +816,4 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
