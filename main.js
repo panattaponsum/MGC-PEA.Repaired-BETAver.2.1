@@ -21,8 +21,9 @@ let currentDevice = null, editIndex = -1, chartInstance = null;
 let currentPage = 1;
 const pageSize = 7; 
 let currentUser = null;
-let currentUserRole = 'viewer'; // default role
-const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; // Hardcoded Admin
+let currentUserRole = 'viewer'; 
+let currentUserFullName = ''; // เก็บชื่อเต็ม
+const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
 
 const sites = {
 "ko-phaluay": {
@@ -54,7 +55,7 @@ devices: [
 ]
 },
 "phrao": {
-name: "ไมโครกริดพร้าว อ.พร้าว จ.เชียงใหม่",
+name: "ไมโครกริดอำเภอพร้าว จ.เชียงใหม่",
 devices: [
 "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3", "RCS (Switch 1)", "Recloser", "BSC (BATT-1)", "BSC (BATT-2)",
 "The others"
@@ -62,43 +63,38 @@ devices: [
 }
 };
 
-/** Helper function to escape HTML characters */
 function escapeHtml(text) {
 return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>');
 }
 
-/** Returns the Firestore Collection reference for devices in the current site. */
 function getSiteCollection(siteKey) {
 return db.collection(`sites`).doc(siteKey).collection(`devices`);
 }
 
-/** Fetches and processes records for a specific device. */
 async function getDeviceRecords(siteKey, device) {
 const docRef = getSiteCollection(siteKey).doc(device); 
 const snap = await docRef.get();
 const recs = snap.exists ? (snap.data().records || []) : [];
 for (const r of recs) {
-if (typeof r.counted === 'undefined') r.counted = (r.status === 'down');
+if (typeof r.counted === 'undefined') r.counted = (r.status === 'down' || r.status === 'abnormal');
 }
 return recs;
 }
 
-/** Saves the updated records array back to Firestore. */
 async function saveDeviceRecords(siteKey, device, records) {
-    // 1. ตรวจสอบว่ามี Down ที่ยังไม่ได้แก้หรือไม่ (Logic ใหม่)
-    const hasUnresolvedIssues = records.some(r => {
-        // เช็คว่าเป็นสถานะ Down และ ไม่มีวันที่ซ่อม
-        return r.status === 'down' && 
-               (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null');
-    });
-
+    const isUnresolved = (r) => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null');
+    
     for (const r of records) {
-        if (typeof r.counted === 'undefined') r.counted = (r.status === 'down');
+        if (typeof r.counted === 'undefined') r.counted = (r.status === 'down' || r.status === 'abnormal');
     }
     
     records.sort((a, b) => a.ts - b.ts);
-    // ใหม่: ถ้ามีรายการค้าง (Unresolved) ให้สถานะเป็น down ทันที, ถ้าไม่มีให้เป็น ok
-    const currentStatus = hasUnresolvedIssues ? 'down' : 'ok';
+    
+    // อัปเดตการหาสถานะปัจจุบัน
+    let currentStatus = 'ok';
+    const unresolvedIssues = records.filter(isUnresolved);
+    if (unresolvedIssues.some(r => r.status === 'down')) currentStatus = 'down';
+    else if (unresolvedIssues.some(r => r.status === 'abnormal')) currentStatus = 'abnormal';
     
     const downCount = records.filter(r => r.counted).length;
     const docRef = getSiteCollection(siteKey).doc(device);
@@ -109,6 +105,7 @@ async function saveDeviceRecords(siteKey, device, records) {
         currentStatus: currentStatus 
     }, { merge: true });
 }
+
 async function getAllDevicesDocs(siteKey) {
 return await getSiteCollection(siteKey).get();
 }
@@ -162,20 +159,11 @@ default: return '<span>-</span>';
 }
 }
 
-
-// =========================================================================
-// 💥 RBAC & Auth Functions 💥
-// =========================================================================
-
-/**
-* เปิด/ปิดการใช้งานปุ่มที่ใช้เขียนข้อมูล ตาม Role
-*/
 function toggleWriteAccess(isLoggedIn) {
     const role = isLoggedIn ? currentUserRole : 'viewer';
     const isAdmin = role === 'admin';
-    const isEditor = role === 'editor' || isAdmin; // Admin is also Editor
+    const isEditor = role === 'editor' || isAdmin; 
 
-    // 1. ปุ่มเกี่ยวกับการบันทึก (Editor & Admin)
     const recordButtons = ['saveDataButton', 'clearDeviceButton', 'clearAllButton'];
     recordButtons.forEach(id => {
         const btn = document.getElementById(id);
@@ -186,113 +174,65 @@ function toggleWriteAccess(isLoggedIn) {
         }
     });
 
-    // 2. ปุ่มเกี่ยวกับทรัพย์สิน (Admin Only)
     const assetBtn = document.getElementById('saveAssetButton');
-    if (assetBtn) {
-        assetBtn.style.display = isAdmin ? 'inline-block' : 'none';
-    }
+    if (assetBtn) assetBtn.style.display = isAdmin ? 'inline-block' : 'none';
 
-    // 3. ปุ่ม Import/Manage (Admin Only for Import/Manage, Editor for Import)
     const importLabel = document.getElementById('importButtonLabel');
-    if (importLabel) {
-        // ให้ Editor Import ได้หรือไม่? ปกติถ้า Import Records ควรได้
-        importLabel.style.display = isEditor ? 'inline-block' : 'none';
-    }
+    if (importLabel) importLabel.style.display = isEditor ? 'inline-block' : 'none';
     
-    // 4. ปุ่ม Manage Users (Admin Only)
     const manageUsersBtn = document.getElementById('manageUsersBtn');
-    if (manageUsersBtn) {
-        manageUsersBtn.classList.toggle('hidden', !isAdmin);
-    }
+    if (manageUsersBtn) manageUsersBtn.classList.toggle('hidden', !isAdmin);
     
-    // 5. แสดง Role Tag
     const roleDisplay = document.getElementById('userRoleDisplay');
     if (roleDisplay) {
         if (!isLoggedIn) roleDisplay.style.display = 'none';
         else {
             roleDisplay.style.display = 'inline-block';
             roleDisplay.textContent = role.toUpperCase();
-            // สีตาม Role
-            if (isAdmin) roleDisplay.className = 'tag tag-bad text-xs'; // Red
-            else if (isEditor) roleDisplay.className = 'tag tag-warn text-xs'; // Yellow
-            else roleDisplay.className = 'tag tag-ok text-xs'; // Green (Viewer)
+            if (isAdmin) roleDisplay.className = 'tag tag-bad text-xs'; 
+            else if (isEditor) roleDisplay.className = 'tag tag-warn text-xs'; 
+            else roleDisplay.className = 'tag tag-ok text-xs'; 
         }
     }
 
-    // อัปเดตช่องชื่อผู้ใช้
     const userNameInput = document.getElementById('userName');
     if (isLoggedIn && currentUser) {
-        userNameInput.value = currentUser.email; 
+        userNameInput.value = currentUserFullName || currentUser.email; 
         userNameInput.readOnly = true;
     } else {
         userNameInput.value = 'ผู้เยี่ยมชม (อ่านอย่างเดียว)';
         userNameInput.readOnly = true;
     }
     
-    // Refresh UI parts if open
-    if (document.getElementById('formModal').style.display === 'flex') {
-        loadHistory(); 
-    }
+    if (document.getElementById('formModal').style.display === 'flex') loadHistory(); 
 }
 
 function login() {
 const provider = new firebase.auth.GoogleAuthProvider();
-auth.signInWithPopup(provider)
-.then((result) => {
-// Handled by onAuthStateChanged
-}).catch((error) => {
+auth.signInWithPopup(provider).catch((error) => {
 console.error("Login Error:", error);
 Swal.fire('Login ผิดพลาด', error.message, 'error');
 });
 }
 
 window.logout = async function() {
-    if (currentUser) {
-        await createLog("AUTH_LOGOUT", "ผู้ใช้กดออกจากระบบ");
-    }
-    auth.signOut().then(() => {
-        location.reload(); // รีเฟรชหน้าเพื่อเคลียร์สถานะ
-    });
+    if (currentUser) await createLog("AUTH_LOGOUT", "ผู้ใช้กดออกจากระบบ");
+    auth.signOut().then(() => { location.reload(); });
 };
 
-// บันทึกกิจกรรม
 window.createLog = async function(action, details, siteKey = null) {
     if (!currentUser) return;
     try {
-        let finalSiteKey = "";
-
-        if (action.startsWith("AUTH")) {
-            finalSiteKey = "SYSTEM";
-        } else {
-            // ดึงค่าอังกฤษ (เช่น ko-phaluay) จากตัวแปร currentSiteKey
-            finalSiteKey = siteKey || currentSiteKey || "";
-        }
-
+        let finalSiteKey = action.startsWith("AUTH") ? "SYSTEM" : (siteKey || currentSiteKey || "");
         await db.collection("activity_logs").add({
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            userEmail: currentUser.email,
+            userEmail: currentUserFullName || currentUser.email,
             action: action,
             details: details,
             siteKey: finalSiteKey 
         });
-    } catch (e) {
-        console.error("Error creating log:", e);
-    }
+    } catch (e) { console.error("Error creating log:", e); }
 };
-// ลบ Log ที่เก่ากว่า 6 เดือน (Retention Policy)
-async function cleanOldLogs() {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-    const snapshot = await db.collection("activity_logs")
-        .where("timestamp", "<", sixMonthsAgo)
-        .get();
-
-    const batch = db.batch();
-    snapshot.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
-    await createLog("SYSTEM_CLEANUP", `ล้างข้อมูล Log เก่าที่เกิน 6 เดือน (ลบออก ${snapshot.size} รายการ)`);
-}
 
 window.showActivityLogs = async function() {
     const modal = document.getElementById('logModal');
@@ -301,32 +241,20 @@ window.showActivityLogs = async function() {
     const actionFilter = document.getElementById('logActionFilter').value;
     
     if (!modal || !tableBody) return;
-
     modal.classList.remove('hidden');
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลด...</td></tr>';
 
     try {
         let query = db.collection("activity_logs");
-
-        // 1. กรอง Site
-        if (siteFilter !== "all") {
-            query = query.where("siteKey", "==", siteFilter);
-        }
-
-        // 2. กรอง Action
+        if (siteFilter !== "all") query = query.where("siteKey", "==", siteFilter);
         if (actionFilter !== "all") {
             if (actionFilter === "AUTH") {
-                query = query.where("action", ">=", "AUTH_")
-                             .where("action", "<=", "AUTH_\uf8ff")
-                             .orderBy("action");
+                query = query.where("action", ">=", "AUTH_").where("action", "<=", "AUTH_\uf8ff").orderBy("action");
             } else {
                 query = query.where("action", "==", actionFilter);
             }
         }
-
-        // 3. Order By Timestamp
         query = query.orderBy("timestamp", "desc").limit(100);
-
         const snapshot = await query.get();
 
         if (snapshot.empty) {
@@ -334,19 +262,13 @@ window.showActivityLogs = async function() {
             return;
         }
 
-     let html = '';
+        let html = '';
         snapshot.forEach(doc => {
             const d = doc.data();
             const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
-            
-           
             let siteDisplay = "-";
-            if (d.siteKey === "SYSTEM") {
-                siteDisplay = `<span class="text-slate-400 font-medium italic">SYSTEM</span>`;
-            } else if (d.siteKey) {
-                
-                siteDisplay = `<span class="font-mono text-blue-600 font-bold">${d.siteKey.toUpperCase()}</span>`;
-            }
+            if (d.siteKey === "SYSTEM") siteDisplay = `<span class="text-slate-400 font-medium italic">SYSTEM</span>`;
+            else if (d.siteKey) siteDisplay = `<span class="font-mono text-blue-600 font-bold">${d.siteKey.toUpperCase()}</span>`;
 
             let badgeClass = 'bg-slate-100 text-slate-600';
             if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700';
@@ -359,30 +281,17 @@ window.showActivityLogs = async function() {
                     <td class="p-2 border text-[10px] font-mono">${time}</td>
                     <td class="p-2 border text-[11px]">${d.userEmail || 'System'}</td>
                     <td class="p-2 border text-[11px]">${siteDisplay}</td>
-                    <td class="p-2 border">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${d.action}</span>
-                    </td>
+                    <td class="p-2 border"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${d.action}</span></td>
                     <td class="p-2 border text-left text-[11px] text-slate-600">${d.details}</td>
                 </tr>`;
         });
         tableBody.innerHTML = html;
-
-    } catch (error) {
-        console.error("Log error:", error);
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">เกิดข้อผิดพลาด: ${error.message}</td></tr>`;
-    }
+    } catch (error) { tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">เกิดข้อผิดพลาด: ${error.message}</td></tr>`; }
 };
-function getActionClass(action) {
-    if (action.includes('UPDATE')) return 'bg-blue-100 text-blue-700';
-    if (action.includes('EDIT')) return 'bg-yellow-100 text-yellow-700';
-    if (action.includes('DELETE')) return 'bg-red-100 text-red-700';
-    return 'bg-gray-100 text-gray-700';
-}
+
 window.closeLogModal = function() {
     const modal = document.getElementById('logModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+    if (modal) modal.classList.add('hidden');
 };
 
 // =========================================================================
@@ -396,7 +305,6 @@ window.openForm = async function(deviceName) {
     document.getElementById('overlay').style.display = 'block';
     document.getElementById('formModal').style.display = 'flex';
     document.getElementById('editHint').classList.add('hidden');
-
     document.getElementById('warrantyStatusDisplay').innerHTML = 'กำลังโหลด...';
     document.getElementById('assetInfoDisplay').innerHTML = '';
 
@@ -411,31 +319,29 @@ document.getElementById('assetModal').style.display = 'none';
 }
 
 function clearForm() {
-    if (!currentUser) {
-        document.getElementById('userName').value = 'ผู้เยี่ยมชม (อ่านอย่างเดียว)';
-    } else {
-        document.getElementById('userName').value = currentUser.email;
-    }
+    if (!currentUser) document.getElementById('userName').value = 'ผู้เยี่ยมชม (อ่านอย่างเดียว)';
+    else document.getElementById('userName').value = currentUserFullName || currentUser.email;
 
     const statusSelect = document.getElementById('status');
     const fixedDateInput = document.getElementById('fixedDate'); 
-
+    
+    // ซ่อนตัวเลือก "ใช้งานได้" เวลาสร้างใหม่
+    document.getElementById('opt-ok').style.display = 'none';
     statusSelect.value = 'down'; 
-    statusSelect.disabled = true; 
+    statusSelect.disabled = false; // ให้เลือก ผิดปกติ หรือ ชำรุด ได้
 
     fixedDateInput.value = '';
     fixedDateInput.disabled = true; 
     fixedDateInput.placeholder = "บันทึกข้อมูลชำรุดก่อน จึงจะระบุวันซ่อมได้";
-    // --- เปลี่ยนสี Disabled ---
     fixedDateInput.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
 
     document.getElementById('brokenDate').value = '';
     document.getElementById('description').value = '';
-    document.getElementById('solution').value = ''; // เพิ่มการเคลียร์ฟิลด์ วิธีแก้ไข
-    
+    document.getElementById('solution').value = ''; 
     editIndex = -1;
     document.getElementById('editHint').classList.add('hidden');
 }
+
 function isValidDate(str) {
 if (!str) return false;
 const d = new Date(str);
@@ -443,12 +349,10 @@ return d instanceof Date && !isNaN(d);
 }
 
 window.saveData = async function() {
-    // 💥 RBAC CHECK
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') {
         Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor และ Admin เท่านั้นที่บันทึกข้อมูลได้', 'error');
         return false;
     }
-
     if (!currentUser || !currentDevice) return false;
 
     let statusVal = document.getElementById('status').value;
@@ -456,10 +360,11 @@ window.saveData = async function() {
     const fixedDate = document.getElementById('fixedDate').value;
     const isEditing = editIndex >= 0;
 
-    // --- ส่วนที่เพิ่ม: Confirmation Dialog ---
+    let statusTextTH = statusVal === 'down' ? 'ชำรุด' : (statusVal === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
+
     const confirmResult = await Swal.fire({
         title: isEditing ? 'ยืนยันการแก้ไข?' : 'ยืนยันการเพิ่มข้อมูล?',
-        text: `คุณต้องการบันทึกสถานะของ ${currentDevice} เป็น "${statusVal === 'down' ? 'ชำรุด' : 'ใช้งานได้'}" ใช่หรือไม่?`,
+        text: `บันทึกสถานะ ${currentDevice} เป็น "${statusTextTH}" ใช่หรือไม่?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#2563eb',
@@ -470,25 +375,26 @@ window.saveData = async function() {
 
     if (!confirmResult.isConfirmed) return false;
 
-    // --- ตรวจสอบเงื่อนไขวันที่ (Validation เดิมของคุณ) ---
-    if (isValidDate(brokenDate) && isValidDate(fixedDate)) {
-        statusVal = 'ok';
-    }
-    if (editIndex < 0 && statusVal === 'ok' && (!brokenDate || !fixedDate)) {
-        Swal.fire({ title: "ไม่อนุญาต", text: "การเพิ่มรายการใหม่ต้องเป็นสถานะ 'ชำรุด' เท่านั้น", icon: "warning" });
+    if (isValidDate(brokenDate) && isValidDate(fixedDate)) statusVal = 'ok';
+    
+    if (editIndex < 0 && statusVal === 'ok') {
+        Swal.fire({ title: "ไม่อนุญาต", text: "การเพิ่มรายการใหม่ต้องเป็นสถานะ ชำรุด หรือ ผิดปกติ", icon: "warning" });
         return false;
     }
-    const now = new Date(); now.setHours(0, 0, 0, 0); 
+    
+    // ตั้งให้เวลาปัจจุบันคือ 23:59:59 เพื่อให้สามารถกรอกวันที่ของวันนี้ได้
+    const now = new Date(); now.setHours(23, 59, 59, 999); 
     if (brokenDate && isValidDate(brokenDate) && new Date(brokenDate) > now) {
-        Swal.fire("วันที่ผิดพลาด", "วันที่ชำรุดอนาคตไม่ได้", "warning"); return false;
+        Swal.fire("วันที่ผิดพลาด", "วันที่ชำรุดเป็นอนาคตไม่ได้", "warning"); return false;
     }
-    if (statusVal === 'down' && !isValidDate(brokenDate)) { Swal.fire("ข้อมูลไม่ครบ", "กรุณาเลือกวันที่ชำรุด", "warning"); return false; }
+    if ((statusVal === 'down' || statusVal === 'abnormal') && !isValidDate(brokenDate)) { 
+        Swal.fire("ข้อมูลไม่ครบ", "กรุณาเลือกวันที่", "warning"); return false; 
+    }
     if (statusVal === 'ok') {
         if (!isValidDate(brokenDate) || !isValidDate(fixedDate)) { Swal.fire("ข้อมูลไม่ครบ", "กรุณากรอกวันที่ให้ครบ", "warning"); return false; }
-        if (new Date(brokenDate) > new Date(fixedDate)) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมต้องหลังวันที่ชำรุด", "warning"); return false; }
+        if (new Date(brokenDate) > new Date(fixedDate)) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมต้องหลังวันที่เกิดเหตุ", "warning"); return false; }
     }
 
-    // --- กระบวนการบันทึกข้อมูล ---
     let records = await getDeviceRecords(currentSiteKey, currentDevice); 
     const baseRec = {
         user: document.getElementById('userName').value || "ไม่ระบุ",
@@ -496,15 +402,15 @@ window.saveData = async function() {
         brokenDate,
         fixedDate,
         description: document.getElementById('description').value,
-        solution: document.getElementById('solution').value, // เพิ่มบันทึก วิธีแก้ไข
+        solution: document.getElementById('solution').value, 
         ts: Date.now(),
-        counted: (statusVal === 'down') 
+        counted: (statusVal === 'down' || statusVal === 'abnormal') 
     };
 
     if (editIndex >= 0) {
         const originalRecord = records[editIndex];
         records[editIndex] = { ...originalRecord, ...baseRec, ts: originalRecord.ts };
-        if (statusVal === 'ok' && originalRecord.status === 'down') records[editIndex].counted = true;
+        if (statusVal === 'ok' && (originalRecord.status === 'down' || originalRecord.status === 'abnormal')) records[editIndex].counted = true;
         editIndex = -1;
         document.getElementById('editHint').classList.add('hidden');
     } else {
@@ -516,44 +422,33 @@ window.saveData = async function() {
     
     clearForm(); 
     await loadHistory();
-    window.updateDeviceSummary(); // ฟังก์ชันนี้จะไปอัปเดต Status Cards ด้วย
+    window.updateDeviceSummary(); 
     window.updateDeviceStatusOverlays(currentSiteKey); 
    
-    if (statusVal === 'down' && !isEditing) { 
-        sendEmailNotify('down', currentDevice, baseRec.description,baseRec.solution, baseRec.user, baseRec.brokenDate, records.filter(r => r.counted).length);
+    if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) { 
+        sendEmailNotify('down', currentDevice, baseRec.description, baseRec.solution, baseRec.user, baseRec.brokenDate, records.filter(r => r.counted).length);
     }
     if (statusVal === 'ok' && !isEditing) { 
-        sendEmailNotify('fixed', currentDevice, baseRec.description,baseRec.solution, baseRec.user, baseRec.fixedDate, null);
+        sendEmailNotify('fixed', currentDevice, baseRec.description, baseRec.solution, baseRec.user, baseRec.fixedDate, null);
     }
 
     Swal.fire("บันทึกเรียบร้อย", "", "success");
     
     let logAction = isEditing ? "EDIT_RECORD" : "ADD_RECORD";
-    let logDetail = isEditing 
-        ? `แก้ไขข้อมูลประวัติของ ${currentDevice}` 
-        : `เพิ่มประวัติการชำรุดใหม่ให้ ${currentDevice}`;
-    
+    let logDetail = isEditing ? `แก้ไขข้อมูลประวัติของ ${currentDevice}` : `เพิ่มประวัติเหตุการณ์ให้ ${currentDevice}`;
     await createLog(logAction, logDetail);
-
-    const logStatusText = (statusVal === 'down') ? 'ชำรุด' : 'ใช้งานได้';
-    await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มีสถานะเป็น: ${logStatusText}`);
+    await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มีสถานะเป็น: ${statusTextTH}`);
     return true;
 };
 
 window.clearCurrentDevice = async function() {
 if (currentUserRole !== 'editor' && currentUserRole !== 'admin') {
-    Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์ลบข้อมูล', 'error');
-    return;
+    Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์ลบข้อมูล', 'error'); return;
 }
 if (!currentDevice) return;
 const result = await Swal.fire({
-title: `ลบข้อมูล ${currentDevice}?`,
-text: "คุณต้องการลบข้อมูลทั้งหมดของอุปกรณ์นี้ใช่หรือไม่?",
-icon: 'warning',
-showCancelButton: true,
-confirmButtonColor: '#ef4444',
-confirmButtonText: 'ใช่, ลบเลย!',
-cancelButtonText: 'ยกเลิก'
+title: `ลบข้อมูล ${currentDevice}?`, text: "คุณต้องการลบข้อมูลทั้งหมดของอุปกรณ์นี้ใช่หรือไม่?", icon: 'warning',
+showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก'
 });
 
 if (result.isConfirmed) {
@@ -574,7 +469,7 @@ statusEl.innerHTML = getWarrantyStatusHTML(status);
 let infoParts = [];
 if (assetInfo.model) infoParts.push(`รุ่น: ${escapeHtml(assetInfo.model)}`);
 if (assetInfo.serial) infoParts.push(`S/N: ${escapeHtml(assetInfo.serial)}`);
-if (assetInfo.peaNo) infoParts.push(`PEA: ${escapeHtml(assetInfo.peaNo)}`); // เพิ่มการแสดง PEA No.
+if (assetInfo.peaNo) infoParts.push(`PEA: ${escapeHtml(assetInfo.peaNo)}`);
 infoEl.innerHTML = infoParts.join(' | ') || 'ลงทะเบียนแล้ว';
 } else {
 statusEl.innerHTML = '<span class="tag tag-warranty-bad">🚫 ยังไม่ลงทะเบียน</span>';
@@ -599,11 +494,9 @@ window.loadHistory = async function() {
 
     updateAssetDisplays(assetInfo);
     
-    // ตรวจสอบตัวกรองเฉพาะรายการค้างซ่อม (สถานะเป็น down และยังไม่มีวันที่ซ่อม)
     const filterBrokenOnly = document.getElementById('filterBrokenHistory') ? document.getElementById('filterBrokenHistory').checked : false;
-    
     if (filterBrokenOnly) {
-        records = records.filter(r => r.status === 'down' && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
+        records = records.filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
     }
 
     records.sort((a, b) => b.ts - a.ts); 
@@ -613,12 +506,9 @@ window.loadHistory = async function() {
     }
 
     const canEdit = (currentUserRole === 'editor' || currentUserRole === 'admin') ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
-
     let isCurrentBrokenFound = false; 
-    const totalRecords = docData?.records?.length || records.length; // ใช้ความยาวดั้งเดิมเพื่อรันเลขครั้งที่ให้ถูก
 
     records.forEach((r, index) => {
-        // คำนวณเลข Sequence จากข้อมูลเต็ม ถ้าเป็นตัวกรองอาจจะไม่เรียงกัน แต่ขออนุญาตใช้ Index ของลูปสำหรับแสดงผลให้ง่าย
         const recordSequence = records.length - index; 
         
         let duration = '-';
@@ -628,7 +518,7 @@ window.loadHistory = async function() {
                 duration = formatDuration(days);
             } else if (!r.fixedDate && !isCurrentBrokenFound) { 
                 const days = calculateDaysDifference(r.brokenDate, null);
-                duration = formatDuration(days) + ' <span class="text-sm text-red-500 font-semibold">(ชำรุด)</span>';
+                duration = formatDuration(days) + ' <span class="text-sm text-red-500 font-semibold">(ยังไม่ซ่อม)</span>';
                 isCurrentBrokenFound = true; 
             } else {
                 const days = calculateDaysDifference(r.brokenDate, null);
@@ -636,8 +526,10 @@ window.loadHistory = async function() {
             }
         }
 
-        const statusClass = r.status === 'ok' ? 'tag-ok' : 'tag-bad';
-        const statusText = r.status === 'ok' ? '✅ ใช้งานได้' : '❎ ชำรุด';
+        let statusClass = 'tag-ok', statusText = '✅ ใช้งานได้';
+        if(r.status === 'down') { statusClass = 'tag-bad'; statusText = '❎ ชำรุด'; }
+        else if(r.status === 'abnormal') { statusClass = 'tag-warn'; statusText = '⚠️ ผิดปกติ'; }
+
         const div = document.createElement('div');
         div.className = 'p-4 mb-3 border border-gray-200 bg-white rounded-lg shadow-sm'; 
 
@@ -647,12 +539,10 @@ window.loadHistory = async function() {
                     <span class="tag ${statusClass}">${statusText}</span>
                         <span class="ml-2 text-base text-gray-500">| ครั้งที่ ${recordSequence}</span>
                 </div>
-                <div class="text-sm text-gray-500">
-                    โดย: <span class="font-semibold text-slate-700">${escapeHtml(r.user || 'ไม่ระบุ')}</span>
-                </div>
+                <div class="text-sm text-gray-500">โดย: <span class="font-semibold text-slate-700">${escapeHtml(r.user || 'ไม่ระบุ')}</span></div>
             </div>
             <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
-                <div>วันที่ชำรุด: ${r.brokenDate || '-'}</div>
+                <div>วันที่เกิดเหตุ: ${r.brokenDate || '-'}</div>
                 <div>วันที่ซ่อม: ${r.fixedDate || '-'}</div>
                 <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
             </div>
@@ -671,43 +561,24 @@ window.deleteRecord = async function(ts) {
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') return;
     if (!currentDevice) return;
 
-    const result = await Swal.fire({
-        title: 'ลบรายการนี้?',
-        text: "คุณต้องการลบรายการประวัตินี้จริงหรือไม่?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        confirmButtonText: 'ใช่, ลบ!',
-        cancelButtonText: 'ยกเลิก'
-    });
-
+    const result = await Swal.fire({ title: 'ลบรายการนี้?', text: "คุณต้องการลบรายการประวัตินี้จริงหรือไม่?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ใช่, ลบ!', cancelButtonText: 'ยกเลิก' });
     if (!result.isConfirmed) return;
 
     let records = await getDeviceRecords(currentSiteKey, currentDevice);
     const idx = records.findIndex(r => String(r.ts) === String(ts));
-    
     if (idx < 0) return;
 
-    // 1. เก็บข้อมูลรายการที่จะลบไว้ก่อน (เพื่อเอาไปลง Log)
     const recordToDelete = records[idx];
     const dateRef = recordToDelete.brokenDate || recordToDelete.fixedDate || "ไม่ระบุวันที่";
 
-    // 2. ลบรายการออกจาก Array
     records.splice(idx, 1);
-
-    // 3. บันทึกกลับลง Firestore
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
-
-    // 4. ✅ บันทึก LOG การลบข้อมูล
     await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${dateRef})`);
 
-    // 5. อัปเดตหน้าจอ
-    loadHistory();
-    window.updateDeviceSummary(); 
-    window.updateDeviceStatusOverlays(currentSiteKey); 
-
+    loadHistory(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); 
     Swal.fire('ลบข้อมูลเรียบร้อย', '', 'success');
 }
+
 window.editRecord = async function(ts) {
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') return;
     if (!currentDevice) return;
@@ -717,6 +588,10 @@ window.editRecord = async function(ts) {
     const r = records[idx];
     const statusSelect = document.getElementById('status');
     const fixedDateInput = document.getElementById('fixedDate'); 
+    
+    // เปิดให้เลือก ใช้งานได้ เมื่อแก้ไขประวัติ
+    document.getElementById('opt-ok').style.display = 'block';
+
     statusSelect.value = r.status || 'down';
     statusSelect.disabled = false; 
     fixedDateInput.disabled = false;
@@ -740,22 +615,16 @@ await loadAssetData();
 
 window.closeAssetModal = function(showMainModal = true) {
 document.getElementById('assetModal').style.display = 'none';
-if (showMainModal && currentDevice) {
-document.getElementById('formModal').style.display = 'flex'; 
-} else {
-
-}
+if (showMainModal && currentDevice) document.getElementById('formModal').style.display = 'flex'; 
 }
 
 async function loadAssetData() {
     const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
     const snap = await docRef.get();
     let assetInfo = {};
-    if (snap.exists && snap.data().assetInfo) { assetInfo = snap.data().assetInfo; }
+    if (snap.exists && snap.data().assetInfo) assetInfo = snap.data().assetInfo;
 
     const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetPrice', 'assetManufacturer', 'assetWarrantyStart', 'assetWarrantyEnd'];
-    
-    // 💥 RBAC CHECK: Admin Only for Assets
     const isAdmin = (currentUserRole === 'admin');
 
     inputIds.forEach(id => {
@@ -783,18 +652,12 @@ async function loadAssetData() {
         const end = new Date(assetInfo.warrantyEnd);
         const diffYears = (end - start) / (1000 * 60 * 60 * 24 * 365.25);
         document.getElementById('assetWarrantyYears').value = Math.round(diffYears * 10) / 10; 
-    } else {
-        document.getElementById('assetWarrantyYears').value = '';
-    }
+    } else document.getElementById('assetWarrantyYears').value = '';
     updateAssetWarrantyStatusField();
 }
 
 window.saveAssetData = async function() {
-    // 💥 RBAC CHECK: Admin Only
-    if (currentUserRole !== 'admin') {
-        Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์เข้าถึง', text: `เฉพาะ Admin เท่านั้น` });
-        return; 
-    }
+    if (currentUserRole !== 'admin') { Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์เข้าถึง', text: `เฉพาะ Admin เท่านั้น` }); return; }
     if (!currentDevice) return;
     const assetInfo = {
         serial: document.getElementById('assetSerial').value,
@@ -809,13 +672,8 @@ window.saveAssetData = async function() {
     try {
         await docRef.set({ assetInfo }, { merge: true }); 
         Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success');
-        updateAssetDisplays(assetInfo);
-        window.updateDeviceSummary();
-        closeAssetModal(true); 
-    } catch (e) {
-        console.error("Error saving asset:", e);
-        Swal.fire('ผิดพลาด', e.message, 'error');
-    }
+        updateAssetDisplays(assetInfo); window.updateDeviceSummary(); closeAssetModal(true); 
+    } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
     await createLog("EDIT_ASSET", "แก้ไขรายละเอียดทรัพย์สินของ " + currentDevice);
 }
 
@@ -823,12 +681,7 @@ function updateAssetWarrantyStatusField() {
 const endDate = document.getElementById('assetWarrantyEnd').value;
 const status = getWarrantyStatus(endDate);
 const field = document.getElementById('assetWarrantyStatus');
-switch (status) {
-case 'ok': field.value = 'รับประกัน'; break;
-case 'warn': field.value = 'ใกล้หมดประกัน'; break;
-case 'bad': field.value = 'หมดประกัน'; break;
-default: field.value = 'N/A';
-}
+switch (status) { case 'ok': field.value = 'รับประกัน'; break; case 'warn': field.value = 'ใกล้หมดประกัน'; break; case 'bad': field.value = 'หมดประกัน'; break; default: field.value = 'N/A'; }
 }
 
 function setupWarrantyCalculators() {
@@ -837,36 +690,24 @@ const yearsEl = document.getElementById('assetWarrantyYears');
 const endEl = document.getElementById('assetWarrantyEnd');
 function calculateEnd() {
 if (startEl.value && yearsEl.value) {
-const startDate = new Date(startEl.value);
-const years = parseFloat(yearsEl.value);
+const startDate = new Date(startEl.value); const years = parseFloat(yearsEl.value);
 if (!isNaN(startDate) && years > 0) {
 startDate.setFullYear(startDate.getFullYear() + Math.floor(years));
-const fractionalDays = (years % 1) * 365.25;
-startDate.setDate(startDate.getDate() + Math.round(fractionalDays));
-endEl.value = startDate.toISOString().split('T')[0];
-updateAssetWarrantyStatusField();
-}
-}
-}
+const fractionalDays = (years % 1) * 365.25; startDate.setDate(startDate.getDate() + Math.round(fractionalDays));
+endEl.value = startDate.toISOString().split('T')[0]; updateAssetWarrantyStatusField();
+} } }
 function calculateYears() {
 if (startEl.value && endEl.value) {
-const startDate = new Date(startEl.value);
-const endDate = new Date(endEl.value);
+const startDate = new Date(startEl.value); const endDate = new Date(endEl.value);
 if (!isNaN(startDate) && !isNaN(endDate) && endDate > startDate) {
-const diffMs = endDate - startDate;
-const diffYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
-yearsEl.value = Math.round(diffYears * 100) / 100;
-updateAssetWarrantyStatusField();
-}
-}
-}
-startEl.addEventListener('change', calculateEnd);
-yearsEl.addEventListener('change', calculateEnd);
-endEl.addEventListener('change', calculateYears);
-endEl.addEventListener('change', updateAssetWarrantyStatusField);
+const diffMs = endDate - startDate; const diffYears = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+yearsEl.value = Math.round(diffYears * 100) / 100; updateAssetWarrantyStatusField();
+} } }
+startEl.addEventListener('change', calculateEnd); yearsEl.addEventListener('change', calculateEnd);
+endEl.addEventListener('change', calculateYears); endEl.addEventListener('change', updateAssetWarrantyStatusField);
 }
 
-// 💥💥💥 FUNCTION: User Management UI 💥💥💥
+// 💥💥💥 FUNCTION: User Management UI (แก้ไขให้มีช่องใส่ชื่อ) 💥💥💥
 window.openUserManagement = async function() {
     if (currentUserRole !== 'admin') return;
     document.getElementById('overlay').style.display = 'block';
@@ -895,121 +736,77 @@ window.loadUsers = async function() {
             const userData = doc.data();
             const email = userData.email;
             const role = userData.role || 'viewer';
+            const fullName = userData.fullName || '';
             const isMe = (email === currentUser.email);
-            const isAdminMain = (email === ADMIN_EMAIL); // เช็คว่าเป็น Admin หลักหรือไม่
-            
+            const isAdminMain = (email === ADMIN_EMAIL); 
+            const safeId = email.replace(/[@.]/g, ''); // ทำ id ให้ปลอดภัย
+
             const div = document.createElement('div');
-            div.className = 'user-item flex justify-between items-center p-3 border-b border-gray-200 hover:bg-gray-50 transition-colors';
+            div.className = 'user-item flex flex-col sm:flex-row justify-between sm:items-center gap-2 p-3 border-b border-gray-200 hover:bg-gray-50 transition-colors';
             
             const roleOptions = `
-                <option value="viewer" ${role==='viewer'?'selected':''}>Viewer (ดูอย่างเดียว)</option>
-                <option value="editor" ${role==='editor'?'selected':''}>Editor (บันทึก/แก้ไข)</option>
-                <option value="admin" ${role==='admin'?'selected':''}>Admin (ดูแลระบบ)</option>
+                <option value="viewer" ${role==='viewer'?'selected':''}>Viewer</option>
+                <option value="editor" ${role==='editor'?'selected':''}>Editor</option>
+                <option value="admin" ${role==='admin'?'selected':''}>Admin</option>
             `;
 
-            // เพิ่มปุ่มลบ (แสดงเฉพาะถ้าไม่ใช่ Admin หลัก และ ไม่ใช่ตัวเอง)
             let deleteBtn = '';
             if (!isAdminMain && !isMe) {
-                deleteBtn = `
-                    <button onclick="deleteUser('${email}')" 
-                            class="ml-2 p-2 text-gray-400 hover:text-red-600 transition-colors" 
-                            title="ลบผู้ใช้">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>`;
+                deleteBtn = `<button onclick="deleteUser('${email}')" class="p-2 text-gray-400 hover:text-red-600 transition-colors" title="ลบผู้ใช้"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
             }
 
             div.innerHTML = `
-                <div class="flex flex-col flex-1">
+                <div class="flex flex-col flex-1 gap-1 pr-2">
                     <span class="font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}">
                         ${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}
                     </span>
-                    <span class="text-xs text-gray-500">สิทธิ์ปัจจุบัน: ${role}</span>
+                    <input type="text" id="name-${safeId}" value="${escapeHtml(fullName)}" placeholder="ระบุชื่อ-นามสกุลจริง..." class="text-xs border border-gray-300 rounded p-1.5 w-full outline-none focus:border-blue-500">
                 </div>
-                <div class="flex items-center">
-                    <select onchange="changeUserRole('${email}', this.value)" 
-                            class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 outline-none shadow-sm cursor-pointer">
+                <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                    <select id="role-${safeId}" class="bg-white border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block p-1.5 outline-none cursor-pointer">
                         ${roleOptions}
                     </select>
+                    <button onclick="updateUserFull('${email}', '${safeId}')" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors text-xs font-bold shadow-sm" title="บันทึกการแก้ไขสิทธิ์และชื่อ">
+                        💾 บันทึก
+                    </button>
                     ${deleteBtn}
                 </div>
             `;
             listContainer.appendChild(div);
         });
-
-    } catch (error) {
-        console.error("Load users failed:", error);
-        listContainer.innerHTML = `<div class="text-red-500 text-center py-4">โหลดไม่สำเร็จ: ${error.message}</div>`;
-    }
+    } catch (error) { listContainer.innerHTML = `<div class="text-red-500 text-center py-4">โหลดไม่สำเร็จ: ${error.message}</div>`; }
 }
-window.deleteUser = async function(email) {
-    // เช็คสิทธิ์ว่าคนลบเป็น admin หรือไม่
-    if (currentUserRole !== 'admin') {
-        Swal.fire('ปฏิเสธ', 'คุณไม่มีสิทธิ์ลบผู้ใช้งาน', 'error');
-        return;
-    }
 
-    const result = await Swal.fire({
-        title: 'ยืนยันการลบ?',
-        text: `คุณต้องการลบผู้ใช้ ${email} ออกจากระบบใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'ลบข้อมูล',
-        cancelButtonText: 'ยกเลิก'
-    });
-
-    if (result.isConfirmed) {
-        try {
-            // 1. ลบจาก Firestore
-            await db.collection('users').doc(email).delete();
-            
-            // 2. บันทึก Log เป็น SYSTEM ตามที่กำหนด
-            await createLog("USER_MANAGEMENT", `ลบผู้ใช้ ${email} ออกจากระบบ`, "SYSTEM");
-
-            Swal.fire({
-                icon: 'success',
-                title: 'ลบผู้ใช้สำเร็จ',
-                showConfirmButton: false,
-                timer: 1500
-            });
-
-            // 3. รีโหลดรายชื่อใหม่
-            loadUsers();
-        } catch (error) {
-            console.error("Delete user failed:", error);
-            Swal.fire('ผิดพลาด', 'ไม่สามารถลบผู้ใช้ได้: ' + error.message, 'error');
-        }
-    }
-};
-window.changeUserRole = async function(email, newRole) {
+// ฟังก์ชันอัปเดตข้อมูลผู้ใช้แบบเต็ม (Role + ชื่อสกุล)
+window.updateUserFull = async function(email, safeId) {
     if (currentUserRole !== 'admin') return;
+    const newRole = document.getElementById(`role-${safeId}`).value;
+    const newName = document.getElementById(`name-${safeId}`).value.trim();
+
     if (email === ADMIN_EMAIL && newRole !== 'admin') {
-        Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Admin หลักได้', 'error');
-        await loadUsers(); 
-        return;
+        Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Admin หลักได้', 'error'); return;
     }
 
     try {
-        await db.collection('users').doc(email).update({ role: newRole });
+        await db.collection('users').doc(email).set({ role: newRole, fullName: newName }, { merge: true });
+        Swal.fire({ icon: 'success', title: `อัปเดตข้อมูล ${email} แล้ว`, timer: 1500, showConfirmButton: false });
+        await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ ${email} (Role: ${newRole}, ชื่อ: ${newName||'-'})`, "SYSTEM");
         
-        const Toast = Swal.mixin({ 
-            toast: true, 
-            position: 'top-end', 
-            showConfirmButton: false, 
-            timer: 2000 
-        });
-        Toast.fire({ icon: 'success', title: `ปรับสิทธิ์ ${email} เป็น ${newRole} แล้ว` });
-
-        // --- แก้ไขบรรทัดนี้: เปลี่ยนจาก "" เป็น "SYSTEM" ---
-        await createLog("USER_MANAGEMENT", `แก้ไขสิทธิ์ของ ${email} เป็น ${newRole.toUpperCase()}`, "SYSTEM");
-        
+        if(email === currentUser.email) { currentUserFullName = newName; document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; }
         loadUsers(); 
-    } catch (error) {
-        Swal.fire('ผิดพลาด', error.message, 'error');
-        loadUsers();
+    } catch (error) { Swal.fire('ผิดพลาด', error.message, 'error'); }
+};
+
+window.deleteUser = async function(email) {
+    if (currentUserRole !== 'admin') { Swal.fire('ปฏิเสธ', 'คุณไม่มีสิทธิ์ลบผู้ใช้งาน', 'error'); return; }
+    const result = await Swal.fire({ title: 'ยืนยันการลบ?', text: `คุณต้องการลบผู้ใช้ ${email} ออกจากระบบใช่หรือไม่?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบข้อมูล', cancelButtonText: 'ยกเลิก' });
+    if (result.isConfirmed) {
+        try {
+            await db.collection('users').doc(email).delete();
+            await createLog("USER_MANAGEMENT", `ลบผู้ใช้ ${email} ออกจากระบบ`, "SYSTEM");
+            Swal.fire({ icon: 'success', title: 'ลบผู้ใช้สำเร็จ', showConfirmButton: false, timer: 1500 });
+            loadUsers();
+        } catch (error) { Swal.fire('ผิดพลาด', 'ไม่สามารถลบผู้ใช้ได้: ' + error.message, 'error'); }
     }
 };
 
@@ -1028,8 +825,6 @@ window.updateDeviceSummary = async function() {
     docsSnap.forEach(d => dataMap[d.id] = d.data());
 
     let summary = [];
-    
-    // --- เพิ่มตัวแปรสำหรับ Status Cards ---
     let totalDevices = siteData.devices.length;
     let currentBrokenCount = 0;
     let currentNormalCount = 0;
@@ -1040,27 +835,37 @@ window.updateDeviceSummary = async function() {
         if (records.length > 0) records.sort((a, b) => a.ts - b.ts); 
         
         let downCount = docData?.downCount || 0; 
-        const isUnresolved = (r) => {
-            if (r.status !== 'down') return false;
-            return !r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null';
-        };
-        const remainingDownRecords = records.filter(r => isUnresolved(r));
-        const remainingDownCount = remainingDownRecords.length;
+        const isUnresolved = (r) => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null');
+        
+        const remainingIssues = records.filter(r => isUnresolved(r));
+        const remainingCount = remainingIssues.length;
 
-        let latestBrokenDuration = '-', latestBrokenDays = 0, earliestBrokenDate = '-', latestFixedDate = '-', currentStatusDisplay = 'ใช้งานได้';
+        let latestBrokenDuration = '-', latestBrokenDays = 0, earliestBrokenDate = '-', latestFixedDate = '-';
+        let currentStatusDisplay = 'ปกติ';
+        let isDown = false, isAbnormal = false;
+
+        remainingIssues.forEach(r => {
+            if(r.status === 'down') isDown = true;
+            if(r.status === 'abnormal') isAbnormal = true;
+        });
+
+        // 💥 แสดงสถานะ 2 ค่า
+        if (isDown && isAbnormal) currentStatusDisplay = 'ชำรุด / ผิดปกติ';
+        else if (isDown) currentStatusDisplay = 'ชำรุด';
+        else if (isAbnormal) currentStatusDisplay = 'ผิดปกติ';
+        else currentStatusDisplay = 'ปกติ';
+
         const latestRecord = records.length > 0 ? records[records.length - 1] : null;
 
-        if (remainingDownCount > 0) {
-            currentStatusDisplay = 'ชำรุด';
-            currentBrokenCount++; // นับอุปกรณ์ที่ยังซ่อมไม่เสร็จ
-            const oldestIssue = remainingDownRecords[0]; 
+        if (remainingCount > 0) {
+            currentBrokenCount++; 
+            const oldestIssue = remainingIssues[0]; 
             earliestBrokenDate = oldestIssue.brokenDate || '-';
             latestFixedDate = '-'; 
             latestBrokenDays = calculateDaysDifference(earliestBrokenDate, null);
             latestBrokenDuration = formatDuration(latestBrokenDays);
         } else {
-            currentStatusDisplay = 'ปกติ'; 
-            currentNormalCount++; // นับอุปกรณ์ที่ปกติ
+            currentNormalCount++; 
             if (latestRecord && latestRecord.brokenDate) {
                  earliestBrokenDate = latestRecord.brokenDate;
                  latestFixedDate = latestRecord.fixedDate || '-'; 
@@ -1071,51 +876,51 @@ window.updateDeviceSummary = async function() {
             }
         }
         
-        // --- ส่วน Filter (เหมือนเดิม) ---
+        // --- Filter Logic ---
         let dateFilterSource = earliestBrokenDate !== '-' ? earliestBrokenDate : (latestRecord?.brokenDate);
         if (dateFilterSource && dateFilterSource !== '-') {
             const latestTs = new Date(dateFilterSource).getTime();
-            if (from) { if (latestTs < new Date(from).getTime()) continue; }
-            if (to) { if (latestTs >= new Date(to).getTime() + (86400000)) continue; }
+            if (from && latestTs < new Date(from).getTime()) continue;
+            if (to && latestTs >= new Date(to).getTime() + 86400000) continue;
         }        
 
-        if (filterStatus === 'currently-down' && remainingDownCount === 0) continue; 
-        if (filterStatus === 'down' && downCount === 0) continue; 
-        if (filterStatus === 'clean' && downCount > 0) continue; 
+        if (filterStatus === 'currently-down' && !isDown) continue; 
+        if (filterStatus === 'currently-abnormal' && !isAbnormal) continue; 
+        
+        // 'down' = เคยชำรุด แต่ซ่อมเสร็จแล้ว (ไม่มี issue ค้าง)
+        if (filterStatus === 'down') {
+            if (records.length === 0 || remainingCount > 0) continue;
+        }
+        
+        // 'clean' = ไม่เคยมีประวัติเสียเลย
+        if (filterStatus === 'clean' && records.length > 0) continue; 
+        
         if (search && !dev.toLowerCase().includes(search)) continue;
 
         summary.push({
-            device: dev,
-            count: downCount,
-            remaining: remainingDownCount, 
-            brokenDate: earliestBrokenDate,
-            fixedDate: latestFixedDate,
+            device: dev, count: downCount, remaining: remainingCount, 
+            brokenDate: earliestBrokenDate, fixedDate: latestFixedDate,
             status: currentStatusDisplay,
             latestDescription: latestRecord?.description || '-',
-            latestSolution: latestRecord?.solution || '-', // เพิ่มข้อมูลวิธีแก้ไข
-            latestBrokenDuration: latestBrokenDuration,
-            latestBrokenDays: latestBrokenDays,
+            latestSolution: latestRecord?.solution || '-', 
+            latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays,
         });
     }
 
-    // --- อัปเดตตัวเลขลง Status Cards ---
     if (document.getElementById('cardTotal')) document.getElementById('cardTotal').innerText = totalDevices;
     if (document.getElementById('cardNormal')) document.getElementById('cardNormal').innerText = currentNormalCount;
     if (document.getElementById('cardBroken')) document.getElementById('cardBroken').innerText = currentBrokenCount;
 
-    // --- ส่วนการ Render ตารางและ Pagination (เหมือนเดิม) ---
     summary.sort((a, b) => {
         const countSort = sortOrder === 'desc' ? b.count - a.count : a.count - b.count;
         if (countSort !== 0) return countSort;
         return b.latestBrokenDays - a.latestBrokenDays; 
     });
 
-    const pageSize = 10;
     const totalPages = Math.max(1, Math.ceil(summary.length / pageSize));
     if (currentPage > totalPages) currentPage = totalPages;
     const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const pageData = summary.slice(startIndex, endIndex);
+    const pageData = summary.slice(startIndex, startIndex + pageSize);
 
     const tbody = document.getElementById('summaryBody');
     tbody.innerHTML = '';
@@ -1124,59 +929,43 @@ window.updateDeviceSummary = async function() {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-slate-400 italic"> ไม่พบข้อมูลอุปกรณ์ตามเงื่อนไขที่เลือก </td></tr>'; 
     } else {
         pageData.forEach(s => {
-            const isDown = s.status === 'ชำรุด';
+            let statusBadge = '';
+            if (s.status === 'ชำรุด / ผิดปกติ') {
+                statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-red-50 text-red-600 border border-red-100"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>ชำรุด / ผิดปกติ</span>`;
+            } else if (s.status === 'ชำรุด') {
+                statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-red-50 text-red-600 border border-red-100"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>ชำรุด</span>`;
+            } else if (s.status === 'ผิดปกติ') {
+                statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-100"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>ผิดปกติ</span>`;
+            } else {
+                statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-100"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>ปกติ</span>`;
+            }
+
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer'; 
             tr.innerHTML = `
-                <td class="p-4">
-                    <div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${escapeHtml(s.device)}</div>
-                </td>
-                <td class="p-4 text-center">
-                    <span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">
-                        ${s.count} / ${s.remaining}
-                    </span>
-                </td> 
+                <td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${escapeHtml(s.device)}</div></td>
+                <td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> 
                 <td class="p-4 text-center text-xs text-slate-500 font-mono">${s.brokenDate}</td>
                 <td class="p-4 text-center text-xs text-slate-500 font-mono">${s.fixedDate}</td>
-                <td class="p-4 text-center">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider ${isDown ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-600 border border-green-100'}">
-                        <span class="w-1.5 h-1.5 rounded-full ${isDown ? 'bg-red-500 animate-pulse' : 'bg-green-500'}"></span>
-                        ${s.status}
-                    </span>
-                </td>
-                <td class="p-4 text-center">
-                    <span class="text-xs font-bold ${isDown ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span>
-                </td>
-                <td class="p-4">
-                    <p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p>
-                </td>
-                <td class="p-4">
-                    <p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p>
-                </td>
+                <td class="p-4 text-center">${statusBadge}</td>
+                <td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td>
+                <td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td>
+                <td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>
             `;
             tr.onclick = () => window.openForm(s.device);
             tbody.appendChild(tr);
         });
     }
 
-    // Pagination (สไตล์ที่คุณเขียนไว้)
     const pagination = document.getElementById('pagination');
     if (pagination) {
         pagination.className = "flex items-center justify-between px-6 py-4 bg-slate-50/50";
         pagination.innerHTML = `
-            <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                Showing ${startIndex + 1} to ${Math.min(endIndex, summary.length)} of ${summary.length} entries
-            </div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Showing ${startIndex + 1} to ${Math.min(startIndex + pageSize, summary.length)} of ${summary.length} entries</div>
             <div class="flex items-center gap-1">
-                <button onclick="changePage(-1)" ${currentPage===1?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <div class="px-4 py-1 bg-white rounded-lg shadow-sm border border-slate-200 text-sm font-bold text-blue-600">
-                    ${currentPage} / ${totalPages}
-                </div>
-                <button onclick="changePage(1)" ${currentPage===totalPages?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:hover:bg-transparent transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                </button>
+                <button onclick="changePage(-1)" ${currentPage===1?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
+                <div class="px-4 py-1 bg-white rounded-lg shadow-sm border border-slate-200 text-sm font-bold text-blue-600">${currentPage} / ${totalPages}</div>
+                <button onclick="changePage(1)" ${currentPage===totalPages?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
             </div>
         `;
     }
@@ -1193,7 +982,7 @@ if (chartInstance) chartInstance.destroy();
 const ctx = document.getElementById('chart').getContext('2d');
 chartInstance = new Chart(ctx, {
 type: 'bar',
-data: { labels, datasets: [{ label: 'ครั้งชำรุด', data, backgroundColor: data.map(v => v > 0 ? 'rgba(248,113,113,0.85)' : 'rgba(148,163,184,0.6)') }] },
+data: { labels, datasets: [{ label: 'ครั้งชำรุด/ผิดปกติ', data, backgroundColor: data.map(v => v > 0 ? 'rgba(248,113,113,0.85)' : 'rgba(148,163,184,0.6)') }] },
 options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, precision: 0 } } }
 });
 }
@@ -1208,19 +997,16 @@ window.updateDeviceStatusOverlays = async function(siteKey) {
     const mapContainer = document.getElementById(`map-${siteKey}`);
     if (!mapContainer) return;
 
-    // 1. ลบ Overlay เก่าทั้งหมดออก
     mapContainer.querySelectorAll('.device-overlay').forEach(el => el.remove());
 
-    // 2. ดึงข้อมูลอุปกรณ์เพื่อเช็คสถานะ
     const docsSnap = await getAllDevicesDocs(siteKey);
-    const downDevices = {};
+    const devicesStatus = {};
     docsSnap.forEach(d => {
-        if (d.data() && d.data().currentStatus === 'down') {
-            downDevices[d.id] = true;
+        if (d.data() && d.data().currentStatus) {
+            devicesStatus[d.id] = d.data().currentStatus;
         }
     });
 
-    // 3. ค้นหา Map Area ทั้งหมด (เพื่อวาดทั้งกรอบเขียวและกากบาทแดง)
     const mapElement = mapContainer.querySelector('map');
     if (!mapElement) return;
 
@@ -1229,11 +1015,9 @@ window.updateDeviceStatusOverlays = async function(siteKey) {
     
     areaElements.forEach(area => {
         const deviceName = area.getAttribute('alt');
-        if(!deviceName || deviceName === 'The others') return; // ไม่วาด overlay ให้ The others
+        if(!deviceName || deviceName === 'The others') return; 
 
-        const isDown = downDevices[deviceName]; // เช็คว่าเสียหรือไม่
-
-        // ดึงพิกัด
+        const status = devicesStatus[deviceName] || 'ok'; 
         const coordsAttr = area.getAttribute('coords');
         if(!coordsAttr) return;
         const coords = coordsAttr.split(',').map(c => parseInt(c.trim()));
@@ -1242,34 +1026,23 @@ window.updateDeviceStatusOverlays = async function(siteKey) {
         let x, y, width, height;
 
         if (shape === 'rect' && coords.length === 4) {
-            x = coords[0];
-            y = coords[1];
-            width = coords[2] - coords[0];
-            height = coords[3] - coords[1];
+            x = coords[0]; y = coords[1];
+            width = coords[2] - coords[0]; height = coords[3] - coords[1];
+            width = Math.max(width, MIN_DIMENSION); height = Math.max(height, MIN_DIMENSION);
+        } else return; 
 
-            width = Math.max(width, MIN_DIMENSION);
-            height = Math.max(height, MIN_DIMENSION);
-        } else {
-            return; // รองรับแค่ rect ในตอนนี้
-        }
-
-        // สร้าง Overlay
         const overlay = document.createElement('div');
         
-        // 💥 กำหนด Class ตามสถานะ (ปกติ=กรอบเขียว, เสีย=กากบาทแดง)
-        if (isDown) {
-            overlay.className = 'device-overlay down'; // กากบาทแดง
-        } else {
-            overlay.className = 'device-overlay normal'; // กรอบเขียว
-        }
+        // 💥 กำหนด Class ตามสถานะ
+        if (status === 'down') overlay.className = 'device-overlay down'; 
+        else if (status === 'abnormal') overlay.className = 'device-overlay abnormal'; 
+        else overlay.className = 'device-overlay normal'; 
 
-        const PADDING = 0; // ปรับ Padding เป็น 0 เพื่อให้กรอบตรงเป๊ะกับ Area
-
+        const PADDING = 0; 
         overlay.style.left = `${x - PADDING}px`;
-        overlay.style.top = `${y - PADDING}px`; // ไม่ต้องบวก OFFSET_TOP แล้ว
+        overlay.style.top = `${y - PADDING}px`; 
         overlay.style.width = `${width + (2 * PADDING)}px`;
         overlay.style.height = `${height + (2 * PADDING)}px`;
-
         overlay.setAttribute('title', deviceName);
 
         mapContainer.appendChild(overlay);
@@ -1279,27 +1052,14 @@ window.updateDeviceStatusOverlays = async function(siteKey) {
 let unsubscribe = null; 
 
 function setupRealtimeListener(siteKey) {
-  // 1. ถ้ามี Listener ตัวเก่าให้หยุดทำงานก่อน
-  if (unsubscribe) { unsubscribe(); }
-
-  // 2. เช็คว่าล็อกอินหรือยัง? ถ้ายังไม่ต้องรัน Listener ต่อเพื่อเลี่ยง Error
-  if (!firebase.auth().currentUser) {
-    console.warn("ยังไม่ได้ล็อกอิน: ข้ามการรัน Realtime Listener");
-    return; 
-  }
+  if (unsubscribe) unsubscribe(); 
+  if (!firebase.auth().currentUser) return; 
 
   const currentDeviceCollection = db.collection(`sites`).doc(siteKey).collection(`devices`); 
-
-  // 3. เริ่มดึงข้อมูล
   unsubscribe = currentDeviceCollection.onSnapshot(snapshot => { 
     window.updateDeviceSummary(); 
   }, (error) => {
-    // 4. ถ้าเกิด Error เรื่องสิทธิ์ ให้จัดการอย่างสุภาพ
-    if (error.code === 'permission-denied') {
-        console.warn("สิทธิ์ไม่พอในการดึงข้อมูล (Permission Denied)");
-    } else {
-        console.error("Listener Error:", error);
-    }
+    if (error.code !== 'permission-denied') console.error("Listener Error:", error);
   });
 }
 
@@ -1332,56 +1092,36 @@ async function processAndSaveImport(assetsToImport, recordsToImport) {
             const finalRecords = Array.from(finalRecordsMap.values());
             finalRecords.sort((a, b) => a.ts - b.ts);
             const downCount = finalRecords.filter(r => r.counted).length; 
-          const isUnresolved = (r) => {
-                if (r.status !== 'down') return false; 
-                return !r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null';
-            };
             
-            // เช็คว่ามีรายการค้างหรือไม่
-            const hasUnresolvedIssues = finalRecords.some(r => isUnresolved(r));
-            
-            // ถ้ามีค้าง ให้เป็น down, ถ้าไม่มี ให้เป็น ok
-            const currentStatus = hasUnresolvedIssues ? 'down' : 'ok';
-            // ------------------------
+            const isUnresolved = (r) => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null');
+            const unresolvedIssues = finalRecords.filter(isUnresolved);
+            let currentStatus = 'ok';
+            if (unresolvedIssues.some(r => r.status === 'down')) currentStatus = 'down';
+            else if (unresolvedIssues.some(r => r.status === 'abnormal')) currentStatus = 'abnormal';
 
-            batch.set(docRef, {
-                assetInfo: finalAssetInfo,
-                records: finalRecords,
-                downCount: downCount,
-                currentStatus: currentStatus
-            });
+            batch.set(docRef, { assetInfo: finalAssetInfo, records: finalRecords, downCount: downCount, currentStatus: currentStatus });
         }
         await batch.commit();
-        window.updateDeviceSummary();
-        window.updateDeviceStatusOverlays(currentSiteKey);
+        window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey);
         Swal.fire({ title: 'นำเข้าสำเร็จ!', icon: 'success' });
-    } catch (error) {
-        Swal.fire('ผิดพลาด', error.message, 'error');
-    }
+    } catch (error) { Swal.fire('ผิดพลาด', error.message, 'error'); }
 }
 
 window.importData = function(event) {
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') {
-        Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์นำเข้าข้อมูล', 'error');
-        event.target.value = null;
-        return;
+        Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์นำเข้าข้อมูล', 'error'); event.target.value = null; return;
     }
-    const file = event.target.files[0];
-    if (!file) return;
+    const file = event.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const data = new Uint8Array(e.target.result);
             const wb = XLSX.read(data, { type: 'array' });
-            const assetSheetName = "ข้อมูลทรัพย์สิน";
-            const recordSheetName = "ประวัติการชำรุด";
-            const wsAssets = wb.Sheets[assetSheetName];
-            const wsRecords = wb.Sheets[recordSheetName];
-            const assetsToImport = [];
-            const recordsToImport = [];
+            const wsAssets = wb.Sheets["ข้อมูลทรัพย์สิน"];
+            const wsRecords = wb.Sheets["ประวัติการชำรุด"];
+            const assetsToImport = []; const recordsToImport = [];
             const cleanDate = (val) => {
-                if (!val) return null;
-                const str = val.toString().trim();
+                if (!val) return null; const str = val.toString().trim();
                 if (str === '-' || str === '' || str.toLowerCase() === 'null') return null;
                 return str.slice(0, 10).replace(/\//g, '-');
             };
@@ -1389,30 +1129,11 @@ window.importData = function(event) {
                 const assetRawData = XLSX.utils.sheet_to_json(wsAssets, { header: 1 });
                 if (assetRawData.length >= 2) { 
                     const headers = assetRawData[0];
-                    const headerMap = {
-                        'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'),
-                        'Serial Number': headers.indexOf('Serial Number'),
-                        'Model': headers.indexOf('Model'),
-                        'PEA No.': headers.indexOf('PEA No.'), 
-                        'ราคา': headers.indexOf('ราคา'), 
-                        'Manufacturer': headers.indexOf('Manufacturer'),
-                        'วันที่เริ่มประกัน': headers.indexOf('วันที่เริ่มประกัน'),
-                        'วันที่หมดประกัน': headers.indexOf('วันที่หมดประกัน'),
-                    };
+                    const headerMap = { 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 'Serial Number': headers.indexOf('Serial Number'), 'Model': headers.indexOf('Model'), 'PEA No.': headers.indexOf('PEA No.'), 'ราคา': headers.indexOf('ราคา'), 'Manufacturer': headers.indexOf('Manufacturer'), 'วันที่เริ่มประกัน': headers.indexOf('วันที่เริ่มประกัน'), 'วันที่หมดประกัน': headers.indexOf('วันที่หมดประกัน') };
                     if (headerMap['ชื่ออุปกรณ์'] !== -1) {
                         for (let i = 1; i < assetRawData.length; i++) {
-                            const row = assetRawData[i];
-                            const deviceName = row[headerMap['ชื่ออุปกรณ์']];
-                            if (!deviceName) continue;
-                            const assetInfo = {
-                                serial: row[headerMap['Serial Number']] || '',
-                                model: row[headerMap['Model']] || '',
-                                peaNo: (headerMap['PEA No.'] !== -1) ? (row[headerMap['PEA No.']] || '') : '',
-                                price: (headerMap['ราคา'] !== -1) ? (row[headerMap['ราคา']] || '') : '',
-                                manufacturer: row[headerMap['Manufacturer']] || '',
-                                warrantyStart: cleanDate(row[headerMap['วันที่เริ่มประกัน']]),
-                                warrantyEnd: cleanDate(row[headerMap['วันที่หมดประกัน']]),
-                            };
+                            const row = assetRawData[i]; const deviceName = row[headerMap['ชื่ออุปกรณ์']]; if (!deviceName) continue;
+                            const assetInfo = { serial: row[headerMap['Serial Number']] || '', model: row[headerMap['Model']] || '', peaNo: (headerMap['PEA No.'] !== -1) ? (row[headerMap['PEA No.']] || '') : '', price: (headerMap['ราคา'] !== -1) ? (row[headerMap['ราคา']] || '') : '', manufacturer: row[headerMap['Manufacturer']] || '', warrantyStart: cleanDate(row[headerMap['วันที่เริ่มประกัน']]), warrantyEnd: cleanDate(row[headerMap['วันที่หมดประกัน']]) };
                             assetsToImport.push({ deviceName, assetInfo });
                         }
                     }
@@ -1422,36 +1143,23 @@ window.importData = function(event) {
                 const recordRawData = XLSX.utils.sheet_to_json(wsRecords, { header: 1 });
                 if (recordRawData.length >= 2) { 
                     const headers = recordRawData[0];
-                    const headerMap = {
-                        'Timestamp': headers.indexOf('Timestamp'),
-                        'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'),
-                        'วันที่ชำรุด': headers.indexOf('วันที่ชำรุด'),
-                        'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'),
-                        'สถานะ': headers.indexOf('สถานะ'),
-                        'คำอธิบาย': headers.indexOf('คำอธิบาย'),
-                        'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'), // เพิ่มดึงคอลัมน์วิธีแก้ไข
-                        'ผู้บันทึก': headers.indexOf('ผู้บันทึก')
-                    };
+                    const headerMap = { 'Timestamp': headers.indexOf('Timestamp'), 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 'วันที่ชำรุด': headers.indexOf('วันที่ชำรุด'), 'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'), 'สถานะ': headers.indexOf('สถานะ'), 'คำอธิบาย': headers.indexOf('คำอธิบาย'), 'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'), 'ผู้บันทึก': headers.indexOf('ผู้บันทึก') };
                     const requiredHeaders = ['ชื่ออุปกรณ์', 'วันที่ชำรุด', 'สถานะ'];
                     if (!requiredHeaders.some(h => headerMap[h] === -1)) {
                         for (let i = 1; i < recordRawData.length; i++) {
-                            const row = recordRawData[i];
-                            const deviceName = row[headerMap['ชื่ออุปกรณ์']];
-                            if (!deviceName) continue;
-                            const importedBrokenDate = cleanDate(row[headerMap['วันที่ชำรุด']]);
-                            const importedFixedDate = cleanDate(row[headerMap['วันที่ซ่อมแซม']]);
-                            const statusValue = (row[headerMap['สถานะ']] || '').toString();
-                            const importedTs = row[headerMap['Timestamp']];
-                            let finalStatus = statusValue.includes('ชำรุด') ? 'down' : 'ok';
-                            if (importedBrokenDate && !importedFixedDate) { finalStatus = 'down'; }
+                            const row = recordRawData[i]; const deviceName = row[headerMap['ชื่ออุปกรณ์']]; if (!deviceName) continue;
+                            const importedBrokenDate = cleanDate(row[headerMap['วันที่ชำรุด']]); const importedFixedDate = cleanDate(row[headerMap['วันที่ซ่อมแซม']]);
+                            const statusValue = (row[headerMap['สถานะ']] || '').toString(); const importedTs = row[headerMap['Timestamp']];
+                            let finalStatus = 'ok';
+                            if (statusValue.includes('ชำรุด')) finalStatus = 'down';
+                            else if (statusValue.includes('ผิดปกติ')) finalStatus = 'abnormal';
+                            if (importedBrokenDate && !importedFixedDate && finalStatus === 'ok') finalStatus = 'down'; // fallback
                             const record = {
                                 ts: importedTs ? parseInt(importedTs) : Date.now() + i,
-                                brokenDate: importedBrokenDate || '',
-                                fixedDate: importedFixedDate || null, 
-                                status: finalStatus, 
-                                description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel',
+                                brokenDate: importedBrokenDate || '', fixedDate: importedFixedDate || null, 
+                                status: finalStatus, description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel',
                                 solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
-                                user: (row[headerMap['ผู้บันทึก']] || '').toString() || currentUser.email,
+                                user: (row[headerMap['ผู้บันทึก']] || '').toString() || (currentUserFullName || currentUser.email),
                                 counted: !!importedBrokenDate, 
                             };
                             recordsToImport.push({ deviceName, record });
@@ -1459,14 +1167,9 @@ window.importData = function(event) {
                     }
                 }
             }
-            if (assetsToImport.length > 0 || recordsToImport.length > 0) {
-                processAndSaveImport(assetsToImport, recordsToImport);
-            } else {
-                Swal.fire('ผิดพลาด', 'ไม่พบข้อมูลที่ถูกต้องในชีตใดๆ', 'error');
-            }
-        } catch (error) {
-            Swal.fire('ผิดพลาด', error.message, 'error');
-        }
+            if (assetsToImport.length > 0 || recordsToImport.length > 0) processAndSaveImport(assetsToImport, recordsToImport);
+            else Swal.fire('ผิดพลาด', 'ไม่พบข้อมูลที่ถูกต้องในชีตใดๆ', 'error');
+        } catch (error) { Swal.fire('ผิดพลาด', error.message, 'error'); }
     };
     reader.readAsArrayBuffer(file);
     event.target.value = null; 
@@ -1474,20 +1177,13 @@ window.importData = function(event) {
 
 window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey];
-    if (!siteData || siteData.devices.length === 0) {
-        Swal.fire('แจ้งเตือน', 'ไม่พบอุปกรณ์', 'warning');
-        return;
-    }
+    if (!siteData || siteData.devices.length === 0) { Swal.fire('แจ้งเตือน', 'ไม่พบอุปกรณ์', 'warning'); return; }
 
-    // --- ส่วนที่ 1: ดึงข้อมูล Asset และ History (เดิม) ---
     const docsSnap = await getAllDevicesDocs(currentSiteKey);
-    const dataMap = {};
-    docsSnap.forEach(d => dataMap[d.id] = d.data());
+    const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
 
-    // เพิ่ม วิธีแก้ไข ใน headers ของ records
-    const recordsHeader = ['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการชำรุด (ครั้งที่ N)', 'วันที่ชำรุด', 'วันที่ซ่อมแซม', 'ระยะเวลาชำรุด', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'ผู้บันทึก'];
+    const recordsHeader = ['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'ผู้บันทึก'];
     const recordsData = [recordsHeader]; 
-    // เพิ่ม PEA No. และ ราคา ใน headers ของ assets
     const assetHeader = ['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคา', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
     const assetData = [assetHeader]; 
 
@@ -1496,100 +1192,46 @@ window.exportAllDataExcel = async function() {
         const assetInfo = docData?.assetInfo || {}; 
         const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
         let warrantyStatusText = 'N/A';
-        switch(warrantyStatus) {
-            case 'ok': warrantyStatusText = 'รับประกัน'; break;
-            case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break;
-            case 'bad': warrantyStatusText = 'หมดประกัน'; break;
-        }
-        assetData.push([
-            devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-',
-            (assetInfo.warrantyStart || '-').replace(/-/g, '/'), 
-            (assetInfo.warrantyEnd || '-').replace(/-/g, '/'),   
-            warrantyStatusText
-        ]);
+        switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
+        assetData.push([ devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', (assetInfo.warrantyStart || '-').replace(/-/g, '/'), (assetInfo.warrantyEnd || '-').replace(/-/g, '/'), warrantyStatusText ]);
 
         if (!docData) continue; 
-        const records = docData.records || [];
-        records.sort((a, b) => a.ts - b.ts);
+        const records = docData.records || []; records.sort((a, b) => a.ts - b.ts);
         let downCount = 0; 
         records.forEach(r => {
             let duration = '-', sequenceNumber = '-'; 
             if (r.counted) { downCount++; sequenceNumber = downCount; }
             if (r.brokenDate) {
                 if (r.fixedDate) {
-                    const days = calculateDaysDifference(r.brokenDate, r.fixedDate);
-                    duration = formatDuration(days);
-                } else if (r.status === 'down') {
-                    const days = calculateDaysDifference(r.brokenDate, null); 
-                    duration = formatDuration(days) + ' (ชำรุด)';
+                    duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate));
+                } else if (r.status === 'down' || r.status === 'abnormal') {
+                    duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' (ยังไม่ซ่อม)';
                 }
             }
-            recordsData.push([
-                r.ts || '-', devName, sequenceNumber,
-                (r.brokenDate || '-').replace(/-/g, '/'), 
-                (r.fixedDate || '-').replace(/-/g, '/'),  
-                duration, r.status === 'down' ? 'ชำรุด' : 'ใช้งานได้', r.description || '-', r.solution || '-', r.user || '-', 
-            ]);
+            let statusTH = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
+            recordsData.push([ r.ts || '-', devName, sequenceNumber, (r.brokenDate || '-').replace(/-/g, '/'), (r.fixedDate || '-').replace(/-/g, '/'), duration, statusTH, r.description || '-', r.solution || '-', r.user || '-', ]);
         });
     }
 
-    // --- ส่วนที่ 2: เพิ่มการดึงข้อมูล Log (ใหม่สำหรับ Sheet 3) ---
     const logHeader = ['วัน-เวลา', 'ผู้ใช้งาน', 'การกระทำ', 'รายละเอียด', 'ไซต์'];
     const logData = [logHeader];
-
     try {
-        // ดึง Log เฉพาะของไซต์ปัจจุบัน (หรือทั้งหมดตามต้องการ) เรียงจากใหม่ไปเก่า
-        const logSnap = await db.collection("activity_logs")
-            .where("siteKey", "==", currentSiteKey)
-            .orderBy("timestamp", "desc")
-            .limit(1000) // จำกัดไว้ที่ 1,000 รายการล่าสุด
-            .get();
-
+        const logSnap = await db.collection("activity_logs").where("siteKey", "==", currentSiteKey).orderBy("timestamp", "desc").limit(1000).get();
         logSnap.forEach(doc => {
-            const d = doc.data();
-            const timeStr = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
-            logData.push([
-                timeStr,
-                d.userEmail || '-',
-                d.action || '-',
-                d.details || '-',
-                d.siteKey || '-'
-            ]);
+            const d = doc.data(); const timeStr = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
+            logData.push([ timeStr, d.userEmail || '-', d.action || '-', d.details || '-', d.siteKey || '-' ]);
         });
-    } catch (error) {
-        console.error("Error fetching logs for export:", error);
-        // ถ้าดึง Log ไม่ได้ (เช่น สิทธิ์ไม่ถึง) จะข้ามส่วนนี้ไปเพื่อให้ Export ส่วนอื่นได้ต่อ
-    }
+    } catch (error) {}
 
-    // --- ส่วนที่ 3: สร้างไฟล์ Excel ---
-    if (recordsData.length <= 1 && assetData.length <= 1 && logData.length <= 1) {
-        Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลใดๆ', 'warning');
-        return;
-    }
+    if (recordsData.length <= 1 && assetData.length <= 1 && logData.length <= 1) { Swal.fire('แจ้งเตือน', 'ไม่พบข้อมูลใดๆ', 'warning'); return; }
 
     const wb = XLSX.utils.book_new();
-
-    // Sheet 1: ประวัติการชำรุด
-    if (recordsData.length > 1) {
-        const ws_records = XLSX.utils.aoa_to_sheet(recordsData);
-        XLSX.utils.book_append_sheet(wb, ws_records, "ประวัติการชำรุด");
-    }
-
-    // Sheet 2: ข้อมูลทรัพย์สิน
-    if (assetData.length > 1) {
-        const ws_assets = XLSX.utils.aoa_to_sheet(assetData);
-        XLSX.utils.book_append_sheet(wb, ws_assets, "ข้อมูลทรัพย์สิน");
-    }
-
-    // Sheet 3: ประวัติการใช้งาน (Logs)
-    if (logData.length > 1) {
-        const ws_logs = XLSX.utils.aoa_to_sheet(logData);
-        XLSX.utils.book_append_sheet(wb, ws_logs, "ประวัติการใช้งาน");
-    }
+    if (recordsData.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(recordsData), "ประวัติการชำรุด");
+    if (assetData.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(assetData), "ข้อมูลทรัพย์สิน");
+    if (logData.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(logData), "ประวัติการใช้งาน");
 
     const fileName = `Device_Export_${siteData.name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    Swal.fire('ส่งออกสำเร็จ', `ไฟล์ ${fileName} ถูกบันทึกแล้ว พร้อมข้อมูลประวัติการใช้งาน`, "success");
+    XLSX.writeFile(wb, fileName); Swal.fire('ส่งออกสำเร็จ', `ไฟล์ ${fileName} ถูกบันทึกแล้ว`, "success");
 };
 
 window.resetFilters = function() {
@@ -1603,56 +1245,26 @@ try { window.updateDeviceSummary(); } catch (e) {}
 }
 
 window.clearAllDevices = async function() {
-if (currentUserRole !== 'admin') {
-Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin เท่านั้นที่ลบข้อมูลทั้งหมดได้', 'error');
-return;
-}
-const result = await Swal.fire({
-title: '⚠️ ลบข้อมูลทั้งหมด?',
-text: `คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด? ข้อมูลทรัพย์สินจะไม่ถูกลบ`,
-icon: 'error',
-showCancelButton: true,
-confirmButtonColor: '#ef4444',
-confirmButtonText: 'ใช่, ลบทั้งหมด!',
-cancelButtonText: 'ยกเลิก'
-});
+if (currentUserRole !== 'admin') { Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin เท่านั้น', 'error'); return; }
+const result = await Swal.fire({ title: '⚠️ ลบข้อมูลทั้งหมด?', text: `คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?`, icon: 'error', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ใช่, ลบทั้งหมด!', cancelButtonText: 'ยกเลิก' });
 if (result.isConfirmed) {
-const docs = await getAllDevicesDocs(currentSiteKey);
-const batch = db.batch(); 
-for (let d of docs.docs) {
-const docRef = getSiteCollection(currentSiteKey).doc(d.id);
-batch.set(docRef, { records: [], downCount: 0, currentStatus: 'ok' }, { merge: true });
-}
-await batch.commit();
-window.updateDeviceSummary(); 
-window.updateDeviceStatusOverlays(currentSiteKey); 
+const docs = await getAllDevicesDocs(currentSiteKey); const batch = db.batch(); 
+for (let d of docs.docs) { batch.set(getSiteCollection(currentSiteKey).doc(d.id), { records: [], downCount: 0, currentStatus: 'ok' }, { merge: true }); }
+await batch.commit(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); 
 Swal.fire('ลบเรียบร้อย', 'ลบข้อมูลประวัติทั้งหมดแล้ว', 'success');
 }
 }
 
-window.showSummary = function() {
-document.getElementById('topologyPage').classList.add('hidden');
-document.getElementById('summaryPage').classList.remove('hidden');
-window.updateDeviceSummary(); 
-};
-
-window.showTopology = function() {
-document.getElementById('summaryPage').classList.add('hidden');
-document.getElementById('topologyPage').classList.remove('hidden');
-if (typeof imageMapResize === 'function') { imageMapResize(); }
-window.updateDeviceStatusOverlays(currentSiteKey);
-};
+window.showSummary = function() { document.getElementById('topologyPage').classList.add('hidden'); document.getElementById('summaryPage').classList.remove('hidden'); window.updateDeviceSummary(); };
+window.showTopology = function() { document.getElementById('summaryPage').classList.add('hidden'); document.getElementById('topologyPage').classList.remove('hidden'); if (typeof imageMapResize === 'function') { imageMapResize(); } window.updateDeviceStatusOverlays(currentSiteKey); };
 
 function switchSite(siteKey) {
-const siteData = sites[siteKey];
-if (!siteData) return;
-currentSiteKey = siteKey;
+const siteData = sites[siteKey]; if (!siteData) return; currentSiteKey = siteKey;
 document.getElementById('locationTitle').textContent = `🔎 ${siteData.name}`;
 document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden'));
 document.getElementById(`map-${siteKey}`).classList.remove('hidden');
 if (typeof imageMapResize === 'function') { imageMapResize(); }
-setupRealtimeListener(siteKey); 
-window.updateDeviceStatusOverlays(currentSiteKey); 
+setupRealtimeListener(siteKey); window.updateDeviceStatusOverlays(currentSiteKey); 
 }
 
 // =========================================================================
@@ -1660,63 +1272,42 @@ window.updateDeviceStatusOverlays(currentSiteKey);
 // =========================================================================
 
 document.addEventListener("DOMContentLoaded", function() {
-
-// 💥 MODIFIED: Auth with Role Fetching 💥
 auth.onAuthStateChanged(async user => {
     if (user) {
         currentUser = user;
         document.getElementById('userInfo').classList.remove('hidden');
         document.getElementById('loginButton').classList.add('hidden');
-        document.getElementById('userNameDisplay').textContent = `${user.email}`; 
         
         try {
             const userRef = db.collection('users').doc(user.email);
             const userSnap = await userRef.get();
             
             if (!userSnap.exists) {
-                let initialRole = 'viewer';
-                if (user.email === ADMIN_EMAIL) initialRole = 'admin';
-                
-                await userRef.set({
-                    email: user.email,
-                    role: initialRole,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                currentUserRole = initialRole;
+                let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer';
+                await userRef.set({ email: user.email, role: initialRole, fullName: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                currentUserRole = initialRole; currentUserFullName = '';
             } else {
                 currentUserRole = userSnap.data().role || 'viewer';
+                currentUserFullName = userSnap.data().fullName || ''; 
             }
-            
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
 
-           
+            document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email; 
+
             const sessionLogKey = `logged_in_${user.uid}`;
             if (!sessionStorage.getItem(sessionLogKey)) {
                 await createLog("AUTH_LOGIN", `ผู้ใช้เข้าสู่ระบบด้วยสิทธิ์: ${currentUserRole.toUpperCase()}`);
-               
                 sessionStorage.setItem(sessionLogKey, "true");
             }
-            
             startAutoLogoutTimer();
-        } catch (e) {
-            console.error("Error fetching user role:", e);
-            currentUserRole = 'viewer';
-        }
-
+        } catch (e) { console.error("Error fetching user role:", e); currentUserRole = 'viewer'; }
         toggleWriteAccess(true);
-        
     } else {
-       
-        if (currentUser) {
-            sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
-        }
-        
-        currentUser = null;
-        currentUserRole = 'viewer';
+        if (currentUser) sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
+        currentUser = null; currentUserRole = 'viewer'; currentUserFullName = '';
         document.getElementById('userInfo').classList.add('hidden');
         document.getElementById('loginButton').classList.remove('hidden');
-        toggleWriteAccess(false);
-        stopAutoLogoutTimer();
+        toggleWriteAccess(false); stopAutoLogoutTimer();
     }
 });
 
@@ -1731,74 +1322,38 @@ locationSelect.addEventListener("change", function() { switchSite(this.value); }
 try {
 let initialSiteKey = locationSelect.value;
 if (!sites[initialSiteKey]) initialSiteKey = Object.keys(sites)[0];
-toggleWriteAccess(false); 
-switchSite(initialSiteKey); 
+toggleWriteAccess(false); switchSite(initialSiteKey); 
 } catch (error) { console.error("Init Error:", error); }
 }
 
 });
-let logoutTimer; // ตัวแปรสำหรับฟังก์ชัน logout เดิม
-let countdownInterval; // ตัวแปรใหม่สำหรับนับถอยหลังวินาที
-const LOGOUT_TIME_LIMIT = 30 * 60 * 1000; // 30 นาที
+let logoutTimer; 
+let countdownInterval; 
+const LOGOUT_TIME_LIMIT = 60 * 60 * 1000; 
 
 window.startAutoLogoutTimer = function() {
     stopAutoLogoutTimer();
-
-    // 1. เช็คว่ามีเวลาที่บันทึกไว้เดิมไหม ถ้าไม่มีให้สร้างใหม่ (Now + 15 min)
     let expirationTime = localStorage.getItem('logoutExpiration');
-    if (!expirationTime) {
-        expirationTime = Date.now() + LOGOUT_TIME_LIMIT;
-        localStorage.setItem('logoutExpiration', expirationTime);
-    }
+    if (!expirationTime) { expirationTime = Date.now() + LOGOUT_TIME_LIMIT; localStorage.setItem('logoutExpiration', expirationTime); }
 
     countdownInterval = setInterval(() => {
-        const now = Date.now();
-        let timeLeftMs = expirationTime - now;
-        let timeLeft = Math.ceil(timeLeftMs / 1000);
-
-        if (timeLeft <= 0) {
-            stopAutoLogoutTimer();
-            localStorage.removeItem('logoutExpiration'); // ล้างค่าเมื่อหมดเวลา
-            logout();
-            return;
-        }
-
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-
-        const minElem = document.getElementById('timerMinutes');
-        const secElem = document.getElementById('timerSeconds');
-        if (minElem && secElem) {
-            minElem.textContent = minutes.toString().padStart(2, '0');
-            secElem.textContent = seconds.toString().padStart(2, '0');
-        }
+        const now = Date.now(); let timeLeftMs = expirationTime - now; let timeLeft = Math.ceil(timeLeftMs / 1000);
+        if (timeLeft <= 0) { stopAutoLogoutTimer(); localStorage.removeItem('logoutExpiration'); logout(); return; }
+        const minutes = Math.floor(timeLeft / 60); const seconds = timeLeft % 60;
+        const minElem = document.getElementById('timerMinutes'); const secElem = document.getElementById('timerSeconds');
+        if (minElem && secElem) { minElem.textContent = minutes.toString().padStart(2, '0'); secElem.textContent = seconds.toString().padStart(2, '0'); }
     }, 1000);
 };
 
-window.stopAutoLogoutTimer = function() {
-    if (countdownInterval) clearInterval(countdownInterval);
-    localStorage.removeItem('logoutExpiration');
-};
-
+window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
 
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
-    
-    // แจ้งเตือนให้เลือกประเภทรายงาน (ทั้งหมด หรือ แค่ชำรุด)
     const result = await Swal.fire({
-        title: 'เลือกประเภทรายงาน',
-        input: 'radio',
-        inputOptions: {
-            'all': 'อุปกรณ์ทั้งหมด',
-            'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด',
-            'history_broken': 'อุปกรณ์ที่เคยชำรุดทั้งหมด'
-        },
-        inputValidator: (value) => {
-            if (!value) return 'กรุณาเลือกประเภทรายงาน';
-        },
-        showCancelButton: true,
-        confirmButtonText: 'สร้างรายงาน',
-        cancelButtonText: 'ยกเลิก'
+        title: 'เลือกประเภทรายงาน', input: 'radio',
+        inputOptions: { 'all': 'อุปกรณ์ทั้งหมด', 'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด/ผิดปกติ', 'history_broken': 'อุปกรณ์ที่เคยชำรุด/ผิดปกติทั้งหมด' },
+        inputValidator: (value) => { if (!value) return 'กรุณาเลือกประเภทรายงาน'; },
+        showCancelButton: true, confirmButtonText: 'สร้างรายงาน', cancelButtonText: 'ยกเลิก'
     });
 
     if (!result.isConfirmed) return;
@@ -1806,35 +1361,26 @@ window.printReport = async function() {
 
     Swal.fire({ title: 'กำลังสร้างรายงาน...', didOpen: () => { Swal.showLoading(); } });
     const docsSnap = await getSiteCollection(currentSiteKey).get();
-    const dataMap = {};
-    docsSnap.forEach(d => dataMap[d.id] = d.data());
-    const now = new Date();
-    const printDate = now.toISOString().split('T')[0]; 
-    const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    let tableContent = '';
-    let itemNo = 1;
+    const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
+    const now = new Date(); const printDate = now.toISOString().split('T')[0]; const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    let tableContent = ''; let itemNo = 1;
 
     for (const dev of siteData.devices) {
-        const docData = dataMap[dev] || {};
-        let records = docData.records || [];
-        records.sort((a, b) => b.ts - a.ts); 
+        const docData = dataMap[dev] || {}; let records = docData.records || []; records.sort((a, b) => b.ts - a.ts); 
         const assetInfo = docData.assetInfo || {};
         
-        // เช็คว่าอุปกรณ์นี้ชำรุดค้างอยู่หรือไม่
-        const isCurrentlyDown = records.some(r => r.status === 'down' && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
+        const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
         const hasBrokenHistory = records.length > 0;
-        // ถ้าเลือกรายงานเฉพาะที่ชำรุด แต่ตัวนี้ไม่ได้ชำรุด ให้ข้ามไป
+        
         if (reportType === 'broken' && !isCurrentlyDown) continue;
         if (reportType === 'history_broken' && !hasBrokenHistory) continue;
 
         const rowSpan = records.length > 0 ? records.length : 1;
         for (let i = 0; i < rowSpan; i++) {
-            const r = records[i];
-            const isFirst = (i === 0);
-            const occurrenceNo = r ? (records.length - i) : '-';
+            const r = records[i]; const isFirst = (i === 0); const occurrenceNo = r ? (records.length - i) : '-';
             tableContent += `<tr class="${isFirst ? 'device-group-start' : ''}">`;
             if (isFirst) {
-                const isDown = records.length > 0 && records[0].status === 'down' && !records[0].fixedDate;
+                const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
                 tableContent += `
                     <td rowspan="${rowSpan}" class="col-no text-center">${itemNo++}</td>
                     <td rowspan="${rowSpan}" class="col-device">
@@ -1851,7 +1397,7 @@ window.printReport = async function() {
                     <td class="text-center hist-text">${r.brokenDate || '-'}</td>
                     <td class="text-center hist-text">${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
                     <td class="text-left hist-text desc-cell">${r.description || '-'}</td>
-                    <td class="text-left hist-text desc-cell">${r.solution || '-'}</td> <td class="text-left hist-text user-cell">${r.user ? r.user.split('@')[0] : '-'}</td>
+                    <td class="text-left hist-text desc-cell">${r.solution || '-'}</td> <td class="text-left hist-text user-cell">${r.user || '-'}</td>
                 `;
             } else {
                 tableContent += `<td colspan="6" class="empty-cell">No maintenance history recorded.</td>`;
@@ -1861,14 +1407,9 @@ window.printReport = async function() {
     }
     Swal.close();
     
-    // ถ้ากรองแล้วไม่พบข้อมูล
-    if (tableContent === '') {
-        Swal.fire('ไม่พบข้อมูล', 'ไม่มีอุปกรณ์ตามเงื่อนไขรายงานที่คุณเลือก', 'info');
-        return;
-    }
+    if (tableContent === '') { Swal.fire('ไม่พบข้อมูล', 'ไม่มีอุปกรณ์ตามเงื่อนไขรายงานที่คุณเลือก', 'info'); return; }
 
     const printWindow = window.open('', '', 'height=900,width=1300');
-    // เพิ่ม <th>Solutions</th> ลงในโครงสร้าง Report
     printWindow.document.write(`
         <html><head><title>MAINTENANCE_LOG_${printDate}</title>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -1900,21 +1441,15 @@ window.printReport = async function() {
                 .text-center { text-align: center; } .text-left { text-align: left; } .font-bold { font-weight: 600; }
                 .empty-cell { text-align: center; padding: 30px; color: #cbd5e1; font-style: italic; }
                 .report-footer { margin-top: 15px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 10px; }
-                @media print {
-                    body { background: white; -webkit-print-color-adjust: exact; }
-                    .report-header { background: #0f172a !important; color: white !important; }
-                    th { background: #1e293b !important; color: white !important; }
-                    .device-group-start td { border-top: 3px solid #0f172a !important; }
-                    thead { display: table-header-group; }
-                }
+                @media print { body { background: white; -webkit-print-color-adjust: exact; } .report-header { background: #0f172a !important; color: white !important; } th { background: #1e293b !important; color: white !important; } .device-group-start td { border-top: 3px solid #0f172a !important; } thead { display: table-header-group; } }
             </style>
         </head>
         <body>
             <div class="page-wrapper">
                 <div class="report-header"><div><h1>Asset Maintenance Report</h1><div class="site-name">PROJECT: ${siteData.name} ${reportType==='broken'? '(เฉพาะที่กำลังชำรุด)' : (reportType==='history_broken' ? '(ที่เคยชำรุดทั้งหมด)' : '')}</div></div>
-                    <div class="header-meta"><strong>DATE:</strong> ${printDate}<br><strong>TIME:</strong> ${printTime}<br><strong>OPERATOR:</strong> ${currentUser ? currentUser.email : 'ADMIN'}</div>
+                    <div class="header-meta"><strong>DATE:</strong> ${printDate}<br><strong>TIME:</strong> ${printTime}<br><strong>OPERATOR:</strong> ${currentUserFullName || (currentUser ? currentUser.email : 'ADMIN')}</div>
                 </div>
-                <table><thead><tr><th style="width: 40px;">No.</th><th style="width: 220px;">Device & Specs</th><th style="width: 40px;">Occ.</th><th style="width: 90px;">Down Date</th><th style="width: 90px;">Fixed Date</th><th>Description</th><th style="width: 150px;">Solutions</th><th style="width: 100px;">Recorded By</th></tr></thead><tbody>${tableContent}</tbody></table>
+                <table><thead><tr><th style="width: 40px;">No.</th><th style="width: 220px;">Device & Specs</th><th style="width: 40px;">Occ.</th><th style="width: 90px;">Event Date</th><th style="width: 90px;">Fixed Date</th><th>Description</th><th style="width: 150px;">Solutions</th><th style="width: 100px;">Recorded By</th></tr></thead><tbody>${tableContent}</tbody></table>
                 <div class="report-footer">Generated by Microgrid Asset Management System</div>
             </div>
             <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 1200); }</script>
@@ -1925,14 +1460,10 @@ window.printReport = async function() {
 
 window.sendEmailNotify = async function(type, deviceName, description,solution, user, dateVal, count) {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzLRfWeTwhZN_kU_8RD_eXiy30Mtt1duleN1Vxmw4RV7wB_mmTFhDPXObWCVoaUzF0GgQ/exec"; 
-    let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์ชำรุด (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
+    let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์ชำรุด/ผิดปกติ (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
     const message = `หัวข้อ: ${title}\n------------------------------------------\n📍 สถานที่: ${sites[currentSiteKey].name}\n🛠️ อุปกรณ์: ${deviceName}\n📝 รายละเอียด: ${description || '-'}\n วิธีแก้ไข: ${solution || '-'}\n 📅 วันที่ทำรายการ: ${dateVal}\n👤 ผู้บันทึก: ${user}\n🕒 เวลาที่บันทึกในระบบ: ${new Date().toLocaleString('th-TH')}\n------------------------------------------`;
     try {
-        await fetch(GAS_URL, {
-            method: 'POST', mode: 'no-cors', cache: 'no-cache',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: message }) 
-        });
+        await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message }) });
     } catch (err) { console.error("Email notification failed:", err); }
 };
 
