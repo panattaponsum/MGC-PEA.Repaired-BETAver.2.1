@@ -52,6 +52,13 @@ devices: [
 "Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 6", "ETH Switch 7",
 "The others"
 ]
+},
+"phrao": {
+name: "ไมโครกริดพร้าว อ.พร้าว จ.เชียงใหม่",
+devices: [
+"GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3", "RCS (Switch 1)", "Recloser", "BSC (BATT-1)", "BSC (BATT-2)",
+"The others"
+]
 }
 };
 
@@ -332,12 +339,12 @@ window.showActivityLogs = async function() {
             const d = doc.data();
             const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
             
-            // --- ดึงชื่อสถานที่ (แสดงผลเป็น Key ภาษาอังกฤษ) ---
+           
             let siteDisplay = "-";
             if (d.siteKey === "SYSTEM") {
                 siteDisplay = `<span class="text-slate-400 font-medium italic">SYSTEM</span>`;
             } else if (d.siteKey) {
-                // แสดงผลชื่อภาษาอังกฤษตรงๆ (เช่น ko-phaluay) และทำให้เป็นตัวพิมพ์ใหญ่เพื่อความสวยงาม
+                
                 siteDisplay = `<span class="font-mono text-blue-600 font-bold">${d.siteKey.toUpperCase()}</span>`;
             }
 
@@ -718,7 +725,7 @@ window.editRecord = async function(ts) {
     document.getElementById('brokenDate').value = r.brokenDate || '';
     document.getElementById('fixedDate').value = r.fixedDate || '';
     document.getElementById('description').value = r.description || '';
-    document.getElementById('solution').value = r.solution || ''; // ดึงข้อมูลวิธีแก้ไขมาแสดง
+    document.getElementById('solution').value = r.solution || ''; 
     editIndex = idx;
     document.getElementById('editHint').classList.remove('hidden');
 };
@@ -765,8 +772,8 @@ async function loadAssetData() {
 
     document.getElementById('assetSerial').value = assetInfo.serial || '';
     document.getElementById('assetModel').value = assetInfo.model || '';
-    document.getElementById('assetPeaNo').value = assetInfo.peaNo || ''; // โหลด PEA No.
-    document.getElementById('assetPrice').value = assetInfo.price || ''; // โหลด ราคา
+    document.getElementById('assetPeaNo').value = assetInfo.peaNo || ''; 
+    document.getElementById('assetPrice').value = assetInfo.price || ''; 
     document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
     document.getElementById('assetWarrantyStart').value = assetInfo.warrantyStart || '';
     document.getElementById('assetWarrantyEnd').value = assetInfo.warrantyEnd || '';
@@ -792,8 +799,8 @@ window.saveAssetData = async function() {
     const assetInfo = {
         serial: document.getElementById('assetSerial').value,
         model: document.getElementById('assetModel').value,
-        peaNo: document.getElementById('assetPeaNo').value, // บันทึก PEA No.
-        price: document.getElementById('assetPrice').value, // บันทึก ราคา
+        peaNo: document.getElementById('assetPeaNo').value, 
+        price: document.getElementById('assetPrice').value, 
         manufacturer: document.getElementById('assetManufacturer').value,
         warrantyStart: document.getElementById('assetWarrantyStart').value,
         warrantyEnd: document.getElementById('assetWarrantyEnd').value,
@@ -1386,8 +1393,8 @@ window.importData = function(event) {
                         'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'),
                         'Serial Number': headers.indexOf('Serial Number'),
                         'Model': headers.indexOf('Model'),
-                        'PEA No.': headers.indexOf('PEA No.'), // เพิ่มดึงคอลัมน์ PEA No.
-                        'ราคา': headers.indexOf('ราคา'), // เพิ่มดึงคอลัมน์ ราคา
+                        'PEA No.': headers.indexOf('PEA No.'), 
+                        'ราคา': headers.indexOf('ราคา'), 
                         'Manufacturer': headers.indexOf('Manufacturer'),
                         'วันที่เริ่มประกัน': headers.indexOf('วันที่เริ่มประกัน'),
                         'วันที่หมดประกัน': headers.indexOf('วันที่หมดประกัน'),
@@ -1682,14 +1689,13 @@ auth.onAuthStateChanged(async user => {
             
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
 
-            // --- ส่วนที่แก้ไข: ป้องกัน Log ซ้ำตอน Refresh ---
+           
             const sessionLogKey = `logged_in_${user.uid}`;
             if (!sessionStorage.getItem(sessionLogKey)) {
                 await createLog("AUTH_LOGIN", `ผู้ใช้เข้าสู่ระบบด้วยสิทธิ์: ${currentUserRole.toUpperCase()}`);
-                // บันทึกตัวแปรลง Session (หายไปเมื่อปิดแท็บเบราว์เซอร์)
+               
                 sessionStorage.setItem(sessionLogKey, "true");
             }
-            // ------------------------------------------
             
             startAutoLogoutTimer();
         } catch (e) {
@@ -1700,7 +1706,7 @@ auth.onAuthStateChanged(async user => {
         toggleWriteAccess(true);
         
     } else {
-        // เมื่อ Logout ให้ลบ Session ล็อคอินทิ้งด้วย เพื่อให้ล็อคอินครั้งหน้าบันทึก Log ใหม่ได้
+       
         if (currentUser) {
             sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
         }
@@ -1931,6 +1937,3 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
-
-
-
