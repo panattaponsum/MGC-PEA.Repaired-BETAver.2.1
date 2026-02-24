@@ -55,7 +55,7 @@ devices: [
 ]
 },
 "phrao": {
-name: "ไมโครกริดอำเภอพร้าว จ.เชียงใหม่",
+name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อำเภอพร้าว จ.เชียงใหม่",
 devices: [
 "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3", "RCS (Switch 1)", "Recloser", "BSC (BATT-1)", "BSC (BATT-2)",
 "The others"
@@ -1468,3 +1468,4 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
