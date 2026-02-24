@@ -12,420 +12,191 @@
 <style>
 /* --- Light Theme CSS Variables --- */
 :root {
-    --bg: #f8fafc;        /* พื้นหลังหลัก (Slate-50) */
-    --card-bg: #ffffff;   /* พื้นหลังการ์ด */
-    --text: #1e293b;      /* สีตัวอักษรหลัก (Slate-800) */
-    --sub: #64748b;       /* สีตัวอักษรรอง (Slate-500) */
-    --border: #e2e8f0;    /* สีเส้นขอบ (Slate-200) */
+    --bg: #f8fafc;        
+    --card-bg: #ffffff;   
+    --text: #1e293b;      
+    --sub: #64748b;       
+    --border: #e2e8f0;    
     
-    --ok: #10b981;        /* Emerald-500 */
-    --warn: #f59e0b;      /* Amber-500 */
-    --bad: #ef4444;       /* Red-500 */
+    --ok: #10b981;        
+    --warn: #f59e0b;      
+    --bad: #ef4444;       
 }
 
-body { 
-    margin: 0; 
-    font-family: 'Inter', 'Prompt', sans-serif; 
-    background: var(--bg); 
-    color: var(--text); 
-}
-
-/* ปรับระยะห่าง Map */
+body { margin: 0; font-family: 'Inter', 'Prompt', sans-serif; background: var(--bg); color: var(--text); }
 #map-mae-sariang, #map-betong, #map-phrao { margin-top: 20px !important; padding-top: 0 !important; }
-
-/* Global Elements */
 input, select, textarea, button, table { font-family: 'Inter', 'Prompt', sans-serif; font-weight: 400; }
 h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 
-/* --- Card Design (Clean White) --- */
 .card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px;
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 16px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .spacer { flex: 1; }
 
-.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.spacer { flex: 1; }
-
-/* --- Button Styles (Modern Light) --- */
 .btn {
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
-    color: #334155;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all .2s ease;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid #cbd5e1; background: #ffffff; color: #334155; padding: 8px 16px;
+    border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all .2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 .btn:hover { background: #f1f5f9; border-color: #94a3b8; transform: translateY(-1px); }
-
-/* Button Variants */
-.btn-brand { 
-    border-color: transparent; 
-    background: linear-gradient(180deg, #3b82f6, #2563eb); 
-    color: #ffffff; 
-}
+.btn-brand { border-color: transparent; background: linear-gradient(180deg, #3b82f6, #2563eb); color: #ffffff; }
 .btn-brand:hover { background: linear-gradient(180deg, #2563eb, #1d4ed8); }
-
-.btn-danger { 
-    background: linear-gradient(180deg, #ef4444, #dc2626); 
-    color: #fff; 
-    border-color: transparent; 
-}
-.btn-danger:hover { background: linear-gradient(180deg, #dc2626, #b91c1c); }
-
-.btn-warning { 
-    background: linear-gradient(180deg, #f59e0b, #d97706); 
-    color: #fff; 
-    border-color: transparent; 
-}
-.btn-warning:hover { background: linear-gradient(180deg, #d97706, #b45309); }
-
-.btn-ghost { 
-    background: transparent; 
-    border-color: transparent; 
-    color: var(--sub); 
-    box-shadow: none; 
-}
+.btn-ghost { background: transparent; border-color: transparent; color: var(--sub); box-shadow: none; }
 .btn-ghost:hover { background: #f1f5f9; color: var(--text); }
 
-/* --- Tags --- */
 .tag { padding: 2px 10px; font-size: 13px; border-radius: 999px; border: 1px solid transparent; font-weight: 500; }
 .tag-ok { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
-.tag-warn { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.tag-warn { background: #fff7ed; color: #c2410c; border-color: #ffedd5; } /* สีส้มสำหรับผิดปกติ */
 .tag-bad { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
 
-/* --- Inputs --- */
-.toolbar input, .toolbar select {
-    background: #ffffff;
-    color: #1e293b;
-    border: 1px solid #cbd5e1;
-    padding: 8px 12px;
-    border-radius: 8px;
-    outline: none;
-    min-width: 140px;
-}
-.toolbar input:focus, .toolbar select:focus { border-color: #3b82f6; ring: 2px solid #bfdbfe; }
-
-/* --- Table --- */
-.table th { background: #f8fafc; color: #475569; border-bottom: 2px solid #e2e8f0; font-size: 14px; }
-.table td { padding: 12px 12px; text-align: center; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 14px; }
-.table tr:hover { background-color: #f8fafc; }
-
-/* --- Modals (Light Theme) --- */
 #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); z-index: 1000; }
-
 #formModal {
     overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
-    width: min(1100px, 95vw); /* กว้างขึ้นสำหรับ 2 คอลัมน์ */
-    max-height: 95vh; /* สูงเกือบเต็มจอ */
-    background: #ffffff; 
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    display: none; flex-direction: column;
-    color: var(--text);
+    width: min(1100px, 95vw); max-height: 95vh; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;
+    padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); display: none; flex-direction: column;
 }
-
-/* Modals อื่นๆ ใช้ขนาดเดิม */
 #assetModal, #userModal {
     overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
-    width: min(600px, 92vw);
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    display: none; flex-direction: column;
-    color: var(--text);
+    width: min(600px, 92vw); background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; display: none; flex-direction: column;
 }
+.modal-split-layout { display: flex; gap: 24px; flex: 1; min-height: 0; }
+.modal-left { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+.modal-right { flex: 1; display: flex; flex-direction: column; border-left: 1px solid #e2e8f0; padding-left: 24px; min-width: 320px; }
 
-/* --- Layout ใหม่สำหรับฟอร์ม (ซ้าย-ขวา) --- */
-.modal-split-layout {
-    display: flex;
-    gap: 24px;
-    flex: 1;
-    min-height: 0; /* สำคัญสำหรับการ scroll ภายใน */
-}
-
-.modal-left {
-    flex: 1; /* กินพื้นที่ส่วนซ้าย */
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto; /* scroll ได้ถ้าเนื้อหาเยอะ */
-}
-
-.modal-right {
-    flex: 1; /* กินพื้นที่ส่วนขวา */
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid #e2e8f0; /* เส้นแบ่ง */
-    padding-left: 24px;
-    min-width: 320px; /* ความกว้างขั้นต่ำของประวัติ */
-}
-
-/* Responsive: มือถือให้เรียงลงมา */
 @media (max-width: 1024px) {
-    #formModal { width: min(600px, 95vw); max-height: 90vh; }
-    .modal-split-layout { flex-direction: column; }
+    #formModal { width: min(600px, 95vw); max-height: 90vh; } .modal-split-layout { flex-direction: column; }
     .modal-right { border-left: none; border-top: 1px solid #e2e8f0; padding-left: 0; padding-top: 20px; margin-top: 20px; min-width: 0; }
     #historySection { max-height: 300px; }
 }
 
-#formModal input, #formModal select, #formModal textarea,
-#assetModal input, #assetModal select, #assetModal textarea {
-    background: #ffffff;
-    color: #0f172a;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.15s;
+#formModal input, #formModal select, #formModal textarea, #assetModal input, #assetModal select, #assetModal textarea {
+    background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; font-size: 14px; outline: none; transition: border-color 0.15s;
 }
 #formModal input:focus, #assetModal input:focus { border-color: #3b82f6; }
-
-/* Entry / History Items */
-.entry {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 12px;
-    margin: 8px 0;
-    background: #f8fafc;
-}
 
 .muted { color: #64748b; font-size: 12px; }
 .device-img { width: 100%; height: auto; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
 #historySection { max-height: 400px; overflow-y: auto; padding-right: 6px; }
 .hidden { display: none; }
 
-/* Map Select */
 #location-select { 
-    border: 1px solid #cbd5e1 !important; 
-    background: #ffffff !important; 
-    color: #1e293b !important; 
-    padding: 8px 12px !important; 
-    border-radius: 8px !important; 
-    cursor: pointer; font-weight: 600; font-size: 14px; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid #cbd5e1 !important; background: #ffffff !important; color: #1e293b !important; 
+    padding: 8px 12px !important; border-radius: 8px !important; cursor: pointer; font-weight: 600; font-size: 14px; 
 }
-#location-select option { background: #fff; color: #000; }
-
-/* Device Overlays */
-.device-overlay {
-    position: absolute; border-radius: 4px; pointer-events: none; z-index: 50; transition: all 0.3s ease-in-out; box-sizing: border-box;
-}
+.device-overlay { position: absolute; border-radius: 4px; pointer-events: none; z-index: 50; transition: all 0.3s ease-in-out; box-sizing: border-box; }
 .map-container:hover .device-overlay.normal { opacity: 0.6; }
 .device-overlay.down {
-    border: 3px solid var(--bad);
-    background-color: rgba(239, 68, 68, 0.3);
-    background-image: 
-        linear-gradient(to top right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px)),
-        linear-gradient(to bottom right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px));
+    border: 3px solid var(--bad); background-color: rgba(239, 68, 68, 0.3);
+    background-image: linear-gradient(to top right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px)), linear-gradient(to bottom right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px));
     animation: blink-red 1s infinite alternate; z-index: 60;
+}
+/* Style สำหรับสถานะ ผิดปกติ บนแผนที่ */
+.device-overlay.abnormal {
+    border: 3px solid var(--warn); background-color: rgba(245, 158, 11, 0.3);
+    animation: blink-orange 1s infinite alternate; z-index: 55;
 }
 .device-overlay.normal { border: 2px solid var(--ok); background-color: rgba(16, 185, 129, 0.1); }
 @keyframes blink-red { from { opacity: 0.8; box-shadow: 0 0 5px var(--bad); } to { opacity: 0.4; box-shadow: 0 0 15px var(--bad); } }
+@keyframes blink-orange { from { opacity: 0.8; box-shadow: 0 0 5px var(--warn); } to { opacity: 0.4; box-shadow: 0 0 15px var(--warn); } }
 
-/* Warranty Tags */
-.tag-warranty-ok { background:#d1fae5; border:1px solid #a7f3d0; color:#065f46; }
-.tag-warranty-warn { background:#fef3c7; border:1px solid #fde68a; color:#92400e; }
-.tag-warranty-bad { background:#fee2e2; border:1px solid #fecaca; color:#991b1b; }
-
-/* User Modal List */
-.user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9; }
-.user-item:last-child { border-bottom: none; }
+.tag-warranty-ok { background:#d1fae5; border:1px solid #a7f3d0; color:#065f46; } .tag-warranty-warn { background:#fef3c7; border:1px solid #fde68a; color:#92400e; } .tag-warranty-bad { background:#fee2e2; border:1px solid #fecaca; color:#991b1b; }
 </style>
 <header class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 z-40 shadow-sm">
   <div class="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-    
     <div class="flex items-center gap-4">
       <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-200">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
       </div>
       <div>
-        <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-slate-800 leading-tight">
-          <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-            Microgrid
-          </span> 
-          Asset Management
-        </h1>
+        <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-slate-800 leading-tight"><span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Microgrid</span> Asset Management</h1>
         <div class="flex items-center gap-2 mt-0.5">
           <span class="text-[11px] font-medium text-slate-400 uppercase tracking-widest">แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</span>
-          <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-          <h2 id="locationTitle" class="text-sm font-bold text-blue-600 italic"></h2>
+          <span class="h-1 w-1 rounded-full bg-slate-300"></span><h2 id="locationTitle" class="text-sm font-bold text-blue-600 italic"></h2>
         </div>
       </div>
     </div>
-
     <div id="userInfo" class="hidden flex items-center gap-4">
-      
       <div id="logoutTimerDisplay" class="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 shadow-inner">
-        <span class="flex h-2 w-2 relative">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-        </span>
-        <span class="text-xs font-mono font-bold text-red-600">
-          <span id="timerMinutes">15</span>:<span id="timerSeconds">00</span>
-        </span>
+        <span class="flex h-2 w-2 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span></span>
+        <span class="text-xs font-mono font-bold text-red-600"><span id="timerMinutes">15</span>:<span id="timerSeconds">00</span></span>
       </div>
-
       <div class="flex items-center gap-3 pl-4 border-l border-slate-200">
         <div class="text-right hidden sm:block">
           <div id="userNameDisplay" class="text-sm font-bold text-slate-700 leading-none"></div>
-          <div id="userRoleDisplay" class="text-[10px] mt-1 font-bold uppercase py-0.5 px-2 bg-blue-50 text-blue-600 rounded-md border border-blue-100 inline-block">
-            Viewer
-          </div>
+          <div id="userRoleDisplay" class="text-[10px] mt-1 font-bold uppercase py-0.5 px-2 bg-blue-50 text-blue-600 rounded-md border border-blue-100 inline-block">Viewer</div>
         </div>
-        
         <button id="logoutButton" class="group flex items-center gap-2 bg-slate-800 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 shadow-md hover:shadow-red-200">
-          <span>Logout</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+          <span>Logout</span><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
         </button>
       </div>
-
     </div>
-
   </div>
 </header>
 
 <main class="max-w-[1400px] mx-auto px-4 py-6">
   <div id="topologyPage">
     <div class="card flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-white rounded-2xl shadow-sm border border-slate-100 mb-6">
-  
   <div class="flex items-center gap-3">
-    <div class="p-2 bg-blue-50 rounded-lg">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    </div>
+    <div class="p-2 bg-blue-50 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg></div>
     <div class="flex flex-col">
       <label for="location-select" class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Location Selection</label>
       <select id="location-select" class="bg-transparent text-slate-700 font-bold focus:outline-none cursor-pointer hover:text-blue-600 transition-colors">
         <option value="ko-phaluay">📍 ไมโครกริดเกาะพะลวย</option>
         <option value="mae-sariang">📍 ไมโครกริดอำเภอแม่สะเรียง</option>
         <option value="betong">📍 ไมโครกริดอำเภอเบตง</option>
-        <option value="phrao">📍 ไมโครกริดอำเภอพร้าว</option>
+        <option value="phrao">📍 BESS อำเภอพร้าว</option>
       </select>
     </div>
   </div>
 
   <div class="flex flex-wrap items-center gap-2">
     <div class="flex bg-slate-100 p-1 rounded-xl mr-2">
-      <button onclick="showActivityLogs()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm transition-all">
-        📜 Logs
-      </button>
-      <button onclick="showSummary()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm transition-all">
-        📊 Status Report
-      </button>
+      <button onclick="showActivityLogs()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm transition-all">📜 Logs</button>
+      <button onclick="showSummary()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-white hover:shadow-sm transition-all">📊 Status Report</button>
     </div>
-
-    <button onclick="window.printReport()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
-      <span class="text-blue-500">🖨️</span> Report PDF
-    </button>
-    
-    <button onclick="exportAllDataExcel()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
-      <span class="text-green-500">📤</span> Export Excel
-    </button>
-
+    <button onclick="window.printReport()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"><span class="text-blue-500">🖨️</span> Report PDF</button>
+    <button onclick="exportAllDataExcel()" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"><span class="text-green-500">📤</span> Export Excel</button>
     <label id="importButtonLabel" class="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm cursor-pointer">
-      <span class="text-amber-500">📥</span> Import Excel
-      <input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
+      <span class="text-amber-500">📥</span> Import Excel<input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
     </label>
-
-    <button id="manageUsersBtn" class="hidden flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-extrabold hover:bg-indigo-100 transition-all" onclick="openUserManagement()">
-      ⚙️ Manage Users
-    </button>
+    <button id="manageUsersBtn" class="hidden flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-extrabold hover:bg-indigo-100 transition-all" onclick="openUserManagement()">⚙️ Manage Users</button>
   </div>
-
-  <div id="authContainer">
-    <button id="loginButton" class="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-100 hover:scale-105 transition-all">
-      <span>🔒</span> Login with Google
-    </button>
-    </div>
-
+  <div id="authContainer"><button id="loginButton" class="flex items-center gap-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-100 hover:scale-105 transition-all"><span>🔒</span> Login</button></div>
 </div>
    <div id="logModal" class="hidden fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-5xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-200">
-        
         <div class="px-6 py-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-slate-50/50">
             <div class="flex items-center gap-3">
-                <div class="bg-indigo-600 p-2 rounded-lg shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="text-xl font-extrabold text-slate-800 tracking-tight">System Activity Logs</h2>
-                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">บันทึกประวัติการใช้งานและกิจกรรมในระบบ</p>
-                </div>
+                <div class="bg-indigo-600 p-2 rounded-lg shadow-md"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                <div><h2 class="text-xl font-extrabold text-slate-800 tracking-tight">System Activity Logs</h2><p class="text-xs text-slate-500 font-medium uppercase tracking-wider">บันทึกประวัติการใช้งานและกิจกรรมในระบบ</p></div>
             </div>
-
             <div class="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
                 <div class="flex items-center gap-2 px-3 border-r border-slate-100">
                     <span class="text-[10px] font-black text-indigo-500 uppercase">Site:</span>
                     <select id="logSiteFilter" class="text-sm font-bold bg-transparent focus:outline-none cursor-pointer text-slate-700" onchange="showActivityLogs()">
-                        <option value="all">All (Global)</option>
-                        <option value="ko-phaluay">KO-PHALUAY</option>
-                        <option value="mae-sariang">MAE-SARIANG</option>
-                        <option value="betong">BETONG</option>
-                        <option value="phrao">PHRAO</option>
+                        <option value="all">All (Global)</option><option value="ko-phaluay">KO-PHALUAY</option><option value="mae-sariang">MAE-SARIANG</option><option value="betong">BETONG</option><option value="phrao">PHRAO</option>
                     </select>
                 </div>
-
                 <div class="flex items-center gap-2 px-3">
                     <span class="text-[10px] font-black text-indigo-500 uppercase">Action:</span>
                     <select id="logActionFilter" class="text-sm font-bold bg-transparent focus:outline-none cursor-pointer text-slate-700" onchange="showActivityLogs()">
-                        <option value="all">All</option>
-                        <option value="AUTH">🔐 Access & Auth</option>
-                        <option value="UPDATE_STATUS">🔄 Status Change</option>
-                        <option value="ADD_RECORD">➕ New Entry</option>
-                        <option value="EDIT_RECORD">✏️ Modification</option>
-                        <option value="DELETE_RECORD">❌ Removal</option>
+                        <option value="all">All</option><option value="AUTH">🔐 Access & Auth</option><option value="UPDATE_STATUS">🔄 Status Change</option><option value="ADD_RECORD">➕ New Entry</option><option value="EDIT_RECORD">✏️ Modification</option><option value="DELETE_RECORD">❌ Removal</option>
                     </select>
                 </div>
             </div>
-
-            <button onclick="closeLogModal()" class="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-slate-400">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+            <button onclick="closeLogModal()" class="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
         </div>
 <div class="flex-1 overflow-auto p-4 bg-slate-50/30">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-slate-700 text-white text-[12px] uppercase tracking-widest font-bold">
-                    <th class="p-4 border-b border-slate-500 text-center w-40 shadow-sm text-white">วัน-เวลา</th>
-                    <th class="p-4 border-b border-slate-500 text-center text-white">ผู้ดำเนินการ</th>
-                    <th class="p-4 border-b border-slate-500 text-center text-white">สถานที่</th>
-                    <th class="p-4 border-b border-slate-500 text-center w-32 text-white">ประเภท</th>
-                    <th class="p-4 border-b border-slate-500 text-white">รายละเอียดกิจกรรม</th>
-                </tr>
-            </thead>
-            <tbody id="logTableBody" class="divide-y divide-slate-200">
-                </tbody>
+            <thead><tr class="bg-slate-700 text-white text-[12px] uppercase tracking-widest font-bold"><th class="p-4 border-b border-slate-500 text-center w-40 text-white">วัน-เวลา</th><th class="p-4 border-b border-slate-500 text-center text-white">ผู้ดำเนินการ</th><th class="p-4 border-b border-slate-500 text-center text-white">สถานที่</th><th class="p-4 border-b border-slate-500 text-center w-32 text-white">ประเภท</th><th class="p-4 border-b border-slate-500 text-white">รายละเอียดกิจกรรม</th></tr></thead>
+            <tbody id="logTableBody" class="divide-y divide-slate-200"></tbody>
         </table>
     </div>
 </div>
-
-        <div class="px-6 py-4 bg-white border-t border-slate-100 flex justify-between items-center">
-            <p class="text-[11px] text-slate-400 italic font-medium">* ระบบแสดงประวัติล่าสุด 200 รายการ</p>
-        </div>
     </div>
 </div>
+
 <div id="map-ko-phaluay" class="map-container" style="position:relative;">
   <img class="device-img bg-white" src="phaluay.png" usemap="#netmap" width="1903" height="1041" alt="Topology" />
   <map name="netmap">
@@ -522,7 +293,6 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
   </div>
 
  <div id="map-betong" class="map-container hidden" style="position:relative;">
-    <h4 id="betong-map-title"></h4> 
        <img id="map-img-betong" class="device-img bg-white" src="betong.jpg" usemap="#map-areas-betong" width="1917" height="919" alt="Topology" />
         <map name="map-areas-betong" id="map-areas-betong">
           <area alt="Operator HMI 24" coords="202,76,364,197" shape="rect" href="" onclick="openForm('Operator HMI 24'); return false;">
@@ -574,89 +344,53 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <div id="summaryPage" class="hidden">
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-            <p class="text-xs text-slate-500 uppercase font-bold">อุปกรณ์ทั้งหมด</p>
-            <h3 class="text-2xl font-bold text-slate-800" id="cardTotal">0</h3>
-        </div>
-        <div class="text-2xl">📦</div>
+        <div><p class="text-xs text-slate-500 uppercase font-bold">อุปกรณ์ทั้งหมด</p><h3 class="text-2xl font-bold text-slate-800" id="cardTotal">0</h3></div><div class="text-2xl">📦</div>
     </div>
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-            <p class="text-xs text-slate-500 uppercase font-bold">ปกติ</p>
-            <h3 class="text-2xl font-bold text-green-600" id="cardNormal">0</h3>
-        </div>
-        <div class="text-2xl">✅</div>
+        <div><p class="text-xs text-slate-500 uppercase font-bold">ปกติ</p><h3 class="text-2xl font-bold text-green-600" id="cardNormal">0</h3></div><div class="text-2xl">✅</div>
     </div>
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-            <p class="text-xs text-slate-500 uppercase font-bold">กำลังชำรุด</p>
-            <h3 class="text-2xl font-bold text-red-600" id="cardBroken">0</h3>
-        </div>
-        <div class="text-2xl">🚨</div>
+        <div><p class="text-xs text-slate-500 uppercase font-bold">กำลังมีปัญหา</p><h3 class="text-2xl font-bold text-red-600" id="cardBroken">0</h3></div><div class="text-2xl">🚨</div>
     </div>
 </div>
 <div class="card bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mt-6 overflow-visible">
   <div class="flex items-center justify-between mb-4 border-b border-slate-50 pb-3">
-    <div class="flex items-center gap-2">
-      <div class="w-2 h-6 bg-amber-400 rounded-full"></div>
-      <h3 class="font-bold text-slate-700">ตัวกรองและค้นหาข้อมูล</h3>
-    </div>
-    <button onclick="showTopology()" class="flex items-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700 transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
-      กลับหน้าหลัก
-    </button>
+    <div class="flex items-center gap-2"><div class="w-2 h-6 bg-amber-400 rounded-full"></div><h3 class="font-bold text-slate-700">ตัวกรองและค้นหาข้อมูล</h3></div>
+    <button onclick="showTopology()" class="flex items-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>กลับหน้าหลัก</button>
   </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
-    
     <div class="lg:col-span-1">
       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Search</label>
-      <div class="relative">
-        <input id="searchInput" type="search" placeholder="ชื่ออุปกรณ์..." oninput="updateDeviceSummary()" 
-          class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"/>
-        <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
-      </div>
+      <div class="relative"><input id="searchInput" type="search" placeholder="ชื่ออุปกรณ์..." oninput="updateDeviceSummary()" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"/><span class="absolute left-3 top-2.5 text-slate-400">🔍</span></div>
     </div>
-
     <div>
       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Sort By</label>
       <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer">
-        <option value="desc">📉 ชำรุด มาก → น้อย</option>
-        <option value="asc">📈 ชำรุด น้อย → มาก</option>
+        <option value="desc">📉 มีปัญหา มาก → น้อย</option><option value="asc">📈 มีปัญหา น้อย → มาก</option>
       </select>
     </div>
-
     <div>
       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Status</label>
       <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer">
         <option value="all">ทั้งหมด</option>
-        <option value="currently-down">⚠️ ยังชำรุดอยู่</option>
-        <option value="down">❎ เคยชำรุด</option>
-        <option value="clean">✅ ปกติ/ไม่เคยชำรุด</option>
+        <option value="currently-down">🚨 กำลังชำรุด</option>
+        <option value="currently-abnormal">⚠️ กำลังผิดปกติ</option>
+        <option value="down">❎ เคยชำรุด (ซ่อมแล้ว)</option>
+        <option value="clean">✅ ปกติ/ไม่เคยเสีย</option>
       </select>
     </div>
-
     <div>
       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">From Date</label>
       <input id="fromDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:ring-2 focus:ring-blue-500/20"/>
     </div>
-
     <div>
       <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">To Date</label>
       <input id="toDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:ring-2 focus:ring-blue-500/20"/>
     </div>
-
     <div>
-      <button onclick="resetFilters()" class="w-full bg-slate-100 hover:bg-amber-100 hover:text-amber-700 text-slate-500 font-bold py-2 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        ล้างค่า
-      </button>
+      <button onclick="resetFilters()" class="w-full bg-slate-100 hover:bg-amber-100 hover:text-amber-700 text-slate-500 font-bold py-2 rounded-xl text-sm transition-all flex items-center justify-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>ล้างค่า</button>
     </div>
-
   </div>
 </div>
 
@@ -666,8 +400,8 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
      <thead>
   <tr class="bg-slate-800 text-white text-[12px] uppercase tracking-wider font-bold">
     <th class="p-4 border-b border-slate-700 text-white">🛠️ อุปกรณ์</th>
-    <th class="p-4 border-b border-slate-700 text-center text-white">ชำรุด (รวม/ค้าง)</th>
-    <th class="p-4 border-b border-slate-700 text-center text-white">วันที่ชำรุด</th>
+    <th class="p-4 border-b border-slate-700 text-center text-white">มีปัญหา (รวม/ค้าง)</th>
+    <th class="p-4 border-b border-slate-700 text-center text-white">วันที่เกิดเหตุ</th>
     <th class="p-4 border-b border-slate-700 text-center text-white">วันที่ซ่อม</th>
     <th class="p-4 border-b border-slate-700 text-center text-white">สถานะ</th>
     <th class="p-4 border-b border-slate-700 text-center text-white">⚠️ ระยะเวลา</th>
@@ -675,33 +409,20 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <th class="p-4 border-b border-slate-700 text-white">วิธีแก้ไข</th>
   </tr>
 </thead>
-      <tbody id="summaryBody" class="divide-y divide-slate-100 text-sm">
-        </tbody>
+      <tbody id="summaryBody" class="divide-y divide-slate-100 text-sm"></tbody>
     </table>
   </div>
-  
-  <div id="pagination" class="bg-slate-50 px-6 py-3 flex justify-center border-t border-slate-100">
-    </div>
+  <div id="pagination" class="bg-slate-50 px-6 py-3 flex justify-center border-t border-slate-100"></div>
 </div>
 
 <div class="card bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mt-6">
   <div class="flex items-center justify-between mb-6">
     <div class="flex items-center gap-3">
-      <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-        </svg>
-      </div>
-      <div>
-        <h3 class="font-bold text-slate-800">กราฟวิเคราะห์จำนวนครั้งที่ชำรุด</h3>
-        <p class="text-xs text-slate-400 font-medium uppercase tracking-tighter">Failure Frequency Analysis by Device</p>
-      </div>
+      <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg></div>
+      <div><h3 class="font-bold text-slate-800">กราฟวิเคราะห์จำนวนครั้งที่มีปัญหา</h3><p class="text-xs text-slate-400 font-medium uppercase tracking-tighter">Failure Frequency Analysis by Device</p></div>
     </div>
   </div>
-  
-  <div class="relative w-full bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-200">
-    <canvas id="chart" height="100"></canvas>
-  </div>
+  <div class="relative w-full bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-200"><canvas id="chart" height="100"></canvas></div>
 </div>
     </div>
 
@@ -717,10 +438,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
         <div class="modal-left">
             <div class="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                 <div class="flex justify-between items-center">
-                    <div>
-                        <div id="warrantyStatusDisplay" class="text-sm font-bold text-slate-700">-</div>
-                        <div id="assetInfoDisplay" class="text-xs text-gray-500 mt-1">-</div>
-                    </div>
+                    <div><div id="warrantyStatusDisplay" class="text-sm font-bold text-slate-700">-</div><div id="assetInfoDisplay" class="text-xs text-gray-500 mt-1">-</div></div>
                     <button class="btn btn-ghost text-xs border border-gray-200" onclick="openAssetModal()">📋 ดู/แก้ไขข้อมูลทรัพย์สิน</button>
                 </div>
             </div>
@@ -733,12 +451,13 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
               <div>
                 <label class="text-sm font-semibold text-gray-700">สถานะ</label>
                 <select id="status" class="w-full">
-                  <option value="ok">✅ ใช้งานได้</option>
-                  <option value="down">❎ ชำรุด</option>
+                  <option value="down" id="opt-down">❎ ชำรุด</option>
+                  <option value="abnormal" id="opt-abnormal">⚠️ ผิดปกติ</option>
+                  <option value="ok" id="opt-ok" style="display:none;">✅ ใช้งานได้</option>
                 </select>
               </div>
               <div>
-                <label class="text-sm font-semibold text-gray-700">วันที่ชำรุด</label>
+                <label class="text-sm font-semibold text-gray-700">วันที่เกิดเหตุ</label>
                 <input type="date" id="brokenDate" class="w-full"/>
               </div>
               <div>
@@ -764,7 +483,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 
         <div class="modal-right">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="m-0 text-lg text-slate-800">📜 ประวัติการชำรุด</h3>
+                <h3 class="m-0 text-lg text-slate-800">📜 ประวัติการเกิดเหตุ</h3>
                 <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                     <input type="checkbox" id="filterBrokenHistory" onchange="loadHistory()" class="rounded border-gray-300">
                     <span class="text-xs">เฉพาะรายการที่ค้างซ่อม</span>
@@ -778,51 +497,21 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <div id="assetModal" >
     <div class="row mb-3">
         <h3 id="assetFormTitle" class="m-0 text-lg font-bold text-slate-800">📋 ข้อมูลทะเบียนทรัพย์สิน</h3>
-        <span class="spacer"></span>
-        <button class="btn btn-ghost hover:text-red-500" onclick="closeAssetModal()">✖ ปิด</button>
+        <span class="spacer"></span><button class="btn btn-ghost hover:text-red-500" onclick="closeAssetModal()">✖ ปิด</button>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-            <label class="text-sm font-semibold text-gray-700">Serial Number (S/N)</label>
-            <input type="text" id="assetSerial" class="w-full"/>
-        </div>
-        <div>
-            <label class="text-sm font-semibold text-gray-700">รุ่น (Model)</label>
-            <input type="text" id="assetModel" class="w-full"/>
-        </div>
-        <div>
-            <label class="text-sm font-semibold text-gray-700">PEA No.</label>
-            <input type="text" id="assetPeaNo" class="w-full"/>
-        </div>
-        <div>
-            <label class="text-sm font-semibold text-gray-700">ราคา (Price)</label>
-            <input type="number" id="assetPrice" class="w-full" step="0.01"/>
-        </div>
-        <div class="sm:col-span-2">
-            <label class="text-sm font-semibold text-gray-700">ผู้ผลิต (Manufacturer)</label>
-            <input type="text" id="assetManufacturer" class="w-full"/>
-        </div>
+        <div><label class="text-sm font-semibold text-gray-700">Serial Number (S/N)</label><input type="text" id="assetSerial" class="w-full"/></div>
+        <div><label class="text-sm font-semibold text-gray-700">รุ่น (Model)</label><input type="text" id="assetModel" class="w-full"/></div>
+        <div><label class="text-sm font-semibold text-gray-700">PEA No.</label><input type="text" id="assetPeaNo" class="w-full"/></div>
+        <div><label class="text-sm font-semibold text-gray-700">ราคา (Price)</label><input type="number" id="assetPrice" class="w-full" step="0.01"/></div>
+        <div class="sm:col-span-2"><label class="text-sm font-semibold text-gray-700">ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer" class="w-full"/></div>
         <hr class="sm:col-span-2 border-gray-200 my-1">
-        <div>
-            <label class="text-sm font-semibold text-gray-700">วันที่เริ่มรับประกัน</label>
-            <input type="date" id="assetWarrantyStart" class="w-full"/>
-        </div>
-        <div>
-            <label class="text-sm font-semibold text-gray-700">จำนวนปีรับประกัน</label>
-            <input type="number" id="assetWarrantyYears" class="w-full" min="0" step="1"/>
-        </div>
-        <div>
-            <label class="text-sm font-semibold text-gray-700">วันที่หมดรับประกัน</label>
-            <input type="date" id="assetWarrantyEnd" class="w-full"/>
-        </div>
-         <div>
-            <label class="text-sm font-semibold text-gray-700">สถานะประกัน </label>
-            <input type="text" id="assetWarrantyStatus" class="w-full bg-gray-100 text-gray-600" readOnly/>
-        </div>
+        <div><label class="text-sm font-semibold text-gray-700">วันที่เริ่มรับประกัน</label><input type="date" id="assetWarrantyStart" class="w-full"/></div>
+        <div><label class="text-sm font-semibold text-gray-700">จำนวนปีรับประกัน</label><input type="number" id="assetWarrantyYears" class="w-full" min="0" step="1"/></div>
+        <div><label class="text-sm font-semibold text-gray-700">วันที่หมดรับประกัน</label><input type="date" id="assetWarrantyEnd" class="w-full"/></div>
+        <div><label class="text-sm font-semibold text-gray-700">สถานะประกัน </label><input type="text" id="assetWarrantyStatus" class="w-full bg-gray-100 text-gray-600" readOnly/></div>
     </div>
-    <div class="row mt-4">
-        <button class="btn btn-brand" onclick="saveAssetData()" id="saveAssetButton">💾 บันทึกข้อมูลทรัพย์สิน</button>
-    </div>
+    <div class="row mt-4"><button class="btn btn-brand" onclick="saveAssetData()" id="saveAssetButton">💾 บันทึกข้อมูลทรัพย์สิน</button></div>
 </div>
 
 <div id="userModal">
@@ -832,21 +521,17 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
         <button class="btn btn-ghost hover:text-red-500" onclick="closeUserManagement()">✖ ปิด</button>
     </div>
     <div class="text-sm text-gray-500 mb-2">รายชื่อผู้ใช้ทั้งหมดที่เคยเข้าสู่ระบบ</div>
-    
     <div id="userListContainer" class="flex-1 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
         <div class="text-center py-4 text-gray-400">กำลังโหลดรายชื่อ...</div>
     </div>
 </div>
 
-
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/image-map-resizer@1.0.10/js/imageMapResizer.min.js"></script>
-
 <script src="main.js"></script>
 </body>
 </html>
