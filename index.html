@@ -31,7 +31,7 @@ body {
 }
 
 /* ปรับระยะห่าง Map */
-#map-mae-sariang, #map-betong { margin-top: 20px !important; padding-top: 0 !important; }
+#map-mae-sariang, #map-betong, #map-phrao { margin-top: 20px !important; padding-top: 0 !important; }
 
 /* Global Elements */
 input, select, textarea, button, table { font-family: 'Inter', 'Prompt', sans-serif; font-weight: 400; }
@@ -316,6 +316,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
         <option value="ko-phaluay">📍 ไมโครกริดเกาะพะลวย</option>
         <option value="mae-sariang">📍 ไมโครกริดอำเภอแม่สะเรียง</option>
         <option value="betong">📍 ไมโครกริดอำเภอเบตง</option>
+        <option value="phrao">📍 ไมโครกริดอำเภอพร้าว</option>
       </select>
     </div>
   </div>
@@ -379,6 +380,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
                         <option value="ko-phaluay">KO-PHALUAY</option>
                         <option value="mae-sariang">MAE-SARIANG</option>
                         <option value="betong">BETONG</option>
+                        <option value="phrao">PHRAO</option>
                     </select>
                 </div>
 
@@ -535,6 +537,38 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     </map>
     <div id="overlay-container-betong" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
   </div>
+
+  <div id="map-phrao" class="map-container hidden" style="position:relative;">
+      <img class="device-img bg-white" src="phrao.png" usemap="#netmap-phrao" width="1176" height="877" alt="Topology" />
+      <map name="netmap-phrao">
+          <area alt="GPS Antenna" coords="31,14,117,100" shape="rect" href="" onclick="openForm('GPS Antenna'); return false;">
+          <area alt="work station" coords="125,74,212,137" shape="rect" href="" onclick="openForm('work station'); return false;">
+          <area alt="Insight server" coords="125,151,223,210" shape="rect" href="" onclick="openForm('Insight server'); return false;">
+          <area alt="Network Switch 1" coords="221,68,331,137" shape="rect" href="" onclick="openForm('Network Switch 1'); return false;">
+          <area alt="Clock server" coords="235,145,330,210" shape="rect" href="" onclick="openForm('Clock server'); return false;">
+          <area alt="Network Switch 2" coords="462,86,620,149" shape="rect" href="" onclick="openForm('Network Switch 2'); return false;">
+          <area alt="Back start controller" coords="608,37,755,83" shape="rect" href="" onclick="openForm('Back start controller'); return false;">
+          <area alt="Firewall 1" coords="738,94,891,141" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
+          <area alt="EMS Controller" coords="603,160,751,206" shape="rect" href="" onclick="openForm('EMS Controller'); return false;">
+          <area alt="ETH Switch 1" coords="59,297,109,393" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
+          <area alt="ETH Switch 2" coords="60,409,109,504" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;">
+          <area alt="Local Controller 200-1" coords="177,367,247,436" shape="rect" href="" onclick="openForm('Local Controller 200-1'); return false;">
+          <area alt="Local Controller 200-2" coords="572,375,645,445" shape="rect" href="" onclick="openForm('Local Controller 200-2'); return false;">
+          <area alt="Local Controller 200-3" coords="691,374,761,444" shape="rect" href="" onclick="openForm('Local Controller 200-3'); return false;">
+          <area alt="ETH Switch 3" coords="445,297,497,400" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
+          <area alt="ETH Switch 4" coords="443,418,496,525" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
+          <area alt="PCS-1" coords="350,563,438,660" shape="rect" href="" onclick="openForm('PCS-1'); return false;">
+          <area alt="PCS-2" coords="707,563,792,658" shape="rect" href="" onclick="openForm('PCS-2'); return false;">
+          <area alt="PCS-3" coords="850,563,932,659" shape="rect" href="" onclick="openForm('PCS-3'); return false;">
+          <area alt="RCS (Switch 1)" coords="1019,290,1158,361" shape="rect" href="" onclick="openForm('RCS (Switch 1)'); return false;">
+          <area alt="Recloser" coords="937,459,1067,574" shape="rect" href="" onclick="openForm('Recloser'); return false;">
+          <area alt="BSC (BATT-1)" coords="293,708,330,758" shape="rect" href="" onclick="openForm('BSC (BATT-1)'); return false;">
+          <area alt="BSC (BATT-2)" coords="789,708,826,758" shape="rect" href="" onclick="openForm('BSC (BATT-2)'); return false;">
+          <area shape="default" alt="The others" href="#" onclick="openForm('The others'); return false;">
+      </map>
+      <div id="overlay-container-phrao" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
+  </div>
+
 </div>
 
 <div id="summaryPage" class="hidden">
@@ -816,6 +850,3 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
-
-
-
