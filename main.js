@@ -846,7 +846,6 @@ window.printReport = async function() {
         const assetInfo = docData.assetInfo || {};
         
         const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '-' || r.fixedDate === 'null'));
-
         if (reportType === 'broken' && !isCurrentlyDown) continue;
         if (reportType === 'history_broken' && records.length === 0) continue;
 
@@ -855,7 +854,7 @@ window.printReport = async function() {
         for (let i = 0; i < rowSpan; i++) {
             const r = records[i]; 
             const isFirst = (i === 0);
-            tableContent += `<tr>`;
+            tableContent += `<tr class="${isFirst ? 'row-group-start' : ''}">`;
             
             if (isFirst) {
                 const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
@@ -863,32 +862,25 @@ window.printReport = async function() {
                     <td rowspan="${rowSpan}" class="col-no text-center font-bold v-center">${itemNo++}</td>
                     <td rowspan="${rowSpan}" class="col-device v-center">
                         <div class="dev-title">${dev}</div>
-                        <div class="dev-specs">
-                            <b>Manufacturer:</b> ${assetInfo.manufacturer || '-'}<br>
+                        <div class="dev-specs text-center">
+                            <b>ผู้ผลิต:</b> ${assetInfo.manufacturer || '-'}<br>
                             <b>Model:</b> ${assetInfo.model || '-'}<br>
                             <b>S/N:</b> ${assetInfo.serial || '-'}<br>
-                            <b>PEA No.:</b> ${assetInfo.peaNo || '-'}
+                            <b>PEA:</b> ${assetInfo.peaNo || '-'}
                         </div>
-                        <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}</div>
+                        <center><div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}</div></center>
                     </td>
                 `;
             }
             if (r) {
-                let imagesHtml = '';
-                if (r.brokenFileUrl || r.fixedFileUrl) {
-                    imagesHtml = `<div class="image-flex-container">`;
-                    if (r.brokenFileUrl) imagesHtml += `<div class="img-half"><span class="img-tag">แจ้งเสีย</span><img src="${r.brokenFileUrl}"></div>`;
-                    if (r.fixedFileUrl) imagesHtml += `<div class="img-half"><span class="img-tag" style="color:#16a34a">ซ่อมเสร็จ</span><img src="${r.fixedFileUrl}"></div>`;
-                    imagesHtml += `</div>`;
-                }
+                let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>` : '';
+                let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>` : '';
 
                 tableContent += `
                     <td class="text-center font-bold v-center">${records.length - i}</td>
                     <td class="text-center font-bold v-center" style="font-size:11px;">${r.brokenDate || '-'}<br><small style="color:#94a3b8">ถึง</small><br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
-                    <td class="desc-cell">
-                        <b>ปัญหา:</b> ${r.description || '-'}<br>
-                        <b>การแก้ไข:</b> ${r.solution || '-'}${imagesHtml}
-                    </td>
+                    <td class="desc-cell"><div class="label-box">แจ้งเสีย</div>${r.description || '-'}${imgBroken}</td>
+                    <td class="desc-cell"><div class="label-box" style="background:#dcfce7; color:#166534;">การแก้ไข</div>${r.solution || '-'}${imgFixed}</td>
                     <td class="text-left v-center">
                         <div class="cost-row"><span>Order:</span> <b>${r.orderNumber || '-'}</b></div>
                         <div class="cost-row" style="margin-top:8px;"><span>Cost:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '0'}</b></div>
@@ -896,7 +888,7 @@ window.printReport = async function() {
                     <td class="text-center user-cell font-bold v-center">${r.user || '-'}</td>
                 `;
             } else {
-                tableContent += `<td colspan="5" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
+                tableContent += `<td colspan="6" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
             }
             tableContent += `</tr>`;
         }
@@ -911,114 +903,108 @@ window.printReport = async function() {
             <style>
                 @page { 
                     size: A4 landscape; 
-                    margin: 10mm 10mm 25mm 10mm; 
+                    margin: 15mm 10mm 35mm 10mm; 
                 }
-                body { 
-                    font-family: 'Sarabun', sans-serif; 
-                    margin: 0; 
-                    counter-reset: page; 
-                }
+                body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; color: #1e293b; counter-reset: page; }
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
                 
-                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a !important; color: white !important; padding: 20px 30px; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a !important; color: white !important; padding: 20px 30px; margin-bottom: 0; }
                 
                 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-                th { background: #1e293b !important; color: white !important; padding: 10px; font-size: 11px; border: 1px solid #334155; }
-                td { padding: 8px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 12px; word-wrap: break-word; }
+                th { background: #1e293b !important; color: white !important; padding: 10px; font-size: 11px; border: 1px solid #334155; text-align: center; }
+                td { padding: 10px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 12px; word-wrap: break-word; }
                 
-                /* ควบคุมการขึ้นหน้าใหม่ของแถวตาราง */
-                tr { page-break-inside: avoid !important; page-break-after: auto; }
+                /* แก้ปัญหาการแบ่งหน้า */
+                tr { page-break-inside: avoid !important; }
                 thead { display: table-header-group; }
+                .row-group-start td { border-top: 2.5px solid #0f172a; }
 
                 .v-center { vertical-align: middle !important; }
+                .text-center { text-align: center; }
                 .col-no { width: 40px; background: #f8fafc !important; }
                 .col-device { width: 220px; background: #f8fafc !important; }
-                .user-cell { width: 130px; }
                 
-                .dev-title { font-size: 14px; font-weight: 800; color: #1e40af; margin-bottom: 5px; }
-                .dev-specs { font-size: 10px; color: #64748b; line-height: 1.4; }
+                .dev-title { font-size: 14px; font-weight: 800; color: #1e40af; margin-bottom: 8px; text-align: center; }
+                .dev-specs { font-size: 10px; color: #475569; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 5px; }
                 
-                /* จัดรูปภาพแบบแบ่งครึ่ง 50/50 */
-                .image-flex-container { display: flex; gap: 4%; margin-top: 10px; justify-content: start; }
-                .img-half { width: 48%; border: 1px solid #e2e8f0; padding: 2px; border-radius: 4px; }
-                .img-half img { width: 100%; height: 140px; object-fit: cover; display: block; }
-                .img-tag { font-size: 9px; font-weight: bold; display: block; text-align: center; margin-bottom: 2px; }
+                /* รูปภาพแยกช่องและปรับขนาด */
+                .img-wrap { margin-top: 10px; text-align: center; border: 1px solid #e2e8f0; padding: 2px; border-radius: 4px; background: white; }
+                .img-wrap img { width: 100%; height: 120px; object-fit: cover; display: block; }
 
-                .status-pill { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; display: inline-block; }
+                .status-pill { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 10px; display: inline-block; }
                 .pill-ok { background: #dcfce7 !important; color: #166534 !important; }
                 .pill-down { background: #fee2e2 !important; color: #991b1b !important; }
-                .label-box { font-size: 8px; background: #f1f5f9; padding: 1px 4px; margin-bottom: 4px; display: inline-block; }
+                .label-box { font-size: 9px; font-weight: bold; background: #f1f5f9; padding: 2px 6px; margin-bottom: 5px; display: inline-block; border-radius: 3px; }
                 
                 .cost-row { display: flex; justify-content: space-between; font-size: 11px; }
                 .cost-val { color: #c2410c !important; }
 
-                /* ลายเซ็นและเลขหน้าตายตัว */
-                .footer-space { height: 80px; }
+                /* ลายเซ็นและเลขหน้า */
                 .fixed-footer { 
                     position: fixed; 
                     bottom: 0; 
                     left: 0; 
                     right: 0; 
-                    height: 22mm; 
+                    height: 28mm; 
                     background: white; 
-                    border-top: 2px solid #0f172a;
+                    border-top: 1px solid #0f172a;
                     padding: 10px 20px;
                 }
                 .sig-wrapper { display: flex; justify-content: space-around; width: 100%; }
-                .sig-box { text-align: center; width: 250px; font-size: 11px; }
-                .sig-line { border-top: 1px solid #000; margin-top: 25px; padding-top: 3px; }
+                .sig-box { text-align: center; width: 250px; font-size: 11px; line-height: 1.5; }
+                .sig-line { border-top: 1px solid #000; margin-top: 25px; padding-top: 3px; font-weight: bold; }
                 
-                /* เลขหน้าที่ทำงานได้จริง */
-                .page-number-box { position: absolute; bottom: 5px; right: 20px; font-size: 10px; color: #64748b; }
-                .page-number-box::after { content: "หน้า " counter(page); }
+                /* เลขหน้าแบบ Dynamic */
+                .page-counter { position: absolute; bottom: 8px; right: 20px; font-size: 10px; color: #64748b; }
+                .page-counter::after { content: "หน้า " counter(page) " / " counter(pages); }
 
-                .no-print { text-align: center; padding: 20px; background: #f1f5f9; }
-                .btn { background: #0f172a; color: white; padding: 10px 30px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+                .no-print { text-align: center; padding: 15px; background: #cbd5e1; }
+                .btn { background: #0f172a; color: white; padding: 10px 40px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; }
 
                 @media print {
                     .no-print { display: none; }
                     body { padding: 0; }
+                    .report-header { -webkit-print-color-adjust: exact; }
                 }
             </style>
         </head>
         <body>
             <div class="no-print">
-                <button class="btn" onclick="window.print()">🖨️ สั่งพิมพ์รายงาน / บันทึกเป็น PDF</button>
+                <button class="btn" onclick="window.print()">🖨️ ยืนยันข้อมูลและบันทึกรายงาน (PDF)</button>
             </div>
             
             <div class="report-header">
                 <div>
                     <h1>Asset Maintenance Report</h1>
-                    <div style="font-size: 13px;">PROJECT: ${siteData.name}</div>
+                    <div style="font-size: 13px;">โครงการ: ${siteData.name}</div>
                 </div>
                 <div style="text-align: right; font-size: 11px;">
-                    พิมพ์เมื่อ: ${printDate} ${printTime}
+                    วันที่ออกรายงาน: ${printDate} ${printTime}
                 </div>
             </div>
 
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 40px;">No.</th>
-                        <th style="width: 220px;">Device & Asset Specs</th>
-                        <th style="width: 35px;">OCC.</th>
-                        <th style="width: 90px;">Processing date</th>
-                        <th>Work Description & Evidence</th>
-                        <th style="width: 140px;">Order & Cost</th>
-                        <th style="width: 130px;">Recorded By</th>
+                        <th style="width: 40px;">ลำดับที่</th>
+                        <th style="width: 220px;">ข้อมูลทรัพย์สิน</th>
+                        <th style="width: 35px;">จำนวนครั้งที่</th>
+                        <th style="width: 90px;">ช่วงเวลา</th>
+                        <th>รายละเอียดการเสีย</th>
+                        <th>รายละเอียดการซ่อม</th>
+                        <th style="width: 140px;">เลขใบสั่ง / งบประมาณที่ใช้</th>
+                        <th style="width: 130px;">ผู้บันทึกข้อมูล</th>
                     </tr>
                 </thead>
                 <tbody>${tableContent}</tbody>
             </table>
 
-            <div class="footer-space"></div>
-            
             <div class="fixed-footer">
                 <div class="sig-wrapper">
                     <div class="sig-box"><div class="sig-line">ผู้ออกรายงาน</div>( ${currentUserFullName || '..........................................'} )</div>
                     <div class="sig-box"><div class="sig-line">ผู้อนุมัติ / ผู้ตรวจสอบ</div>( ............................................................ )</div>
                 </div>
-                <div class="page-number-box"></div>
+                <div class="page-counter"></div>
             </div>
         </body></html>
     `);
@@ -1031,6 +1017,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
