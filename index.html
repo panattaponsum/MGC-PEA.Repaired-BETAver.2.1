@@ -46,7 +46,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 
 .tag { padding: 2px 10px; font-size: 13px; border-radius: 999px; border: 1px solid transparent; font-weight: 500; }
 .tag-ok { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
-.tag-warn { background: #fff7ed; color: #c2410c; border-color: #ffedd5; } /* สีส้มสำหรับผิดปกติ */
+.tag-warn { background: #fff7ed; color: #c2410c; border-color: #ffedd5; } 
 .tag-bad { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
 
 #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); z-index: 1000; }
@@ -60,7 +60,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     width: min(600px, 92vw); background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; display: none; flex-direction: column;
 }
 .modal-split-layout { display: flex; gap: 24px; flex: 1; min-height: 0; }
-.modal-left { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+.modal-left { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-right: 10px; }
 .modal-right { flex: 1; display: flex; flex-direction: column; border-left: 1px solid #e2e8f0; padding-left: 24px; min-width: 320px; }
 
 @media (max-width: 1024px) {
@@ -69,14 +69,14 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     #historySection { max-height: 300px; }
 }
 
-#formModal input, #formModal select, #formModal textarea, #assetModal input, #assetModal select, #assetModal textarea {
+#formModal input:not([type="file"]), #formModal select, #formModal textarea, #assetModal input, #assetModal select, #assetModal textarea {
     background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; font-size: 14px; outline: none; transition: border-color 0.15s;
 }
 #formModal input:focus, #assetModal input:focus { border-color: #3b82f6; }
 
 .muted { color: #64748b; font-size: 12px; }
 .device-img { width: 100%; height: auto; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-#historySection { max-height: 400px; overflow-y: auto; padding-right: 6px; }
+#historySection { max-height: 500px; overflow-y: auto; padding-right: 6px; }
 .hidden { display: none; }
 
 #location-select { 
@@ -90,7 +90,6 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     background-image: linear-gradient(to top right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px)), linear-gradient(to bottom right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px));
     animation: blink-red 1s infinite alternate; z-index: 60;
 }
-/* Style สำหรับสถานะ ผิดปกติ บนแผนที่ */
 .device-overlay.abnormal {
     border: 3px solid var(--warn); background-color: rgba(245, 158, 11, 0.3);
     animation: blink-orange 1s infinite alternate; z-index: 55;
@@ -236,7 +235,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
       <area alt="Firewall 1" coords="1088,384,1181,417" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
       <area alt="Firewall 2" coords="1216,384,1292,411" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
       <area alt="Firewall 3" coords="1429,416,1513,446" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
-      <area shape="default" alt="The others" href="#" onclick="openForm('The others'); return false;">
+      <area shape="default" alt="others" href="#" onclick="openForm('others'); return false;">
       </map>
   <div id="overlay-container-ko-phaluay" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
 </div>
@@ -287,7 +286,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <area alt="BMS 5" coords="1282,847,1360,866" shape="rect" href="" onclick="openForm('BMS 5'); return false;">
       <area alt="BMS 6" coords="1396,844,1477,866" shape="rect" href="" onclick="openForm('BMS 6'); return false;">
 <area alt="FRTU 1-15" coords="1492,679,1770,796" shape="rect" href="" onclick="openForm('FRTU 1-15'); return false;">
-      <area shape="default" alt="The others" href="#" onclick="openForm('The others'); return false;">
+      <area shape="default" alt="others" href="#" onclick="openForm('others'); return false;">
     </map>
     <div id="overlay-container-mae-sariang" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
   </div>
@@ -303,7 +302,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <area alt="ETH Switch 4" coords="1048,708,1222,738" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
     <area alt="ETH Switch 6" coords="464,374,510,451" shape="rect" href="" onclick="openForm('ETH Switch 6'); return false;">
     <area alt="ETH Switch 7" coords="657,371,703,452" shape="rect" href="" onclick="openForm('ETH Switch 7'); return false;">
-      <area shape="default" alt="The others" href="#" onclick="openForm('The others'); return false;">
+      <area shape="default" alt="others" href="#" onclick="openForm('others'); return false;">
     </map>
     <div id="overlay-container-betong" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
   </div>
@@ -334,7 +333,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
           <area alt="Recloser" coords="937,459,1067,574" shape="rect" href="" onclick="openForm('Recloser'); return false;">
           <area alt="BSC (BATT-1)" coords="293,708,330,758" shape="rect" href="" onclick="openForm('BSC (BATT-1)'); return false;">
           <area alt="BSC (BATT-2)" coords="789,708,826,758" shape="rect" href="" onclick="openForm('BSC (BATT-2)'); return false;">
-          <area shape="default" alt="The others" href="#" onclick="openForm('The others'); return false;">
+          <area shape="default" alt="others" href="#" onclick="openForm('others'); return false;">
       </map>
       <div id="overlay-container-phrao" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
   </div>
@@ -464,8 +463,29 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
                 <label class="text-sm font-semibold text-gray-700">วันที่ซ่อมแซม</label>
                 <input type="date" id="fixedDate" class="w-full"/>
               </div>
-              <div class="sm:col-span-2">
-                <label class="text-sm font-semibold text-gray-700">รายละเอียด</label>
+              
+              <div>
+                <label class="text-sm font-semibold text-gray-700">เลขที่ใบสั่ง / Ticket No.</label>
+                <input type="text" id="orderNumber" placeholder="ระบุเลขที่อ้างอิง..." class="w-full"/>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700">ราคาซ่อมแซม (บาท)</label>
+                <input type="number" id="repairCost" placeholder="0.00" class="w-full"/>
+              </div>
+
+              <div>
+                <label class="text-sm font-semibold text-gray-700">แนบไฟล์แจ้งเสีย (รูปภาพ/PDF ไม่เกิน 5MB)</label>
+                <input type="file" id="brokenFile" accept="image/*,.pdf" class="w-full text-xs p-1 border border-slate-200 rounded mt-1"/>
+                <div id="brokenFileLink" class="text-xs mt-1 text-blue-600"></div>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700">แนบไฟล์หลังซ่อม (รูปภาพ/PDF ไม่เกิน 5MB)</label>
+                <input type="file" id="fixedFile" accept="image/*,.pdf" class="w-full text-xs p-1 border border-slate-200 rounded mt-1"/>
+                <div id="fixedFileLink" class="text-xs mt-1 text-blue-600"></div>
+              </div>
+
+              <div class="sm:col-span-2 mt-2">
+                <label class="text-sm font-semibold text-gray-700">รายละเอียดปัญหา</label>
                 <textarea id="description" rows="2" class="w-full"></textarea>
               </div>
               <div class="sm:col-span-2">
@@ -503,7 +523,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
         <div><label class="text-sm font-semibold text-gray-700">Serial Number (S/N)</label><input type="text" id="assetSerial" class="w-full"/></div>
         <div><label class="text-sm font-semibold text-gray-700">รุ่น (Model)</label><input type="text" id="assetModel" class="w-full"/></div>
         <div><label class="text-sm font-semibold text-gray-700">PEA No.</label><input type="text" id="assetPeaNo" class="w-full"/></div>
-        <div><label class="text-sm font-semibold text-gray-700">ราคา (Price)</label><input type="number" id="assetPrice" class="w-full" step="0.01"/></div>
+        <div><label class="text-sm font-semibold text-gray-700">ราคาซื้อ (Price)</label><input type="number" id="assetPrice" class="w-full" step="0.01"/></div>
         <div class="sm:col-span-2"><label class="text-sm font-semibold text-gray-700">ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer" class="w-full"/></div>
         <hr class="sm:col-span-2 border-gray-200 my-1">
         <div><label class="text-sm font-semibold text-gray-700">วันที่เริ่มรับประกัน</label><input type="date" id="assetWarrantyStart" class="w-full"/></div>
@@ -529,7 +549,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script> <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/image-map-resizer@1.0.10/js/imageMapResizer.min.js"></script>
 <script src="main.js"></script>
