@@ -817,155 +817,124 @@ window.startAutoLogoutTimer = function() {
 window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
-    const result = await Swal.fire({ 
-        title: 'เลือกประเภทรายงาน', 
-        input: 'radio', 
-        inputOptions: { 
-            'all': 'อุปกรณ์ทั้งหมด', 
-            'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด/ผิดปกติ', 
-            'history_broken': 'อุปกรณ์ที่เคยชำรุด/ผิดปกติทั้งหมด' 
-        }, 
-        inputValidator: (value) => { if (!value) return 'กรุณาเลือกประเภทรายงาน'; }, 
-        showCancelButton: true, 
-        confirmButtonText: 'สร้างรายงาน', 
-        cancelButtonText: 'ยกเลิก' 
+    const result = await Swal.fire({
+        title: 'เลือกประเภทรายงาน', input: 'radio',
+        inputOptions: { 'all': 'อุปกรณ์ทั้งหมด', 'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด/ผิดปกติ', 'history_broken': 'อุปกรณ์ที่เคยชำรุด/ผิดปกติทั้งหมด' },
+        inputValidator: (value) => { if (!value) return 'กรุณาเลือกประเภทรายงาน'; },
+        showCancelButton: true, confirmButtonText: 'สร้างรายงาน', cancelButtonText: 'ยกเลิก'
     });
-    
-    if (!result.isConfirmed) return; 
+
+    if (!result.isConfirmed) return;
     const reportType = result.value;
 
     Swal.fire({ title: 'กำลังสร้างรายงาน...', didOpen: () => { Swal.showLoading(); } });
-    
-    const docsSnap = await getSiteCollection(currentSiteKey).get(); 
-    const dataMap = {}; 
-    docsSnap.forEach(d => dataMap[d.id] = d.data());
-    
-    const now = new Date(); 
-    const printDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-    const printTime = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-    
-    let tableContent = ''; 
-    let itemNo = 1;
+    const docsSnap = await getSiteCollection(currentSiteKey).get();
+    const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
+    const now = new Date(); const printDate = now.toISOString().split('T')[0]; const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    let tableContent = ''; let itemNo = 1;
 
     for (const dev of siteData.devices) {
-        const docData = dataMap[dev] || {}; 
-        let records = docData.records || []; 
-        records.sort((a, b) => b.ts - a.ts); 
+        const docData = dataMap[dev] || {}; let records = docData.records || []; records.sort((a, b) => b.ts - a.ts); 
         const assetInfo = docData.assetInfo || {};
         
         const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
+        const hasBrokenHistory = records.length > 0;
         
-        if (reportType === 'broken' && !isCurrentlyDown) continue; 
-        if (reportType === 'history_broken' && records.length === 0) continue;
+        if (reportType === 'broken' && !isCurrentlyDown) continue;
+        if (reportType === 'history_broken' && !hasBrokenHistory) continue;
 
         const rowSpan = records.length > 0 ? records.length : 1;
         for (let i = 0; i < rowSpan; i++) {
-            const r = records[i]; 
-            const isFirst = (i === 0);
+            const r = records[i]; const isFirst = (i === 0); const occurrenceNo = r ? (records.length - i) : '-';
             tableContent += `<tr class="${isFirst ? 'device-group-start' : ''}">`;
-            
             if (isFirst) {
                 const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
                 tableContent += `
-                    <td rowspan="${rowSpan}" class="col-no">${itemNo++}</td>
+                    <td rowspan="${rowSpan}" class="col-no text-center">${itemNo++}</td>
                     <td rowspan="${rowSpan}" class="col-device">
+                        <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
                         <div class="dev-title">${dev}</div>
-                        <div class="dev-specs">S/N: ${assetInfo.serial || '-'}<br>PEA: ${assetInfo.peaNo || '-'}</div>
-                        <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? 'Requires Attention' : 'Operational'}</div>
-                    </td>`;
+                        <div class="dev-specs"><span><b>Model:</b> ${assetInfo.model || '-'}</span><br><span><b>S/N:</b> ${assetInfo.serial || '-'}</span><br><span><b>PEA:</b> ${assetInfo.peaNo || '-'}</span></div>
+                        <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}</div>
+                    </td>
+                `;
             }
-
             if (r) {
-                // แยกรูปภาพตามประเภท
-                let problemImg = (r.brokenFileUrl && r.brokenFileType && r.brokenFileType.startsWith('image/')) 
-                    ? `<div class="img-box"><span class="img-label">📸 รูปภาพปัญหา</span><img src="${r.brokenFileUrl}"></div>` : '';
+                // จัดการรูปภาพ
+                let imgHtmlBroken = '';
+                if(r.brokenFileUrl && r.brokenFileType && r.brokenFileType.startsWith('image/')) imgHtmlBroken = `<div class="img-box mt-2"><img src="${r.brokenFileUrl}" style="max-width: 100%; max-height: 100px; border-radius: 4px; border: 1px solid #e2e8f0;"></div>`;
+                else if(r.brokenFileUrl) imgHtmlBroken = `<div class="mt-1 text-xs text-blue-600 font-semibold">[ 📄 มีเอกสารแนบแจ้งเสีย ]</div>`;
                 
-                let repairImg = (r.fixedFileUrl && r.fixedFileType && r.fixedFileType.startsWith('image/')) 
-                    ? `<div class="img-box"><span class="img-label">📸 รูปภาพซ่อมแซม</span><img src="${r.fixedFileUrl}"></div>` : '';
+                let imgHtmlFixed = '';
+                if(r.fixedFileUrl && r.fixedFileType && r.fixedFileType.startsWith('image/')) imgHtmlFixed = `<div class="img-box mt-2"><img src="${r.fixedFileUrl}" style="max-width: 100%; max-height: 100px; border-radius: 4px; border: 1px solid #e2e8f0;"></div>`;
+                else if(r.fixedFileUrl) imgHtmlFixed = `<div class="mt-1 text-xs text-green-600 font-semibold">[ 📄 มีเอกสารแนบซ่อมแซม ]</div>`;
 
-                let costText = r.repairCost ? `<div class="meta-item"><b>ค่าใช้จ่าย:</b> ${Number(r.repairCost).toLocaleString()} บาท</div>` : '';
-                let orderText = r.orderNumber ? `<div class="meta-item"><b>เลขที่ใบสั่ง:</b> ${r.orderNumber}</div>` : '';
+                let costText = r.repairCost ? `<span style="display:inline-block; margin-top:4px; padding:2px 4px; background:#fef3c7; color:#c2410c; border-radius:3px; font-size:11px;"><b>฿ ราคาซ่อม:</b> ${Number(r.repairCost).toLocaleString()} บ.</span><br>` : '';
+                let orderText = r.orderNumber ? `<span style="display:inline-block; margin-top:4px; padding:2px 4px; background:#e0f2fe; color:#0369a1; border-radius:3px; font-size:11px;"><b>📋 เลขที่ใบสั่ง:</b> ${escapeHtml(r.orderNumber)}</span><br>` : '';
 
                 tableContent += `
-                    <td class="text-center">${r.brokenDate || '-'}</td>
-                    <td class="text-center">${r.fixedDate || '<span class="urgent">กำลังดำเนินการ</span>'}</td>
-                    <td class="desc-cell">
-                        <div class="text-content">${r.description || '-'}</div>
-                        ${problemImg}
-                    </td>
-                    <td class="desc-cell">
-                        ${costText}${orderText}
-                        <div class="text-content">${r.solution || '-'}</div>
-                        ${repairImg}
-                    </td>
-                    <td class="text-center">${r.user || '-'}</td>
+                    <td class="text-center font-bold hist-text">${occurrenceNo}</td>
+                    <td class="text-center hist-text">${r.brokenDate || '-'}</td>
+                    <td class="text-center hist-text">${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
+                    <td class="text-left hist-text desc-cell">${escapeHtml(r.description || '-')}${imgHtmlBroken}</td>
+                    <td class="text-left hist-text desc-cell">${orderText}${costText}${escapeHtml(r.solution || '-')}${imgHtmlFixed}</td> 
+                    <td class="text-center hist-text user-cell">${r.user || '-'}</td>
                 `;
             } else {
-                tableContent += `<td colspan="5" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
+                tableContent += `<td colspan="6" class="empty-cell">No maintenance history recorded.</td>`;
             }
             tableContent += `</tr>`;
         }
     }
-
     Swal.close();
-    if (tableContent === '') { Swal.fire('ไม่พบข้อมูล', 'ไม่มีอุปกรณ์ตามเงื่อนไขที่เลือก', 'info'); return; }
+    
+    if (tableContent === '') { Swal.fire('ไม่พบข้อมูล', 'ไม่มีอุปกรณ์ตามเงื่อนไขรายงานที่คุณเลือก', 'info'); return; }
 
     const printWindow = window.open('', '', 'height=900,width=1300');
     printWindow.document.write(`
-        <html><head><title>Maintenance_Report</title>
-            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+        <html><head><title>MAINTENANCE_LOG_${printDate}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { size: A4 landscape; margin: 10mm; }
-                body { font-family: 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 20px; }
-                .report-header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #0f172a; padding-bottom: 10px; }
-                .report-header h1 { margin: 0; font-size: 22px; color: #0f172a; }
-                .meta-data { display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; }
-                
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-                th { background: #f1f5f9; padding: 10px; border: 1px solid #cbd5e1; font-size: 13px; }
-                td { padding: 8px; border: 1px solid #cbd5e1; vertical-align: top; font-size: 12px; word-wrap: break-word; }
-                
-                .device-group-start td { border-top: 2px solid #0f172a; }
-                .dev-title { font-weight: bold; color: #1e40af; font-size: 14px; }
-                .status-pill { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-top: 5px; display: inline-block; }
+                @page { size: A4 landscape; margin: 8mm; }
+                body { font-family: 'Inter', 'Sarabun', sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; }
+                .page-wrapper { padding: 10px; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 25px 30px; border-radius: 8px 8px 0 0; margin-bottom: 0; }
+                .report-header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+                .report-header .site-name { font-size: 14px; opacity: 0.8; margin-top: 5px; }
+                .header-meta { text-align: right; font-size: 12px; opacity: 0.9; line-height: 1.6; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #e2e8f0; }
+                th { background: #1e293b; color: #f8fafc; padding: 15px 10px; font-size: 14px; text-transform: uppercase; font-weight: 600; border: 1px solid #334155; text-align: center; }
+                .hist-text { font-size: 13px; } 
+                td { padding: 12px 10px; border: 1px solid #e2e8f0; vertical-align: top; word-wrap: break-word; }
+                tr { page-break-inside: avoid; }
+                .device-group-start td { border-top: 3px solid #0f172a; }
+                .col-no { width: 40px; background: #f8fafc; color: #64748b; vertical-align: middle;}
+                .col-device { width: 200px; background: #f8fafc; border-right: 2px solid #e2e8f0; }
+                .brand-tag { font-size: 9px; font-weight: 700; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 5px; color: #475569; }
+                .dev-title { font-size: 15px; font-weight: 700; color: #1e40af; margin-bottom: 5px; }
+                .dev-specs { font-size: 11px; color: #64748b; line-height: 1.4; }
+                .status-pill { margin-top: 12px; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-block; }
                 .pill-ok { background: #dcfce7; color: #166534; }
                 .pill-down { background: #fee2e2; color: #991b1b; }
-                
-                .desc-cell { line-height: 1.4; }
-                .text-content { margin-bottom: 8px; white-space: pre-wrap; }
-                .img-box { margin-top: 5px; border: 1px solid #e2e8f0; padding: 4px; border-radius: 4px; background: #fff; text-align: center; }
-                .img-label { display: block; font-size: 9px; color: #64748b; margin-bottom: 3px; font-weight: bold; }
-                .img-box img { max-width: 100%; max-height: 150px; object-fit: contain; }
-                
-                .text-center { text-align: center; }
-                .urgent { color: #e11d48; font-weight: bold; }
-                .meta-item { font-size: 11px; margin-bottom: 3px; background: #f8fafc; padding: 2px 4px; border-radius: 2px; }
-                
-                @media print { body { padding: 0; } .report-header { border-bottom-color: #000; } }
+                .urgent { color: #e11d48; font-weight: 700; text-decoration: underline; }
+                .desc-cell { line-height: 1.6; white-space: pre-wrap; }
+                .user-cell { color: #94a3b8; font-style: italic; vertical-align: middle; }
+                .text-center { text-align: center; } .text-left { text-align: left; } .font-bold { font-weight: 600; }
+                .empty-cell { text-align: center; padding: 30px; color: #cbd5e1; font-style: italic; vertical-align: middle;}
+                .report-footer { margin-top: 15px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+                .mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; }
+                @media print { body { background: white; -webkit-print-color-adjust: exact; } .report-header { background: #0f172a !important; color: white !important; } th { background: #1e293b !important; color: white !important; } .device-group-start td { border-top: 3px solid #0f172a !important; } thead { display: table-header-group; } }
             </style>
         </head>
         <body>
-            <div class="report-header">
-                <h1>รายงานประวัติการบำรุงรักษาอุปกรณ์ (Maintenance Report)</h1>
-                <div class="meta-data">
-                    <span><b>โครงการ:</b> ${siteData.name}</span>
-                    <span><b>พิมพ์เมื่อ:</b> ${printDate} ${printTime}</span>
+            <div class="page-wrapper">
+                <div class="report-header"><div><h1>Asset Maintenance Report</h1><div class="site-name">PROJECT: ${siteData.name} ${reportType==='broken'? '(เฉพาะที่กำลังมีปัญหา)' : (reportType==='history_broken' ? '(ที่เคยมีปัญหาทั้งหมด)' : '')}</div></div>
+                    <div class="header-meta"><strong>DATE:</strong> ${printDate}<br><strong>TIME:</strong> ${printTime}<br><strong>OPERATOR:</strong> ${currentUserFullName || (currentUser ? currentUser.email : 'ADMIN')}</div>
                 </div>
+                <table><thead><tr><th style="width: 35px;">No.</th><th style="width: 200px;">Device & Specs</th><th style="width: 40px;">Occ.</th><th style="width: 85px;">Event Date</th><th style="width: 85px;">Fixed Date</th><th>Description</th><th style="width: 180px;">Solutions</th><th style="width: 90px;">Recorded By</th></tr></thead><tbody>${tableContent}</tbody></table>
+                <div class="report-footer">Generated by Microgrid Asset Management System</div>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 40px;">No.</th>
-                        <th style="width: 180px;">อุปกรณ์</th>
-                        <th style="width: 90px;">วันที่พบปัญหา</th>
-                        <th style="width: 90px;">วันที่ซ่อมเสร็จ</th>
-                        <th>รายละเอียดปัญหา</th>
-                        <th style="width: 300px;">รายละเอียดการซ่อมแซม</th>
-                        <th style="width: 100px;">ผู้บันทึก</th>
-                    </tr>
-                </thead>
-                <tbody>${tableContent}</tbody>
-            </table>
+            <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 1500); }</script>
         </body></html>
     `);
     printWindow.document.close();
@@ -977,6 +946,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
