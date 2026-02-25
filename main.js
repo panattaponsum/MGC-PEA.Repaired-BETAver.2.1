@@ -852,9 +852,6 @@ window.printReport = async function() {
 
         const rowSpan = records.length > 0 ? records.length : 1;
         
-        // ใช้ tbody เป็นกลุ่มของแต่ละอุปกรณ์ เพื่อให้แยกหน้าได้อิสระ
-        tableContent += `<tbody class="device-group">`;
-        
         for (let i = 0; i < rowSpan; i++) {
             const r = records[i]; 
             const isFirst = (i === 0);
@@ -867,10 +864,10 @@ window.printReport = async function() {
                     <td rowspan="${rowSpan}" class="col-device v-center">
                         <div class="dev-title">${dev}</div>
                         <div class="dev-specs">
-                            <b>ผู้ผลิต:</b> ${assetInfo.manufacturer || '-'}<br>
+                            <b>Manufacturer:</b> ${assetInfo.manufacturer || '-'}<br>
                             <b>Model:</b> ${assetInfo.model || '-'}<br>
                             <b>S/N:</b> ${assetInfo.serial || '-'}<br>
-                            <b>PEA:</b> ${assetInfo.peaNo || '-'}
+                            <b>PEA No.:</b> ${assetInfo.peaNo || '-'}
                         </div>
                         <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}</div>
                     </td>
@@ -879,17 +876,16 @@ window.printReport = async function() {
             if (r) {
                 let imagesHtml = '';
                 if (r.brokenFileUrl || r.fixedFileUrl) {
-                    imagesHtml = `<div class="image-grid">`;
-                    if (r.brokenFileUrl) imagesHtml += `<div class="img-item"><span class="img-tag">แจ้งเสีย</span><img src="${r.brokenFileUrl}"></div>`;
-                    if (r.fixedFileUrl) imagesHtml += `<div class="img-item"><span class="img-tag" style="color:#16a34a">ซ่อมเสร็จ</span><img src="${r.fixedFileUrl}"></div>`;
+                    imagesHtml = `<div class="image-flex-container">`;
+                    if (r.brokenFileUrl) imagesHtml += `<div class="img-half"><span class="img-tag">แจ้งเสีย</span><img src="${r.brokenFileUrl}"></div>`;
+                    if (r.fixedFileUrl) imagesHtml += `<div class="img-half"><span class="img-tag" style="color:#16a34a">ซ่อมเสร็จ</span><img src="${r.fixedFileUrl}"></div>`;
                     imagesHtml += `</div>`;
                 }
 
                 tableContent += `
                     <td class="text-center font-bold v-center">${records.length - i}</td>
-                    <td class="text-center font-bold v-center" style="font-size:11px;">${r.brokenDate || '-'}<br><small style="color:#94a3b8">TO</small><br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
+                    <td class="text-center font-bold v-center" style="font-size:11px;">${r.brokenDate || '-'}<br><small style="color:#94a3b8">ถึง</small><br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
                     <td class="desc-cell">
-                        <div class="label-box">WORK DETAILS</div>
                         <b>ปัญหา:</b> ${r.description || '-'}<br>
                         <b>การแก้ไข:</b> ${r.solution || '-'}${imagesHtml}
                     </td>
@@ -904,110 +900,125 @@ window.printReport = async function() {
             }
             tableContent += `</tr>`;
         }
-        tableContent += `</tbody>`;
     }
     Swal.close();
     
     const printWindow = window.open('', '', 'height=900,width=1400');
     printWindow.document.write(`
         <html><head>
-            <title>MAINTENANCE_REPORT_${siteData.name}</title>
+            <title>REPORT_${siteData.name}</title>
             <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { size: A4 landscape; margin: 12mm 10mm 30mm 10mm; }
-                body { font-family: 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 20px; background: #f1f5f9; }
+                @page { 
+                    size: A4 landscape; 
+                    margin: 10mm 10mm 25mm 10mm; 
+                }
+                body { 
+                    font-family: 'Sarabun', sans-serif; 
+                    margin: 0; 
+                    counter-reset: page; 
+                }
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
                 
-                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 20px 30px; border-radius: 4px 4px 0 0; }
-                .report-header h1 { margin: 0; font-size: 20px; letter-spacing: 1px; }
-
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; background: white; }
-                th { background: #1e293b !important; color: white !important; padding: 12px 8px; font-size: 11px; border: 1px solid #334155; }
-                td { padding: 10px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 12px; word-break: break-word; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a !important; color: white !important; padding: 20px 30px; }
                 
-                /* การแบ่งหน้าที่ยืดหยุ่น */
-                tbody.device-group { page-break-inside: auto; }
-                tr { page-break-inside: avoid; page-break-after: auto; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                th { background: #1e293b !important; color: white !important; padding: 10px; font-size: 11px; border: 1px solid #334155; }
+                td { padding: 8px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 12px; word-wrap: break-word; }
+                
+                /* ควบคุมการขึ้นหน้าใหม่ของแถวตาราง */
+                tr { page-break-inside: avoid !important; page-break-after: auto; }
+                thead { display: table-header-group; }
 
                 .v-center { vertical-align: middle !important; }
                 .col-no { width: 40px; background: #f8fafc !important; }
-                .col-device { width: 200px; background: #f8fafc !important; border-right: 2px solid #e2e8f0; }
-                .user-cell { width: 120px; color: #475569; } /* ขยายความกว้างRecorded By */
+                .col-device { width: 220px; background: #f8fafc !important; }
+                .user-cell { width: 130px; }
                 
-                .dev-title { font-size: 14px; font-weight: 800; color: #1e40af; line-height: 1.2; margin-bottom: 6px; }
-                .dev-specs { font-size: 10px; color: #64748b; line-height: 1.5; }
+                .dev-title { font-size: 14px; font-weight: 800; color: #1e40af; margin-bottom: 5px; }
+                .dev-specs { font-size: 10px; color: #64748b; line-height: 1.4; }
                 
-                .status-pill { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 8px; display: inline-block; }
+                /* จัดรูปภาพแบบแบ่งครึ่ง 50/50 */
+                .image-flex-container { display: flex; gap: 4%; margin-top: 10px; justify-content: start; }
+                .img-half { width: 48%; border: 1px solid #e2e8f0; padding: 2px; border-radius: 4px; }
+                .img-half img { width: 100%; height: 140px; object-fit: cover; display: block; }
+                .img-tag { font-size: 9px; font-weight: bold; display: block; text-align: center; margin-bottom: 2px; }
+
+                .status-pill { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; display: inline-block; }
                 .pill-ok { background: #dcfce7 !important; color: #166534 !important; }
                 .pill-down { background: #fee2e2 !important; color: #991b1b !important; }
-
-                .label-box { font-size: 8px; font-weight: 800; background: #f1f5f9; color: #64748b; padding: 1px 4px; border-radius: 2px; margin-bottom: 5px; width: fit-content; }
+                .label-box { font-size: 8px; background: #f1f5f9; padding: 1px 4px; margin-bottom: 4px; display: inline-block; }
                 
-                /* ปรับแต่งรูปภาพตามโจทย์: เล็กลงแต่สูงขึ้น */
-                .image-grid { display: grid; grid-template-columns: 120px 120px; gap: 10px; margin-top: 10px; }
-                .img-item { border: 1px solid #e2e8f0; padding: 2px; border-radius: 4px; background: #f8fafc; }
-                .img-item img { width: 100%; height: 120px; object-fit: cover; display: block; }
-                .img-tag { font-size: 8px; font-weight: bold; display: block; text-align: center; padding: 2px; }
+                .cost-row { display: flex; justify-content: space-between; font-size: 11px; }
+                .cost-val { color: #c2410c !important; }
 
-                .cost-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #cbd5e1; }
-                .cost-val { color: #c2410c !important; font-size: 13px; }
-
-                /* ลายเซ็นและเลขหน้า */
-                .signature-footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px 0; border-top: 2px solid #0f172a; }
-                .signature-wrapper { display: flex; justify-content: space-around; }
+                /* ลายเซ็นและเลขหน้าตายตัว */
+                .footer-space { height: 80px; }
+                .fixed-footer { 
+                    position: fixed; 
+                    bottom: 0; 
+                    left: 0; 
+                    right: 0; 
+                    height: 22mm; 
+                    background: white; 
+                    border-top: 2px solid #0f172a;
+                    padding: 10px 20px;
+                }
+                .sig-wrapper { display: flex; justify-content: space-around; width: 100%; }
                 .sig-box { text-align: center; width: 250px; font-size: 11px; }
-                .sig-line { border-top: 1px solid #000; margin-top: 35px; padding-top: 5px; font-weight: bold; }
-                .page-info { position: absolute; bottom: 5px; right: 20px; font-size: 10px; color: #94a3b8; }
-                .page-number:after { content: "หน้า " counter(page) " / " counter(pages); }
+                .sig-line { border-top: 1px solid #000; margin-top: 25px; padding-top: 3px; }
+                
+                /* เลขหน้าที่ทำงานได้จริง */
+                .page-number-box { position: absolute; bottom: 5px; right: 20px; font-size: 10px; color: #64748b; }
+                .page-number-box::after { content: "หน้า " counter(page); }
 
-                .no-print-zone { text-align: center; margin-bottom: 20px; }
-                .btn-print { background: #0f172a; color: white; padding: 12px 40px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+                .no-print { text-align: center; padding: 20px; background: #f1f5f9; }
+                .btn { background: #0f172a; color: white; padding: 10px 30px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
 
                 @media print {
-                    body { background: white; padding: 0; }
-                    .no-print-zone { display: none; }
-                    thead { display: table-header-group; }
+                    .no-print { display: none; }
+                    body { padding: 0; }
                 }
             </style>
         </head>
         <body>
-            <div class="no-print-zone">
-                <button class="btn-print" onclick="window.print()">🖨️ ยืนยันข้อมูลและบันทึกรายงาน</button>
+            <div class="no-print">
+                <button class="btn" onclick="window.print()">🖨️ สั่งพิมพ์รายงาน / บันทึกเป็น PDF</button>
             </div>
             
-            <div class="page-wrapper">
-                <div class="report-header">
-                    <div>
-                        <h1>Asset Maintenance Report</h1>
-                        <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">SITE: ${siteData.name}</div>
-                    </div>
-                    <div style="text-align: right; font-size: 11px;">
-                        DATE: ${printDate}<br>TIME: ${printTime}
-                    </div>
+            <div class="report-header">
+                <div>
+                    <h1>Asset Maintenance Report</h1>
+                    <div style="font-size: 13px;">PROJECT: ${siteData.name}</div>
                 </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 40px;">No.</th>
-                            <th style="width: 200px;">Device & Asset Specs</th>
-                            <th style="width: 35px;">Occ.</th>
-                            <th style="width: 90px;">Timeline</th>
-                            <th>Description & Evidence</th>
-                            <th style="width: 140px;">Order & Cost (THB)</th>
-                            <th style="width: 120px;">Recorded By</th>
-                        </tr>
-                    </thead>
-                    ${tableContent}
-                </table>
-
-                <div class="signature-footer">
-                    <div class="signature-wrapper">
-                        <div class="sig-box"><div class="sig-line">ผู้ออกรายงาน</div>( ${currentUserFullName || '..........................................'} )</div>
-                        <div class="sig-box"><div class="sig-line">ผู้อนุมัติ / ผู้ตรวจสอบ</div>( ............................................................. )</div>
-                    </div>
-                    <div class="page-info"><span class="page-number"></span></div>
+                <div style="text-align: right; font-size: 11px;">
+                    พิมพ์เมื่อ: ${printDate} ${printTime}
                 </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">No.</th>
+                        <th style="width: 220px;">Device & Asset Specs</th>
+                        <th style="width: 35px;">OCC.</th>
+                        <th style="width: 90px;">Processing date</th>
+                        <th>Work Description & Evidence</th>
+                        <th style="width: 140px;">Order & Cost</th>
+                        <th style="width: 130px;">Recorded By</th>
+                    </tr>
+                </thead>
+                <tbody>${tableContent}</tbody>
+            </table>
+
+            <div class="footer-space"></div>
+            
+            <div class="fixed-footer">
+                <div class="sig-wrapper">
+                    <div class="sig-box"><div class="sig-line">ผู้ออกรายงาน</div>( ${currentUserFullName || '..........................................'} )</div>
+                    <div class="sig-box"><div class="sig-line">ผู้อนุมัติ / ผู้ตรวจสอบ</div>( ............................................................ )</div>
+                </div>
+                <div class="page-number-box"></div>
             </div>
         </body></html>
     `);
@@ -1020,6 +1031,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
