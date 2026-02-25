@@ -828,13 +828,12 @@ window.printReport = async function() {
     if (!result.isConfirmed) return;
     const reportType = result.value;
 
-    Swal.fire({ title: 'กำลังเตรียมรายงาน...', didOpen: () => { Swal.showLoading(); } });
+    Swal.fire({ title: 'กำลังเตรียมข้อมูล...', didOpen: () => { Swal.showLoading(); } });
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
     
     const now = new Date(); 
     const printDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-    const printTime = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     
     let tableContent = ''; 
     let itemNo = 1;
@@ -861,13 +860,13 @@ window.printReport = async function() {
                     <td rowspan="${rowSpan}" class="col-no text-center font-bold v-center">${itemNo++}</td>
                     <td rowspan="${rowSpan}" class="col-device v-center">
                         <div class="dev-title">${dev}</div>
-                        <div class="dev-specs text-center">
-                            <b>ผู้ผลิต:</b> ${assetInfo.manufacturer || '-'}<br>
+                        <div class="dev-specs">
+                            <b>MFR:</b> ${assetInfo.manufacturer || '-'}<br>
                             <b>Model:</b> ${assetInfo.model || '-'}<br>
                             <b>S/N:</b> ${assetInfo.serial || '-'}<br>
                             <b>PEA:</b> ${assetInfo.peaNo || '-'}
                         </div>
-                        <center><div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}</div></center>
+                        <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? 'DOWN' : 'OK'}</div>
                     </td>
                 `;
             }
@@ -877,14 +876,14 @@ window.printReport = async function() {
 
                 tableContent += `
                     <td class="text-center font-bold v-center">${records.length - i}</td>
-                    <td class="text-center font-bold v-center" style="font-size:11px;">${r.brokenDate || '-'}<br>ถึง<br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
-                    <td class="desc-cell"><div class="label-box">รายละเอียดการเสีย</div><br>${r.description || '-'}${imgBroken}</td>
-                    <td class="desc-cell"><div class="label-box" style="background:#dcfce7; color:#166534;">รายละเอียดการซ่อม</div><br>${r.solution || '-'}${imgFixed}</td>
-                    <td class="text-left v-center">
-                        <div class="cost-row"><span>Order:</span> <b>${r.orderNumber || '-'}</b></div>
-                        <div class="cost-row" style="margin-top:8px;"><span>Cost:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '0'}</b></div>
+                    <td class="text-center v-center" style="font-size:10px;">${r.brokenDate || '-'}<br>To<br>${r.fixedDate || 'PENDING'}</td>
+                    <td class="desc-cell text-small">${r.description || '-'}${imgBroken}</td>
+                    <td class="desc-cell text-small">${r.solution || '-'}${imgFixed}</td>
+                    <td class="v-center">
+                        <div class="cost-row">O: <b>${r.orderNumber || '-'}</b></div>
+                        <div class="cost-row">C: <b>${r.repairCost ? Number(r.repairCost).toLocaleString() : '0'}</b></div>
                     </td>
-                    <td class="text-center user-cell font-bold v-center">${r.user || '-'}</td>
+                    <td class="text-center user-cell v-center">${r.user || '-'}</td>
                 `;
             }
             tableContent += `</tr>`;
@@ -895,109 +894,116 @@ window.printReport = async function() {
     const printWindow = window.open('', '', 'height=900,width=1400');
     printWindow.document.write(`
         <html><head>
-            <title>MAINTENANCE_REPORT_${siteData.name}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+            <title>REPORT_${siteData.name}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
             <style>
                 @page { 
                     size: A4 landscape; 
-                    margin: 10mm 10mm 10mm 10mm; 
+                    margin: 8mm 5mm 25mm 5mm; 
                 }
-                body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; color: #000; counter-reset: page; }
-                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+                body { 
+                    font-family: 'Sarabun', sans-serif; 
+                    margin: 0; padding: 0; 
+                    counter-reset: page; 
+                    font-size: 11px;
+                }
+                * { -webkit-print-color-adjust: exact !important; box-sizing: border-box; }
                 
-                /* แก้ไขหน้าแรกว่าง: ใช้ Header ธรรมดาไม่ดันเนื้อหา */
-                .report-header-box { background: #0f172a !important; color: white !important; padding: 20px 30px; margin-bottom: 0; }
-                .report-header-box h1 { margin: 0; font-size: 20px; }
+                /* จัดการเลขหน้าแบบเสถียร */
+                .page-footer {
+                    position: fixed;
+                    bottom: 0;
+                    width: 100%;
+                    height: 20mm;
+                    border-top: 1.5px solid black;
+                    background: white;
+                }
+                .page-footer::after {
+                    counter-increment: page;
+                    content: "หน้า " counter(page) " / " counter(pages);
+                    position: absolute;
+                    right: 10px;
+                    bottom: 5px;
+                    font-size: 9px;
+                }
+
+                .header-area { background: #0f172a !important; color: white !important; padding: 10px 20px; width: 100%; margin-bottom: 0; }
                 
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.2px solid #000; }
-                th { background: #1e293b !important; color: white !important; padding: 8px; font-size: 11px; border: 1.2px solid #000; }
-                td { padding: 8px; border: 1.2px solid #000; vertical-align: top; font-size: 12px; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.5px solid black; }
+                th { background: #1e293b !important; color: white !important; padding: 4px; font-size: 10px; border: 1.5px solid black; }
+                td { padding: 4px; border: 1.5px solid black; vertical-align: top; word-break: break-all; overflow-wrap: break-word; line-height: 1.2; }
                 
-                tr { page-break-inside: avoid !important; }
+                /* บีบพื้นที่แนวตั้ง */
+                tr { page-break-inside: auto; } 
+                td { page-break-inside: avoid; }
+                
                 thead { display: table-header-group; }
-                tfoot { display: table-footer-group; } /* บังคับให้ลายเซ็นปรากฏทุกหน้า */
-
                 .v-center { vertical-align: middle !important; }
-                .col-no { width: 40px; background: #f1f5f9 !important; }
-                .col-device { width: 220px; background: #f1f5f9 !important; }
+                .text-center { text-align: center; }
+                .font-bold { font-weight: bold; }
                 
-                .dev-title { font-size: 14px; font-weight: 800; color: #1e40af; margin-bottom: 5px; text-align: center; }
-                .dev-specs { font-size: 10px; line-height: 1.4; border-top: 1px solid #000; padding-top: 5px; }
+                .col-no { width: 30px; }
+                .col-device { width: 160px; }
+                .user-cell { width: 110px; font-size: 10px; }
+
+                .dev-title { font-size: 12px; font-weight: bold; color: #1e40af; text-align: center; }
+                .dev-specs { font-size: 9px; border-top: 0.5px solid black; padding-top: 2px; }
                 
-                .img-wrap { margin-top: 8px; text-align: center; border: 1px solid #000; padding: 2px; }
-                .img-wrap img { width: 100%; height: 120px; object-fit: cover; display: block; }
+                .img-wrap { margin-top: 4px; text-align: center; border: 0.5px solid black; }
+                .img-wrap img { width: 100%; height: 100px; object-fit: cover; display: block; }
 
-                .status-pill { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 8px; border: 1px solid #000; }
-                .label-box { font-size: 10px; font-weight: bold; border-bottom: 1px solid #000; margin-bottom: 4px; display: inline-block; }
+                .status-pill { font-size: 8px; font-weight: bold; padding: 1px 5px; border: 1px solid black; display: inline-block; margin-top: 4px; }
+                .label-box { font-size: 9px; font-weight: bold; border-bottom: 1px solid black; display: inline-block; }
                 
-                .cost-row { display: flex; justify-content: space-between; font-size: 11px; }
+                .cost-row { display: flex; justify-content: space-between; font-size: 10px; }
+                .row-group-start td { border-top: 2px solid black; }
 
-                /* ส่วน Footer และเลขหน้า */
-                .signature-container { padding: 10px 0; background: white; }
-                .sig-wrapper { display: flex; justify-content: space-around; }
-                .sig-box { text-align: center; width: 250px; font-size: 11px; }
-                .sig-line { border-top: 1px solid #000; margin-top: 25px; padding-top: 2px; font-weight: bold; }
-                
-                .page-info { text-align: right; font-size: 10px; margin-top: 5px; padding-right: 10px; }
-                .page-number::after { content: "หน้า " counter(page) " / " counter(pages); }
+                .sig-area { display: flex; justify-content: space-around; width: 100%; padding-top: 10px; }
+                .sig-box { text-align: center; width: 220px; font-size: 10px; }
+                .sig-line { border-top: 1px solid black; margin-top: 20px; font-weight: bold; }
 
-                .no-print { text-align: center; padding: 15px; background: #ddd; }
-                .btn { background: #000; color: #fff; padding: 10px 30px; border: none; font-weight: bold; cursor: pointer; }
-
-                @media print {
-                    .no-print { display: none; }
-                    body { padding: 0; }
-                }
+                .no-print { text-align: center; padding: 10px; background: #ccc; position: sticky; top: 0; z-index: 9999; }
             </style>
         </head>
         <body>
             <div class="no-print">
-                <button class="btn" onclick="window.print()">🖨️ สั่งพิมพ์รายงาน </button>
+                <button style="padding:10px 30px; cursor:pointer;" onclick="window.print()">กดตรงนี้เพื่อบันทึก PDF / สั่งพิมพ์</button>
             </div>
             
+            <div class="header-area">
+                <table style="border:none; background:transparent; width:100%; color:white;">
+                    <tr style="border:none;">
+                        <td style="border:none; padding:0; color:white;">
+                            <h2 style="margin:0; font-size:18px;">Asset Maintenance Report</h2>
+                            <span>โครงการ: ${siteData.name}</span>
+                        </td>
+                        <td style="border:none; text-align:right; color:white;">พิมพ์เมื่อ: ${printDate}</td>
+                    </tr>
+                </table>
+            </div>
+
             <table>
                 <thead>
                     <tr>
-                        <th colspan="8" style="padding: 0; border: none;">
-                            <div class="report-header-box">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div style="text-align: left;">
-                                        <h1>Asset Maintenance Report</h1>
-                                        <div style="font-size: 13px;">โครงการ: ${siteData.name}</div>
-                                    </div>
-                                    <div style="text-align: right; font-size: 11px;">
-                                        วันที่ออกรายงาน: ${printDate}
-                                    </div>
-                                </div>
-                            </div>
-                        </th>
-                    </tr>
-                    <tr>
-                        <th style="width: 40px;">ลำดับที่</th>
-                        <th style="width: 220px;">ข้อมูลทรัพย์สิน</th>
-                        <th style="width: 35px;">ครั้งที่</th>
-                        <th style="width: 90px;">ช่วงเวลา</th>
+                        <th style="width: 30px;">ลำดับที่</th>
+                        <th style="width: 160px;">ข้อมูลทรัพย์สิน</th>
+                        <th style="width: 30px;">ครั้งที่</th>
+                        <th style="width: 80px;">วันที่ดำเนินการ</th>
                         <th>รายละเอียดการเสีย</th>
                         <th>รายละเอียดการซ่อม</th>
-                        <th style="width: 140px;">ใบสั่ง / งบประมาณ</th>
-                        <th style="width: 130px;">ผู้บันทึกข้อมูล</th>
+                        <th style="width: 120px;">งบประมาณ</th>
+                        <th style="width: 110px;">ผู้บันทึก</th>
                     </tr>
                 </thead>
                 <tbody>${tableContent}</tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="8" style="border: none; padding-top: 20px;">
-                            <div class="signature-container">
-                                <div class="sig-wrapper">
-                                    <div class="sig-box"><div class="sig-line">ผู้ออกรายงาน</div>( ${currentUserFullName || '..........................................'} )</div>
-                                    <div class="sig-box"><div class="sig-line">ผู้อนุมัติ / ผู้ตรวจสอบ</div>( ......................................................... )</div>
-                                </div>
-                                <div class="page-info"><span class="page-number"></span></div>
-                            </div>
-                        </td>
-                    </tr>
-                </tfoot>
             </table>
+
+            <div class="page-footer">
+                <div class="sig-area">
+                    <div class="sig-box"><div class="sig-line">ผู้ออกรายงาน</div>( ${currentUserFullName || '..........................................'} )</div>
+                    <div class="sig-box"><div class="sig-line">ผู้อนุมัติ / ผู้ตรวจสอบ</div>( ......................................................... )</div>
+                </div>
+            </div>
         </body></html>
     `);
     printWindow.document.close();
@@ -1009,6 +1015,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
