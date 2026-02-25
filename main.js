@@ -827,10 +827,13 @@ window.printReport = async function() {
     if (!result.isConfirmed) return;
     const reportType = result.value;
 
-    Swal.fire({ title: 'กำลังสร้างรายงาน...', didOpen: () => { Swal.showLoading(); } });
+    Swal.fire({ title: 'กำลังเตรียมข้อมูล...', didOpen: () => { Swal.showLoading(); } });
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
-    const now = new Date(); const printDate = now.toISOString().split('T')[0]; const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const now = new Date(); 
+    const printDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    const printTime = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    
     let tableContent = ''; let itemNo = 1;
 
     for (const dev of siteData.devices) {
@@ -854,34 +857,39 @@ window.printReport = async function() {
                     <td rowspan="${rowSpan}" class="col-device">
                         <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
                         <div class="dev-title">${dev}</div>
-                        <div class="dev-specs"><span><b>Model:</b> ${assetInfo.model || '-'}</span><br><span><b>S/N:</b> ${assetInfo.serial || '-'}</span><br><span><b>PEA:</b> ${assetInfo.peaNo || '-'}</span></div>
+                        <div class="dev-specs">
+                            <span><b>Model:</b> ${assetInfo.model || '-'}</span><br>
+                            <span><b>S/N:</b> ${assetInfo.serial || '-'}</span><br>
+                            <span><b>PEA No.:</b> ${assetInfo.peaNo || '-'}</span>
+                        </div>
                         <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}</div>
                     </td>
                 `;
             }
             if (r) {
-                // จัดการรูปภาพ
-                let imgHtmlBroken = '';
-                if(r.brokenFileUrl && r.brokenFileType && r.brokenFileType.startsWith('image/')) imgHtmlBroken = `<div class="img-box mt-2"><img src="${r.brokenFileUrl}" style="max-width: 100%; max-height: 100px; border-radius: 4px; border: 1px solid #e2e8f0;"></div>`;
-                else if(r.brokenFileUrl) imgHtmlBroken = `<div class="mt-1 text-xs text-blue-600 font-semibold">[ 📄 มีเอกสารแนบแจ้งเสีย ]</div>`;
-                
-                let imgHtmlFixed = '';
-                if(r.fixedFileUrl && r.fixedFileType && r.fixedFileType.startsWith('image/')) imgHtmlFixed = `<div class="img-box mt-2"><img src="${r.fixedFileUrl}" style="max-width: 100%; max-height: 100px; border-radius: 4px; border: 1px solid #e2e8f0;"></div>`;
-                else if(r.fixedFileUrl) imgHtmlFixed = `<div class="mt-1 text-xs text-green-600 font-semibold">[ 📄 มีเอกสารแนบซ่อมแซม ]</div>`;
+                let imgBroken = (r.brokenFileUrl && r.brokenFileType?.startsWith('image/')) ? `<div class="img-box mt-2"><img src="${r.brokenFileUrl}"></div>` : '';
+                let imgFixed = (r.fixedFileUrl && r.fixedFileType?.startsWith('image/')) ? `<div class="img-box mt-2"><img src="${r.fixedFileUrl}"></div>` : '';
 
-                let costText = r.repairCost ? `<span style="display:inline-block; margin-top:4px; padding:2px 4px; background:#fef3c7; color:#c2410c; border-radius:3px; font-size:11px;"><b>฿ ราคาซ่อม:</b> ${Number(r.repairCost).toLocaleString()} บ.</span><br>` : '';
-                let orderText = r.orderNumber ? `<span style="display:inline-block; margin-top:4px; padding:2px 4px; background:#e0f2fe; color:#0369a1; border-radius:3px; font-size:11px;"><b>📋 เลขที่ใบสั่ง:</b> ${escapeHtml(r.orderNumber)}</span><br>` : '';
+                // แยกข้อมูล Order & Cost
+                let orderAndCost = `
+                    <div class="meta-column">
+                        <div class="meta-label">เลขที่ใบสั่ง:</div>
+                        <div class="meta-value">${r.orderNumber || '-'}</div>
+                        <div class="meta-label mt-2">ค่าซ่อมแซม:</div>
+                        <div class="meta-value highlight">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</div>
+                    </div>
+                `;
 
                 tableContent += `
                     <td class="text-center font-bold hist-text">${occurrenceNo}</td>
-                    <td class="text-center hist-text">${r.brokenDate || '-'}</td>
-                    <td class="text-center hist-text">${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
-                    <td class="text-left hist-text desc-cell">${escapeHtml(r.description || '-')}${imgHtmlBroken}</td>
-                    <td class="text-left hist-text desc-cell">${orderText}${costText}${escapeHtml(r.solution || '-')}${imgHtmlFixed}</td> 
+                    <td class="text-center hist-text">${r.brokenDate || '-'}<br>ถึง<br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
+                    <td class="text-left hist-text desc-cell"><b>ปัญหา:</b><br>${r.description || '-'}${imgBroken}</td>
+                    <td class="text-left hist-text desc-cell"><b>การแก้ไข:</b><br>${r.solution || '-'}${imgFixed}</td>
+                    <td class="text-left">${orderAndCost}</td>
                     <td class="text-center hist-text user-cell">${r.user || '-'}</td>
                 `;
             } else {
-                tableContent += `<td colspan="6" class="empty-cell">No maintenance history recorded.</td>`;
+                tableContent += `<td colspan="6" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
             }
             tableContent += `</tr>`;
         }
@@ -890,51 +898,85 @@ window.printReport = async function() {
     
     if (tableContent === '') { Swal.fire('ไม่พบข้อมูล', 'ไม่มีอุปกรณ์ตามเงื่อนไขรายงานที่คุณเลือก', 'info'); return; }
 
-    const printWindow = window.open('', '', 'height=900,width=1300');
+    const printWindow = window.open('', '', 'height=900,width=1400');
     printWindow.document.write(`
-        <html><head><title>MAINTENANCE_LOG_${printDate}</title>
+        <html><head><title>PREVIEW_REPORT_${siteData.name}</title>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
                 @page { size: A4 landscape; margin: 8mm; }
-                body { font-family: 'Inter', 'Sarabun', sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; }
-                .page-wrapper { padding: 10px; }
-                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 25px 30px; border-radius: 8px 8px 0 0; margin-bottom: 0; }
-                .report-header h1 { margin: 0; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
-                .report-header .site-name { font-size: 14px; opacity: 0.8; margin-top: 5px; }
-                .header-meta { text-align: right; font-size: 12px; opacity: 0.9; line-height: 1.6; }
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #e2e8f0; }
-                th { background: #1e293b; color: #f8fafc; padding: 15px 10px; font-size: 14px; text-transform: uppercase; font-weight: 600; border: 1px solid #334155; text-align: center; }
-                .hist-text { font-size: 13px; } 
-                td { padding: 12px 10px; border: 1px solid #e2e8f0; vertical-align: top; word-wrap: break-word; }
-                tr { page-break-inside: avoid; }
-                .device-group-start td { border-top: 3px solid #0f172a; }
-                .col-no { width: 40px; background: #f8fafc; color: #64748b; vertical-align: middle;}
-                .col-device { width: 200px; background: #f8fafc; border-right: 2px solid #e2e8f0; }
-                .brand-tag { font-size: 9px; font-weight: 700; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 5px; color: #475569; }
-                .dev-title { font-size: 15px; font-weight: 700; color: #1e40af; margin-bottom: 5px; }
-                .dev-specs { font-size: 11px; color: #64748b; line-height: 1.4; }
-                .status-pill { margin-top: 12px; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 20px; display: inline-block; }
+                body { font-family: 'Inter', 'Sarabun', sans-serif; color: #0f172a; margin: 0; padding: 20px; background: #f1f5f9; }
+                .page-wrapper { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); max-width: 1300px; margin: auto; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: white; padding: 20px 25px; border-radius: 8px 8px 0 0; }
+                .report-header h1 { margin: 0; font-size: 20px; text-transform: uppercase; }
+                .header-meta { text-align: right; font-size: 12px; line-height: 1.6; }
+                
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #e2e8f0; background: white; }
+                th { background: #334155; color: white; padding: 12px 8px; font-size: 12px; text-transform: uppercase; border: 1px solid #475569; }
+                td { padding: 10px 8px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 13px; word-wrap: break-word; }
+                
+                .device-group-start td { border-top: 3px solid #1e293b; }
+                .col-device { width: 180px; background: #f8fafc; }
+                .dev-title { font-weight: 700; color: #1e40af; font-size: 14px; margin-bottom: 4px; }
+                .dev-specs { font-size: 10px; color: #64748b; }
+                .brand-tag { font-size: 9px; font-weight: 700; background: #cbd5e1; padding: 1px 5px; border-radius: 3px; margin-bottom: 4px; display: inline-block; }
+                
+                .status-pill { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 12px; margin-top: 8px; display: inline-block; }
                 .pill-ok { background: #dcfce7; color: #166534; }
                 .pill-down { background: #fee2e2; color: #991b1b; }
-                .urgent { color: #e11d48; font-weight: 700; text-decoration: underline; }
-                .desc-cell { line-height: 1.6; white-space: pre-wrap; }
-                .user-cell { color: #94a3b8; font-style: italic; vertical-align: middle; }
-                .text-center { text-align: center; } .text-left { text-align: left; } .font-bold { font-weight: 600; }
-                .empty-cell { text-align: center; padding: 30px; color: #cbd5e1; font-style: italic; vertical-align: middle;}
-                .report-footer { margin-top: 15px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 10px; }
-                .mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; }
-                @media print { body { background: white; -webkit-print-color-adjust: exact; } .report-header { background: #0f172a !important; color: white !important; } th { background: #1e293b !important; color: white !important; } .device-group-start td { border-top: 3px solid #0f172a !important; } thead { display: table-header-group; } }
+                
+                .meta-column { font-size: 11px; }
+                .meta-label { color: #64748b; font-weight: 600; }
+                .meta-value { color: #0f172a; margin-bottom: 2px; }
+                .meta-value.highlight { color: #c2410c; font-weight: 700; }
+                
+                .img-box img { max-width: 100%; max-height: 100px; border-radius: 4px; border: 1px solid #e2e8f0; margin-top: 5px; }
+                .urgent { color: #e11d48; font-weight: 700; }
+                .text-center { text-align: center; }
+                .mt-2 { margin-top: 8px; }
+
+                .no-print-zone { text-align: center; margin-bottom: 20px; }
+                .btn-print { background: #2563eb; color: white; padding: 10px 25px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+                .btn-print:hover { background: #1d4ed8; }
+
+                @media print {
+                    body { background: white; padding: 0; }
+                    .page-wrapper { box-shadow: none; padding: 0; max-width: none; }
+                    .no-print-zone { display: none; }
+                }
             </style>
         </head>
         <body>
-            <div class="page-wrapper">
-                <div class="report-header"><div><h1>Asset Maintenance Report</h1><div class="site-name">PROJECT: ${siteData.name} ${reportType==='broken'? '(เฉพาะที่กำลังมีปัญหา)' : (reportType==='history_broken' ? '(ที่เคยมีปัญหาทั้งหมด)' : '')}</div></div>
-                    <div class="header-meta"><strong>DATE:</strong> ${printDate}<br><strong>TIME:</strong> ${printTime}<br><strong>OPERATOR:</strong> ${currentUserFullName || (currentUser ? currentUser.email : 'ADMIN')}</div>
-                </div>
-                <table><thead><tr><th style="width: 35px;">No.</th><th style="width: 200px;">Device & Specs</th><th style="width: 40px;">Occ.</th><th style="width: 85px;">Event Date</th><th style="width: 85px;">Fixed Date</th><th>Description</th><th style="width: 180px;">Solutions</th><th style="width: 90px;">Recorded By</th></tr></thead><tbody>${tableContent}</tbody></table>
-                <div class="report-footer">Generated by Microgrid Asset Management System</div>
+            <div class="no-print-zone">
+                <p style="color: #64748b;">✨ หน้าต่างพรีวิวรายงาน (Preview Mode)</p>
+                <button class="btn-print" onclick="window.print()">🖨️ สั่งพิมพ์รายงาน (Print / Save PDF)</button>
             </div>
-            <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 1500); }</script>
+            <div class="page-wrapper">
+                <div class="report-header">
+                    <div>
+                        <h1>Asset Maintenance Report</h1>
+                        <div style="font-size: 13px; opacity: 0.8;">โครงการ: ${siteData.name}</div>
+                    </div>
+                    <div class="header-meta">
+                        พิมพ์เมื่อ: ${printDate} ${printTime}<br>
+                        ผู้พิมพ์: ${currentUserFullName || 'Admin'}
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 35px;">No.</th>
+                            <th style="width: 180px;">Device & Asset Info</th>
+                            <th style="width: 35px;">Occ.</th>
+                            <th style="width: 100px;">Date Range</th>
+                            <th>Description & Evidence</th>
+                            <th>Solutions & Action</th>
+                            <th style="width: 130px;">Order & Cost</th>
+                            <th style="width: 90px;">Recorded</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableContent}</tbody>
+                </table>
+            </div>
         </body></html>
     `);
     printWindow.document.close();
@@ -946,6 +988,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
