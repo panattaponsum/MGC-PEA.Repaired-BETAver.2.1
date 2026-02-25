@@ -853,14 +853,14 @@ window.printReport = async function() {
             if (isFirst) {
                 const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
                 tableContent += `
-                    <td rowspan="${rowSpan}" class="col-no text-center">${itemNo++}</td>
                     <td rowspan="${rowSpan}" class="col-device">
+                        <div class="no-label">ลำดับที่ ${itemNo++}</div>
                         <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
                         <div class="dev-title">${dev}</div>
                         <div class="dev-specs">
                             <span><b>Model:</b> ${assetInfo.model || '-'}</span><br>
                             <span><b>S/N:</b> ${assetInfo.serial || '-'}</span><br>
-                            <span><b>PEA No.:</b> ${assetInfo.peaNo || '-'}</span>
+                            <span><b>PEA No:</b> ${assetInfo.peaNo || '-'}</span>
                         </div>
                         <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}</div>
                     </td>
@@ -870,22 +870,19 @@ window.printReport = async function() {
                 let imgBroken = (r.brokenFileUrl && r.brokenFileType?.startsWith('image/')) ? `<div class="img-box mt-2"><img src="${r.brokenFileUrl}"></div>` : '';
                 let imgFixed = (r.fixedFileUrl && r.fixedFileType?.startsWith('image/')) ? `<div class="img-box mt-2"><img src="${r.fixedFileUrl}"></div>` : '';
 
-                // แยกข้อมูล Order & Cost
-                let orderAndCost = `
-                    <div class="meta-column">
-                        <div class="meta-label">เลขที่ใบสั่ง:</div>
-                        <div class="meta-value">${r.orderNumber || '-'}</div>
-                        <div class="meta-label mt-2">ค่าซ่อมแซม:</div>
-                        <div class="meta-value highlight">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</div>
-                    </div>
-                `;
-
                 tableContent += `
                     <td class="text-center font-bold hist-text">${occurrenceNo}</td>
                     <td class="text-center hist-text">${r.brokenDate || '-'}<br>To<br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
-                    <td class="text-left hist-text desc-cell"><b>:</b><br>${r.description || '-'}${imgBroken}</td>
-                    <td class="text-left hist-text desc-cell"><b>:</b><br>${r.solution || '-'}${imgFixed}</td>
-                    <td class="text-left">${orderAndCost}</td>
+                    <td class="text-left hist-text desc-cell">${r.description || '-'}${imgBroken}</td>
+                    <td class="text-left hist-text desc-cell">${r.solution || '-'}${imgFixed}</td>
+                    <td class="text-left">
+                        <div class="meta-column">
+                            <div class="meta-label">เลขที่ใบสั่ง:</div>
+                            <div class="meta-value">${r.orderNumber || '-'}</div>
+                            <div class="meta-label mt-2">ค่าซ่อมแซม:</div>
+                            <div class="meta-value highlight">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</div>
+                        </div>
+                    </td>
                     <td class="text-center hist-text user-cell">${r.user || '-'}</td>
                 `;
             } else {
@@ -896,59 +893,50 @@ window.printReport = async function() {
     }
     Swal.close();
     
-    if (tableContent === '') { Swal.fire('ไม่พบข้อมูล', 'ไม่มีอุปกรณ์ตามเงื่อนไขรายงานที่คุณเลือก', 'info'); return; }
-
     const printWindow = window.open('', '', 'height=900,width=1400');
     printWindow.document.write(`
-        <html><head><title>PREVIEW_REPORT_${siteData.name}</title>
+        <html><head><title>MAINTENANCE_REPORT</title>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
                 @page { size: A4 landscape; margin: 8mm; }
                 body { font-family: 'Inter', 'Sarabun', sans-serif; color: #0f172a; margin: 0; padding: 20px; background: #f1f5f9; }
-                .page-wrapper { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); max-width: 1300px; margin: auto; }
-                .report-header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: white; padding: 20px 25px; border-radius: 8px 8px 0 0; }
-                .report-header h1 { margin: 0; font-size: 20px; text-transform: uppercase; }
-                .header-meta { text-align: right; font-size: 12px; line-height: 1.6; }
                 
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #e2e8f0; background: white; }
-                th { background: #334155; color: white; padding: 12px 8px; font-size: 12px; text-transform: uppercase; border: 1px solid #475569; }
-                td { padding: 10px 8px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 13px; word-wrap: break-word; }
+                /* บังคับให้พิมพ์สีพื้นหลัง */
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+                .page-wrapper { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); max-width: 1300px; margin: auto; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; background: #1e293b !important; color: white !important; padding: 20px 25px; border-radius: 8px 8px 0 0; }
+                
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #e2e8f0; }
+                th { background: #334155 !important; color: white !important; padding: 12px 8px; font-size: 12px; border: 1px solid #475569; text-align: center; }
+                td { padding: 10px 8px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 13px; }
                 
                 .device-group-start td { border-top: 3px solid #1e293b; }
-                .col-device { width: 180px; background: #f8fafc; }
-                .dev-title { font-weight: 700; color: #1e40af; font-size: 14px; margin-bottom: 4px; }
-                .dev-specs { font-size: 10px; color: #64748b; }
-                .brand-tag { font-size: 9px; font-weight: 700; background: #cbd5e1; padding: 1px 5px; border-radius: 3px; margin-bottom: 4px; display: inline-block; }
+                .col-device { width: 180px; background: #f8fafc !important; }
+                .dev-title { font-weight: 700; color: #1e40af; }
+                .brand-tag { font-size: 9px; background: #cbd5e1 !important; color: #475569 !important; padding: 1px 5px; border-radius: 3px; }
                 
-                .status-pill { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 12px; margin-top: 8px; display: inline-block; }
-                .pill-ok { background: #dcfce7; color: #166534; }
-                .pill-down { background: #fee2e2; color: #991b1b; }
+                .status-pill { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
+                .pill-ok { background: #dcfce7 !important; color: #166534 !important; }
+                .pill-down { background: #fee2e2 !important; color: #991b1b !important; }
                 
-                .meta-column { font-size: 11px; }
-                .meta-label { color: #64748b; font-weight: 600; }
-                .meta-value { color: #0f172a; margin-bottom: 2px; }
-                .meta-value.highlight { color: #c2410c; font-weight: 700; }
+                .meta-value.highlight { color: #c2410c !important; font-weight: 700; }
+                .img-box img { max-width: 100%; max-height: 100px; margin-top: 5px; border-radius: 4px; }
                 
-                .img-box img { max-width: 100%; max-height: 100px; border-radius: 4px; border: 1px solid #e2e8f0; margin-top: 5px; }
-                .urgent { color: #e11d48; font-weight: 700; }
-                .text-center { text-align: center; }
-                .mt-2 { margin-top: 8px; }
-
                 .no-print-zone { text-align: center; margin-bottom: 20px; }
-                .btn-print { background: #2563eb; color: white; padding: 10px 25px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
-                .btn-print:hover { background: #1d4ed8; }
+                .btn-print { background: #2563eb; color: white; padding: 10px 25px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
 
                 @media print {
                     body { background: white; padding: 0; }
                     .page-wrapper { box-shadow: none; padding: 0; max-width: none; }
                     .no-print-zone { display: none; }
+                    thead { display: table-header-group; }
                 }
             </style>
         </head>
         <body>
             <div class="no-print-zone">
-                <p style="color: #64748b;">✨ หน้าต่างพรีวิวรายงาน (Preview Mode)</p>
-                <button class="btn-print" onclick="window.print()">🖨️ สั่งพิมพ์รายงาน (Print / Save PDF)</button>
+                <button class="btn-print" onclick="window.print()">🖨️ สั่งพิมพ์รายงาน </button>
             </div>
             <div class="page-wrapper">
                 <div class="report-header">
@@ -956,15 +944,13 @@ window.printReport = async function() {
                         <h1>Asset Maintenance Report</h1>
                         <div style="font-size: 13px; opacity: 0.8;">โครงการ: ${siteData.name}</div>
                     </div>
-                    <div class="header-meta">
-                        พิมพ์เมื่อ: ${printDate} ${printTime}<br>
-                        ผู้พิมพ์: ${currentUserFullName || 'Admin'}
+                    <div style="text-align: right; font-size: 12px;">
+                        วันที่พิมพ์: ${printDate}<br>ผู้พิมพ์: ${currentUserFullName || 'Admin'}
                     </div>
                 </div>
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 35px;">No.</th>
                             <th style="width: 180px;">Device & Asset Info</th>
                             <th style="width: 35px;">Occ.</th>
                             <th style="width: 100px;">Date Range</th>
@@ -988,6 +974,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
