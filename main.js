@@ -820,7 +820,7 @@ window.printReport = async function() {
     const result = await Swal.fire({
         title: 'เลือกประเภทรายงาน', 
         input: 'radio',
-        inputOptions: { 'all': 'อุปกรณ์ทั้งหมด', 'broken': 'เฉพาะอุปกรณ์ที่กำลังมีปัญหา', 'history_broken': 'อุปกรณ์ที่เคยชำรุดทั้งหมด' },
+        inputOptions: { 'all': 'อุปกรณ์ทั้งหมด', 'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด', 'history_broken': 'อุปกรณ์ที่เคยชำรุดทั้งหมด' },
         inputValidator: (value) => { if (!value) return 'กรุณาเลือกประเภทรายงาน'; },
         showCancelButton: true, confirmButtonText: 'สร้างรายงาน', cancelButtonText: 'ยกเลิก'
     });
@@ -828,7 +828,7 @@ window.printReport = async function() {
     if (!result.isConfirmed) return;
     const reportType = result.value;
 
-    Swal.fire({ title: 'กำลังประมวลผล...', didOpen: () => { Swal.showLoading(); } });
+    Swal.fire({ title: 'กำลังเตรียมรายงาน...', didOpen: () => { Swal.showLoading(); } });
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
     
@@ -851,16 +851,20 @@ window.printReport = async function() {
         if (reportType === 'history_broken' && records.length === 0) continue;
 
         const rowSpan = records.length > 0 ? records.length : 1;
+        
+        // ใช้ tbody เป็นกลุ่มของแต่ละอุปกรณ์ เพื่อให้แยกหน้าได้อิสระ
+        tableContent += `<tbody class="device-group">`;
+        
         for (let i = 0; i < rowSpan; i++) {
             const r = records[i]; 
             const isFirst = (i === 0);
-            tableContent += `<tr class="${isFirst ? 'device-group-start' : ''}">`;
+            tableContent += `<tr>`;
             
             if (isFirst) {
                 const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
                 tableContent += `
-                    <td rowspan="${rowSpan}" class="col-no text-center font-bold">${itemNo++}</td>
-                    <td rowspan="${rowSpan}" class="col-device">
+                    <td rowspan="${rowSpan}" class="col-no text-center font-bold v-center">${itemNo++}</td>
+                    <td rowspan="${rowSpan}" class="col-device v-center">
                         <div class="dev-title">${dev}</div>
                         <div class="dev-specs">
                             <b>ผู้ผลิต:</b> ${assetInfo.manufacturer || '-'}<br>
@@ -882,20 +886,25 @@ window.printReport = async function() {
                 }
 
                 tableContent += `
-                    <td class="text-center font-bold" style="vertical-align: middle;">${records.length - i}</td>
-                    <td class="text-center font-bold" style="font-size:11px; vertical-align: middle;">${r.brokenDate || '-'}<br>To<br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
-                    <td class="desc-cell"><div class="label-box">SOLUTION</div><b>รายละเอียด:</b> ${r.description || '-'}<br><b>การแก้ไข:</b> ${r.solution || '-'}${imagesHtml}</td>
-                    <td class="text-left" style="vertical-align: middle;">
-                        <div class="cost-row"><span>Order:</span> <b>${r.orderNumber || '-'}</b></div>
-                        <div class="cost-row" style="margin-top:5px;"><span>Cost:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '0'}</b></div>
+                    <td class="text-center font-bold v-center">${records.length - i}</td>
+                    <td class="text-center font-bold v-center" style="font-size:11px;">${r.brokenDate || '-'}<br><small style="color:#94a3b8">TO</small><br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
+                    <td class="desc-cell">
+                        <div class="label-box">WORK DETAILS</div>
+                        <b>ปัญหา:</b> ${r.description || '-'}<br>
+                        <b>การแก้ไข:</b> ${r.solution || '-'}${imagesHtml}
                     </td>
-                    <td class="text-center user-cell font-bold" style="vertical-align: middle;">${r.user || '-'}</td>
+                    <td class="text-left v-center">
+                        <div class="cost-row"><span>Order:</span> <b>${r.orderNumber || '-'}</b></div>
+                        <div class="cost-row" style="margin-top:8px;"><span>Cost:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '0'}</b></div>
+                    </td>
+                    <td class="text-center user-cell font-bold v-center">${r.user || '-'}</td>
                 `;
             } else {
                 tableContent += `<td colspan="5" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
             }
             tableContent += `</tr>`;
         }
+        tableContent += `</tbody>`;
     }
     Swal.close();
     
@@ -905,81 +914,75 @@ window.printReport = async function() {
             <title>MAINTENANCE_REPORT_${siteData.name}</title>
             <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { size: A4 landscape; margin: 15mm 10mm 25mm 10mm; }
-                body { font-family: 'Sarabun', sans-serif; color: #1e293b; background: #f1f5f9; margin: 0; padding: 20px; }
+                @page { size: A4 landscape; margin: 12mm 10mm 30mm 10mm; }
+                body { font-family: 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 20px; background: #f1f5f9; }
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
                 
-                .page-wrapper { background: white; padding: 0; max-width: 1300px; margin: auto; }
-                
-                /* หัวรายงานแบบเดิมที่ดูหนักแน่น */
-                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 25px 30px; border-radius: 4px 4px 0 0; }
-                .report-header h1 { margin: 0; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
-                
-                /* การจัดหน้าและเลขหน้า */
-                .page-footer-container { position: fixed; bottom: -15mm; width: 100%; height: 20mm; display: flex; flex-direction: column; }
-                .page-number:after { content: "หน้า " counter(page) " / " counter(pages); font-size: 10px; color: #94a3b8; }
-                .page-info { text-align: right; margin-top: 5px; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 20px 30px; border-radius: 4px 4px 0 0; }
+                .report-header h1 { margin: 0; font-size: 20px; letter-spacing: 1px; }
 
-                /* ลายเซ็นทุกหน้า */
-                .signature-wrapper { display: flex; justify-content: space-around; padding-top: 10px; border-top: 1px solid #e2e8f0; width: 100%; background: white; }
-                .sig-box { text-align: center; width: 220px; font-size: 11px; }
-                .sig-line { border-top: 1px solid #000; margin-top: 30px; padding-top: 5px; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; background: white; }
+                th { background: #1e293b !important; color: white !important; padding: 12px 8px; font-size: 11px; border: 1px solid #334155; }
+                td { padding: 10px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 12px; word-break: break-word; }
+                
+                /* การแบ่งหน้าที่ยืดหยุ่น */
+                tbody.device-group { page-break-inside: auto; }
+                tr { page-break-inside: avoid; page-break-after: auto; }
 
-                /* ตารางแบบล่าสุด */
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-                th { background: #1e293b !important; color: white !important; padding: 12px 8px; font-size: 11px; text-transform: uppercase; border: 1px solid #334155; }
-                td { padding: 10px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 12px; word-wrap: break-word; }
+                .v-center { vertical-align: middle !important; }
+                .col-no { width: 40px; background: #f8fafc !important; }
+                .col-device { width: 200px; background: #f8fafc !important; border-right: 2px solid #e2e8f0; }
+                .user-cell { width: 120px; color: #475569; } /* ขยายความกว้างRecorded By */
                 
-                tr { page-break-inside: avoid; }
-                .device-group-start td { border-top: 3px solid #0f172a; }
+                .dev-title { font-size: 14px; font-weight: 800; color: #1e40af; line-height: 1.2; margin-bottom: 6px; }
+                .dev-specs { font-size: 10px; color: #64748b; line-height: 1.5; }
                 
-                .col-no { width: 40px; background: #f8fafc !important; vertical-align: middle; }
-                .col-device { width: 180px; background: #f8fafc !important; }
-                .dev-title { font-size: 14px; font-weight: 800; color: #1e40af; margin-bottom: 5px; line-height: 1.2; }
-                .dev-specs { font-size: 10.5px; color: #475569; line-height: 1.4; }
-                
-                .status-pill { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 12px; margin-top: 8px; display: inline-block; }
+                .status-pill { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 8px; display: inline-block; }
                 .pill-ok { background: #dcfce7 !important; color: #166534 !important; }
                 .pill-down { background: #fee2e2 !important; color: #991b1b !important; }
 
                 .label-box { font-size: 8px; font-weight: 800; background: #f1f5f9; color: #64748b; padding: 1px 4px; border-radius: 2px; margin-bottom: 5px; width: fit-content; }
-                .image-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-                .img-item { border: 1px solid #e2e8f0; padding: 3px; border-radius: 4px; text-align: center; }
-                .img-item img { width: 100%; height: 90px; object-fit: cover; }
-                .img-tag { font-size: 8px; font-weight: bold; display: block; margin-bottom: 2px; }
+                
+                /* ปรับแต่งรูปภาพตามโจทย์: เล็กลงแต่สูงขึ้น */
+                .image-grid { display: grid; grid-template-columns: 120px 120px; gap: 10px; margin-top: 10px; }
+                .img-item { border: 1px solid #e2e8f0; padding: 2px; border-radius: 4px; background: #f8fafc; }
+                .img-item img { width: 100%; height: 120px; object-fit: cover; display: block; }
+                .img-tag { font-size: 8px; font-weight: bold; display: block; text-align: center; padding: 2px; }
 
-                .cost-row { display: flex; justify-content: space-between; font-size: 11px; border-bottom: 1px dashed #e2e8f0; }
-                .cost-val { color: #c2410c !important; }
-                .urgent { color: #ef4444; font-weight: bold; text-decoration: underline; }
+                .cost-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #cbd5e1; }
+                .cost-val { color: #c2410c !important; font-size: 13px; }
+
+                /* ลายเซ็นและเลขหน้า */
+                .signature-footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px 0; border-top: 2px solid #0f172a; }
+                .signature-wrapper { display: flex; justify-content: space-around; }
+                .sig-box { text-align: center; width: 250px; font-size: 11px; }
+                .sig-line { border-top: 1px solid #000; margin-top: 35px; padding-top: 5px; font-weight: bold; }
+                .page-info { position: absolute; bottom: 5px; right: 20px; font-size: 10px; color: #94a3b8; }
+                .page-number:after { content: "หน้า " counter(page) " / " counter(pages); }
 
                 .no-print-zone { text-align: center; margin-bottom: 20px; }
-                .btn-print { background: #0f172a; color: white; padding: 12px 35px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
+                .btn-print { background: #0f172a; color: white; padding: 12px 40px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
                 @media print {
                     body { background: white; padding: 0; }
-                    .page-wrapper { box-shadow: none; }
                     .no-print-zone { display: none; }
-                    .report-header { border-radius: 0; }
                     thead { display: table-header-group; }
-                    /* บังคับลายเซ็นอยู่ท้ายกระดาษทุกหน้า */
-                    .signature-footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 0; }
                 }
             </style>
         </head>
         <body>
             <div class="no-print-zone">
-                <button class="btn-print" onclick="window.print()">🖨️ สั่งพิมพ์รายงาน (ตรวจสอบเลขหน้าและลายเซ็นทุกหน้า)</button>
+                <button class="btn-print" onclick="window.print()">🖨️ ยืนยันข้อมูลและบันทึกรายงาน</button>
             </div>
             
             <div class="page-wrapper">
                 <div class="report-header">
                     <div>
                         <h1>Asset Maintenance Report</h1>
-                        <div style="font-size: 14px; opacity: 0.8; margin-top: 5px;">📍 PROJECT: ${siteData.name}</div>
+                        <div style="font-size: 13px; opacity: 0.8; margin-top: 4px;">SITE: ${siteData.name}</div>
                     </div>
-                    <div style="text-align: right; font-size: 12px;">
-                        DATE: ${printDate}<br>
-                        TIME: ${printTime}
+                    <div style="text-align: right; font-size: 11px;">
+                        DATE: ${printDate}<br>TIME: ${printTime}
                     </div>
                 </div>
 
@@ -987,25 +990,23 @@ window.printReport = async function() {
                     <thead>
                         <tr>
                             <th style="width: 40px;">No.</th>
-                            <th style="width: 180px;">Device & Asset Specs</th>
+                            <th style="width: 200px;">Device & Asset Specs</th>
                             <th style="width: 35px;">Occ.</th>
                             <th style="width: 90px;">Timeline</th>
-                            <th>Work Description & Evidence</th>
-                            <th style="width: 130px;">Order & Cost</th>
-                            <th style="width: 90px;">Recorded By</th>
+                            <th>Description & Evidence</th>
+                            <th style="width: 140px;">Order & Cost (THB)</th>
+                            <th style="width: 120px;">Recorded By</th>
                         </tr>
                     </thead>
-                    <tbody>${tableContent}</tbody>
+                    ${tableContent}
                 </table>
 
                 <div class="signature-footer">
                     <div class="signature-wrapper">
                         <div class="sig-box"><div class="sig-line">ผู้ออกรายงาน</div>( ${currentUserFullName || '..........................................'} )</div>
-                        <div class="sig-box"><div class="sig-line">ผู้อนุมัติ / ผู้ตรวจสอบ</div>( .......................................... )</div>
+                        <div class="sig-box"><div class="sig-line">ผู้อนุมัติ / ผู้ตรวจสอบ</div>( ............................................................. )</div>
                     </div>
-                    <div class="page-info">
-                        <span class="page-number"></span>
-                    </div>
+                    <div class="page-info"><span class="page-number"></span></div>
                 </div>
             </div>
         </body></html>
@@ -1019,6 +1020,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
