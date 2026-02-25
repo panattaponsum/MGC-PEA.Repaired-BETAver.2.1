@@ -816,30 +816,52 @@ window.startAutoLogoutTimer = function() {
 };
 window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
 
-window.generatePDF = function() {
+// ฟังก์ชันสำหรับพิมพ์รายงาน PDF (ปรับปรุงรูปแบบให้สวยงามและแนบรูปในช่อง)
+window.printReport = function() {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('l', 'mm', 'a4'); // แนวนอนเพื่อให้มีพื้นที่วางรูป
-
-    // ดึงข้อมูลจากตาราง (อ้างอิงจาก ID 'deviceTable' ในไฟล์ index.html)
+    
+    // ดึงข้อมูลแถวทั้งหมดจากตาราง
     const table = document.getElementById('deviceTable');
+    if (!table) return;
     const rows = Array.from(table.querySelectorAll('tbody tr'));
 
+    // เตรียมข้อมูล HTML สำหรับแต่ละแถว
     const tableContent = rows.map(row => {
         const cells = row.querySelectorAll('td');
-        
-        // ดึง URL รูปภาพจาก Data Attribute (ต้องมั่นใจว่าตอนสร้างตารางมีการเก็บ URL ไว้)
-        // หรือดึงจาก <img> tag ภายใน Cell
-        const problemImgHtml = cells[2].querySelector('img') ? `<br><img src="${cells[2].querySelector('img').src}" style="max-width:100px; margin-top:5px; border-radius:4px;">` : '';
-        const repairImgHtml = cells[3].querySelector('img') ? `<br><img src="${cells[3].querySelector('img').src}" style="max-width:100px; margin-top:5px; border-radius:4px;">` : '';
+        if (cells.length < 6) return '';
+
+        const deviceName = cells[0].innerText;
+        const statusText = cells[1].innerText;
+        const problemText = cells[2].innerText.split('\n')[0]; // เอาเฉพาะข้อความบรรทัดแรก
+        const repairText = cells[3].innerText.split('\n')[0];  // เอาเฉพาะข้อความบรรทัดแรก
+        const dateStr = cells[4].innerText;
+        const recorder = cells[5].innerText;
+
+        // ดึง URL รูปภาพจาก <img> tag ที่อยู่ในตาราง (ถ้ามี)
+        const problemImg = cells[2].querySelector('img');
+        const repairImg = cells[3].querySelector('img');
+
+        const problemImgHtml = problemImg ? `<div class="img-container"><img src="${problemImg.src}"></div>` : '';
+        const repairImgHtml = repairImg ? `<div class="img-container"><img src="${repairImg.src}"></div>` : '';
+
+        const statusClass = statusText.includes('ปกติ') ? 'status-ok' : 'status-bad';
 
         return `
             <tr>
-                <td>${cells[0].innerText}</td>
-                <td><span class="status-badge ${cells[1].innerText.includes('ปกติ') ? 'status-ok' : 'status-bad'}">${cells[1].innerText}</span></td>
-                <td>${cells[2].innerText.split('\n')[0]} ${problemImgHtml}</td>
-                <td>${cells[3].innerText.split('\n')[0]} ${repairImgHtml}</td>
-                <td>${cells[4].innerText}</td>
-                <td>${cells[5].innerText}</td>
+                <td style="width: 15%;">${deviceName}</td>
+                <td style="width: 10%; text-align: center;">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </td>
+                <td style="width: 25%;">
+                    <div class="cell-text">${problemText}</div>
+                    ${problemImgHtml}
+                </td>
+                <td style="width: 25%;">
+                    <div class="cell-text">${repairText}</div>
+                    ${repairImgHtml}
+                </td>
+                <td style="width: 15%; text-align: center;">${dateStr}</td>
+                <td style="width: 10%; text-align: center;">${recorder}</td>
             </tr>
         `;
     }).join('');
@@ -848,44 +870,47 @@ window.generatePDF = function() {
     printWindow.document.write(`
         <html>
         <head>
-            <title>Report - ${sites[currentSiteKey].name}</title>
+            <title>รายงานสถานะอุปกรณ์ - ${sites[currentSiteKey].name}</title>
             <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
             <style>
-                body { font-family: 'Sarabun', sans-serif; padding: 20px; color: #333; }
-                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
-                .header h2 { margin: 0; color: #0056b3; font-size: 24px; }
-                .header p { margin: 5px 0; color: #666; }
+                body { font-family: 'Sarabun', sans-serif; padding: 40px; color: #333; background: #fff; }
+                .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #0056b3; padding-bottom: 15px; }
+                .header h1 { margin: 0; color: #0056b3; font-size: 26px; }
+                .header p { margin: 5px 0; color: #555; font-size: 16px; }
                 
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-                th { background-color: #f2f2f2; color: #333; font-weight: bold; border: 1px solid #ddd; padding: 12px 8px; text-align: center; }
-                td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; vertical-align: top; word-wrap: break-word; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 20px; }
+                th { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; font-weight: bold; text-align: center; font-size: 14px; }
+                td { border: 1px solid #dee2e6; padding: 10px; vertical-align: top; font-size: 14px; word-wrap: break-word; }
                 
-                .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
-                .status-ok { background: #dcfce7; color: #166534; }
-                .status-bad { background: #fee2e2; color: #991b1b; }
+                .status-badge { padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block; }
+                .status-ok { background: #e6fffa; color: #047481; border: 1px solid #b2f5ea; }
+                .status-bad { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
                 
-                img { border: 1px solid #eee; display: block; }
-                .report-footer { margin-top: 20px; text-align: right; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px; }
+                .img-container { margin-top: 8px; text-align: center; }
+                .img-container img { max-width: 100%; max-height: 120px; border-radius: 4px; border: 1px solid #eee; }
+                .cell-text { margin-bottom: 5px; font-weight: 500; }
+
+                .footer { margin-top: 30px; text-align: right; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px; }
                 
                 @media print {
                     @page { size: landscape; margin: 10mm; }
-                    .no-print { display: none; }
+                    body { padding: 0; }
                 }
             </style>
         </head>
         <body>
             <div class="header">
-                <h2>รายงานสถานะอุปกรณ์และซ่อมบำรุง</h2>
-                <p>สถานที่: ${sites[currentSiteKey].name}</p>
-                <p>ประจำวันที่: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <h1>รายงานสรุปสถานะอุปกรณ์และรายการซ่อมบำรุง</h1>
+                <p>📍 สถานที่: ${sites[currentSiteKey].name}</p>
+                <p>📅 ข้อมูล ณ วันที่: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
             <table>
                 <thead>
                     <tr>
                         <th style="width: 15%;">ชื่ออุปกรณ์</th>
                         <th style="width: 10%;">สถานะ</th>
-                        <th style="width: 25%;">รายละเอียดปัญหา/รูปภาพ</th>
-                        <th style="width: 25%;">วิธีการแก้ไข/รูปภาพ</th>
+                        <th style="width: 25%;">รายละเอียดปัญหา / รูปภาพ</th>
+                        <th style="width: 25%;">วิธีการแก้ไข / รูปภาพ</th>
                         <th style="width: 15%;">วันที่บันทึก</th>
                         <th style="width: 10%;">ผู้บันทึก</th>
                     </tr>
@@ -894,23 +919,22 @@ window.generatePDF = function() {
                     ${tableContent}
                 </tbody>
             </table>
-            <div class="report-footer">
-                พิมพ์โดยระบบจัดการอุปกรณ์โครงข่ายไฟฟ้า (Microgrid Asset Management) | เมื่อวันที่ ${new Date().toLocaleString('th-TH')}
+            <div class="footer">
+                พิมพ์โดยระบบ Microgrid Asset Management System | เมื่อ: ${new Date().toLocaleString('th-TH')}
             </div>
             <script>
                 window.onload = () => {
                     setTimeout(() => { 
                         window.print(); 
-                        // window.close(); // เปิดไว้ถ้าต้องการให้ปิดหน้าต่างหลังพิมพ์เสร็จ
-                    }, 1500);
-                }
+                        window.close();
+                    }, 1000);
+                };
             </script>
         </body>
         </html>
     `);
     printWindow.document.close();
 };
-
 window.sendEmailNotify = async function(type, deviceName, description,solution, user, dateVal, count) {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzLRfWeTwhZN_kU_8RD_eXiy30Mtt1duleN1Vxmw4RV7wB_mmTFhDPXObWCVoaUzF0GgQ/exec"; 
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
@@ -918,4 +942,5 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
