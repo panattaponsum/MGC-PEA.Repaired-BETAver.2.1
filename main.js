@@ -820,7 +820,7 @@ window.printReport = async function() {
     const result = await Swal.fire({
         title: 'เลือกประเภทรายงาน', 
         input: 'radio',
-        inputOptions: { 'all': 'อุปกรณ์ทั้งหมด', 'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด/ผิดปกติ', 'history_broken': 'อุปกรณ์ที่เคยชำรุด/ผิดปกติทั้งหมด' },
+        inputOptions: { 'all': 'อุปกรณ์ทั้งหมด', 'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด', 'history_broken': 'อุปกรณ์ที่เคยชำรุดทั้งหมด' },
         inputValidator: (value) => { if (!value) return 'กรุณาเลือกประเภทรายงาน'; },
         showCancelButton: true, confirmButtonText: 'สร้างรายงาน', cancelButtonText: 'ยกเลิก'
     });
@@ -828,66 +828,73 @@ window.printReport = async function() {
     if (!result.isConfirmed) return;
     const reportType = result.value;
 
-    Swal.fire({ title: 'กำลังเตรียมข้อมูล...', didOpen: () => { Swal.showLoading(); } });
+    Swal.fire({ title: 'กำลังประมวลผล...', didOpen: () => { Swal.showLoading(); } });
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
+    
     const now = new Date(); 
     const printDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
     const printTime = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
     
-    let tableContent = ''; let itemNo = 1;
+    let tableContent = ''; 
+    let itemNo = 1;
+    let summary = { totalDevices: siteData.devices.length, activeBroken: 0, totalCost: 0 };
 
     for (const dev of siteData.devices) {
-        const docData = dataMap[dev] || {}; let records = docData.records || []; records.sort((a, b) => b.ts - a.ts); 
+        const docData = dataMap[dev] || {}; 
+        let records = docData.records || []; 
+        records.sort((a, b) => b.ts - a.ts); 
         const assetInfo = docData.assetInfo || {};
         
-        const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
-        const hasBrokenHistory = records.length > 0;
-        
+        const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '-' || r.fixedDate === 'null'));
+        if (isCurrentlyDown) summary.activeBroken++;
+
         if (reportType === 'broken' && !isCurrentlyDown) continue;
-        if (reportType === 'history_broken' && !hasBrokenHistory) continue;
+        if (reportType === 'history_broken' && records.length === 0) continue;
 
         const rowSpan = records.length > 0 ? records.length : 1;
         for (let i = 0; i < rowSpan; i++) {
-            const r = records[i]; const isFirst = (i === 0); const occurrenceNo = r ? (records.length - i) : '-';
+            const r = records[i]; 
+            const isFirst = (i === 0);
+            if (r && r.repairCost) summary.totalCost += Number(r.repairCost);
+
             tableContent += `<tr class="${isFirst ? 'device-group-start' : ''}">`;
             if (isFirst) {
                 const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
                 tableContent += `
                     <td rowspan="${rowSpan}" class="col-no text-center font-bold">${itemNo++}</td>
                     <td rowspan="${rowSpan}" class="col-device">
-                        <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
                         <div class="dev-title">${dev}</div>
                         <div class="dev-specs">
-                            <span><b>Model:</b> ${assetInfo.model || '-'}</span><br>
-                            <span><b>S/N:</b> ${assetInfo.serial || '-'}</span><br>
-                            <span><b>PEA No:</b> ${assetInfo.peaNo || '-'}</span>
+                            <b>S/N:</b> ${assetInfo.serial || '-'}<br>
+                            <b>PEA:</b> ${assetInfo.peaNo || '-'}
                         </div>
                         <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}</div>
                     </td>
                 `;
             }
             if (r) {
-                let imgBroken = (r.brokenFileUrl && r.brokenFileType?.startsWith('image/')) ? `<div class="img-box mt-2"><img src="${r.brokenFileUrl}"></div>` : '';
-                let imgFixed = (r.fixedFileUrl && r.fixedFileType?.startsWith('image/')) ? `<div class="img-box mt-2"><img src="${r.fixedFileUrl}"></div>` : '';
+                // รูปภาพจัดวางแบบ 2 คอลัมน์ (Grid)
+                let imagesHtml = '';
+                if (r.brokenFileUrl || r.fixedFileUrl) {
+                    imagesHtml = `<div class="image-grid">`;
+                    if (r.brokenFileUrl) imagesHtml += `<div class="img-item"><span class="img-tag">แจ้งเสีย</span><img src="${r.brokenFileUrl}"></div>`;
+                    if (r.fixedFileUrl) imagesHtml += `<div class="img-item"><span class="img-tag" style="color:#16a34a">ซ่อมเสร็จ</span><img src="${r.fixedFileUrl}"></div>`;
+                    imagesHtml += `</div>`;
+                }
 
                 tableContent += `
-                    <td class="text-center font-bold hist-text" style="vertical-align: middle;">${occurrenceNo}</td>
-                    <td class="text-center hist-text">
-                        <div style="font-weight:600; color:#1e293b;">${r.brokenDate || '-'}</div>
-                        <div style="font-size:10px; color:#94a3b8;">TO</div>
-                        <div style="font-weight:600; color:#1e293b;">${r.fixedDate || '<span class="urgent">PENDING</span>'}</div>
+                    <td class="text-center" style="font-weight:bold;">${records.length - i}</td>
+                    <td class="text-center font-bold" style="font-size:11px;">${r.brokenDate || '-'}<br>ถึง<br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
+                    <td class="desc-cell"><b>รายละเอียด:</b> ${r.description || '-'}<br><b>การแก้ไข:</b> ${r.solution || '-'}${imagesHtml}</td>
+                    <td class="text-left">
+                        <div class="cost-box"><b>Order:</b> ${r.orderNumber || '-'}</div>
+                        <div class="cost-box mt-1"><b>Cost:</b> <span class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '0'}</span></div>
                     </td>
-                    <td class="desc-cell"><div class="label-box">ISSUE</div>${r.description || '-'}${imgBroken}</td>
-                    <td class="desc-cell"><div class="label-box" style="background:#dcfce7; color:#166534;">SOLUTION</div>${r.solution || '-'}${imgFixed}</td>
-                    <td>
-                        <div class="meta-row"><span>Order No:</span> <strong>${r.orderNumber || '-'}</strong></div>
-                        <div class="meta-row" style="margin-top:5px;"><span>Cost:</span> <strong class="cost-text">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' THB' : '-'}</strong></div>
-                    </td>
-                    <td class="text-center user-cell font-bold">${r.user || '-'}</td>
+                    <td class="text-center user-cell">${r.user || '-'}</td>
                 `;
             } else {
-                tableContent += `<td colspan="6" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
+                tableContent += `<td colspan="5" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
             }
             tableContent += `</tr>`;
         }
@@ -896,44 +903,56 @@ window.printReport = async function() {
     
     const printWindow = window.open('', '', 'height=900,width=1400');
     printWindow.document.write(`
-        <html><head><title>Asset_Maintenance_Report</title>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+        <html><head>
+            <title>รายงานบำรุงรักษา_${siteData.name}_${now.toISOString().split('T')[0]}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { size: A4 landscape; margin: 8mm; }
-                body { font-family: 'Inter', 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 20px; background: #f8fafc; line-height: 1.5; }
-                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                @page { size: A4 landscape; margin: 10mm; }
+                body { font-family: 'Sarabun', sans-serif; color: #1e293b; background: #f8fafc; padding: 20px; }
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+                
+                .page-wrapper { background: white; padding: 30px; border-radius: 4px; max-width: 1250px; margin: auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+                
+                /* Header & Executive Summary */
+                .report-header { border-bottom: 3px solid #0f172a; padding-bottom: 10px; margin-bottom: 15px; }
+                .report-header h1 { margin: 0; font-size: 22px; color: #0f172a; }
+                .summary-grid { display: flex; gap: 20px; margin: 15px 0; }
+                .summary-card { flex: 1; background: #f1f5f9; padding: 10px; border-radius: 6px; border-left: 4px solid #0f172a; }
+                .summary-card small { font-size: 11px; color: #64748b; display: block; }
+                .summary-card b { font-size: 16px; color: #0f172a; }
 
-                .page-wrapper { background: white; padding: 30px; border-radius: 4px; max-width: 1300px; margin: auto; }
-                .report-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; }
-                .report-header h1 { margin: 0; font-size: 24px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
+                /* Table Styling */
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                th { background: #0f172a !important; color: white !important; padding: 10px; font-size: 12px; border: 1px solid #0f172a; }
+                td { padding: 10px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 12px; word-wrap: break-word; overflow-wrap: break-word; }
                 
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #e2e8f0; }
-                th { background: #0f172a !important; color: white !important; padding: 12px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #0f172a; }
-                td { padding: 12px 10px; border: 1px solid #e2e8f0; vertical-align: top; font-size: 12px; }
-                
+                /* ป้องกันแถวตารางแยกหน้า */
+                tr { page-break-inside: avoid; page-break-after: auto; }
                 .device-group-start td { border-top: 2.5px solid #0f172a; }
-                .col-no { width: 40px; background: #f1f5f9 !important; vertical-align: middle; font-size: 14px; }
-                .col-device { width: 190px; background: #f8fafc !important; }
                 
-                .brand-tag { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
-                .dev-title { font-size: 14px; font-weight: 700; color: #1e40af; margin-bottom: 6px; line-height: 1.2; }
-                .dev-specs { font-size: 10.5px; color: #475569; line-height: 1.4; }
-                .status-pill { font-size: 9px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-top: 10px; display: inline-block; }
+                .col-device { width: 160px; background: #f8fafc !important; }
+                .dev-title { font-weight: 700; color: #1e40af; font-size: 13px; margin-bottom: 5px; }
+                .dev-specs { font-size: 10px; color: #475569; line-height: 1.3; }
+                
+                .desc-cell { line-height: 1.5; text-align: left; }
+                
+                /* 2-Column Image Grid */
+                .image-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+                .img-item { border: 1px solid #e2e8f0; padding: 3px; border-radius: 4px; background: #fff; text-align: center; }
+                .img-tag { display: block; font-size: 9px; font-weight: bold; color: #ef4444; margin-bottom: 2px; }
+                .img-item img { width: 100%; height: 100px; object-fit: cover; border-radius: 2px; }
+
+                .cost-val { color: #c2410c; font-weight: 700; }
+                .status-pill { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-top: 5px; display: inline-block; }
                 .pill-ok { background: #dcfce7 !important; color: #15803d !important; }
                 .pill-down { background: #fee2e2 !important; color: #b91c1c !important; }
 
-                .label-box { font-size: 8px; font-weight: 800; background: #f1f5f9; color: #475569; padding: 1px 4px; border-radius: 2px; margin-bottom: 5px; width: fit-content; }
-                .desc-cell { line-height: 1.6; color: #1e293b; }
-                .img-box img { max-width: 100%; max-height: 120px; border-radius: 4px; margin-top: 8px; border: 1px solid #e2e8f0; }
-                
-                .meta-row { font-size: 11px; display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding-bottom: 2px; }
-                .cost-text { color: #c2410c !important; }
-                .user-cell { color: #64748b; font-size: 11px; vertical-align: middle; }
-                .urgent { color: #ef4444; font-weight: 700; text-decoration: underline; }
+                /* Signature Section */
+                .signature-section { margin-top: 40px; display: flex; justify-content: space-around; text-align: center; }
+                .sig-box { width: 250px; border-top: 1px solid #000; padding-top: 10px; font-size: 13px; }
 
                 .no-print-zone { text-align: center; margin-bottom: 20px; }
-                .btn-print { background: #0f172a; color: white; padding: 12px 30px; border-radius: 6px; border: none; cursor: pointer; font-weight: 700; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-                .btn-print:hover { background: #1e293b; }
+                .btn-print { background: #0f172a; color: white; padding: 10px 30px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
                 @media print {
                     body { background: white; padding: 0; }
@@ -945,36 +964,39 @@ window.printReport = async function() {
         </head>
         <body>
             <div class="no-print-zone">
-                <button class="btn-print" onclick="window.print()">🖨️ สั่งพิมพ์รายงานเพื่อนำเสนอ (Print to PDF)</button>
+                <button class="btn-print" onclick="window.print()">🖨️ ยืนยันการสั่งพิมพ์ (Save PDF)</button>
             </div>
             <div class="page-wrapper">
                 <div class="report-header">
-                    <div>
-                        <h1>Asset Maintenance Report</h1>
-                        <div style="font-size: 14px; font-weight: 600; color: #64748b; margin-top: 5px;">📍 SITE: ${siteData.name}</div>
-                    </div>
-                    <div style="text-align: right; font-size: 11px; color: #475569;">
-                        <b>PRINTED DATE:</b> ${printDate} | ${printTime}<br>
-                        <b>PREPARED BY:</b> ${currentUserFullName || 'ADMINISTRATOR'}
-                    </div>
+                    <h1>Asset Maintenance Report</h1>
+                    <div style="font-size:13px;"><b>โครงการ:</b> ${siteData.name}</div>
                 </div>
+
+                <div class="summary-grid">
+                    <div class="summary-card"><small>อุปกรณ์ทั้งหมด</small><b>${summary.totalDevices} ชิ้น</b></div>
+                    <div class="summary-card"><small>ชำรุดปัจจุบัน</small><b style="color:#ef4444">${summary.activeBroken} รายการ</b></div>
+                    <div class="summary-card"><small>งบประมาณซ่อมแซมรวม</small><b style="color:#c2410c">${summary.totalCost.toLocaleString()} THB</b></div>
+                    <div class="summary-card"><small>วันที่ออกเอกสาร</small><b>${printDate}</b></div>
+                </div>
+
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 40px;">No.</th>
-                            <th style="width: 190px;">Device Information</th>
-                            <th style="width: 40px;">Occ.</th>
-                            <th style="width: 100px;">Timeline</th>
-                            <th>Issue & Description</th>
-                            <th>Resolution & Evidence</th>
-                            <th style="width: 140px;">Order & Costing</th>
-                            <th style="width: 90px;">Recorded By</th>
+                            <th style="width: 35px;">ลำดับที่</th>
+                            <th style="width: 160px;">ข้อมูลทรัพย์สิน</th>
+                            <th style="width: 35px;">จำนวนครั้ง</th>
+                            <th style="width: 90px;">ช่วงเวลาดำเนินการ</th>
+                            <th>รายละเอียดการดำเนินงานและหลักฐานรูปภาพ</th>
+                            <th style="width: 130px;">เลขที่ใบสั่ง / งบประมาณ</th>
+                            <th style="width: 80px;">ผู้บันทึก</th>
                         </tr>
                     </thead>
                     <tbody>${tableContent}</tbody>
                 </table>
-                <div style="margin-top: 20px; text-align: center; font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
-                    © ${new Date().getFullYear()} Microgrid Asset Management System - Confidential Report
+
+                <div class="signature-section">
+                    <div class="sig-box">ผู้ออกรายงาน<br><br>( ${currentUserFullName || '..........................................'} )</div>
+                    <div class="sig-box">ผู้อนุมัติ / ผู้ตรวจสอบ<br><br>( .......................................... )</div>
                 </div>
             </div>
         </body></html>
@@ -988,6 +1010,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
