@@ -882,9 +882,9 @@ window.printReport = async function() {
 
                 tableContent += `
                     <td class="text-center font-bold hist-text">${occurrenceNo}</td>
-                    <td class="text-center hist-text">${r.brokenDate || '-'}<br>ถึง<br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
-                    <td class="text-left hist-text desc-cell"><b>ปัญหา:</b><br>${r.description || '-'}${imgBroken}</td>
-                    <td class="text-left hist-text desc-cell"><b>การแก้ไข:</b><br>${r.solution || '-'}${imgFixed}</td>
+                    <td class="text-center hist-text">${r.brokenDate || '-'}<br>To<br>${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
+                    <td class="text-left hist-text desc-cell"><b>:</b><br>${r.description || '-'}${imgBroken}</td>
+                    <td class="text-left hist-text desc-cell"><b>:</b><br>${r.solution || '-'}${imgFixed}</td>
                     <td class="text-left">${orderAndCost}</td>
                     <td class="text-center hist-text user-cell">${r.user || '-'}</td>
                 `;
@@ -988,6 +988,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
