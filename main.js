@@ -92,7 +92,7 @@ async function saveDeviceRecords(siteKey, device, records) {
     if (unresolvedIssues.some(r => r.status === 'down')) currentStatus = 'down';
     else if (unresolvedIssues.some(r => r.status === 'abnormal')) currentStatus = 'abnormal';
     
-    const downCount = records.filter(r => r.counted).length;
+   const downCount = records.length;
     await getSiteCollection(siteKey).doc(device).set({ records, downCount, currentStatus }, { merge: true });
 }
 
@@ -306,7 +306,7 @@ window.saveData = async function() {
         solution: document.getElementById('solution').value, 
         orderNumber: document.getElementById('orderNumber').value,
         repairCost: document.getElementById('repairCost').value,
-        ts: Date.now(), counted: (statusVal === 'down' || statusVal === 'abnormal') 
+       ts: Date.now(), counted: true 
     };
 
     if (editIndex >= 0) {
@@ -988,6 +988,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
