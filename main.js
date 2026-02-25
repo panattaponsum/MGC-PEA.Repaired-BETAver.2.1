@@ -815,123 +815,158 @@ window.startAutoLogoutTimer = function() {
     }, 1000);
 };
 window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
-
-// ฟังก์ชันสำหรับพิมพ์รายงาน PDF (ปรับปรุงรูปแบบให้สวยงามและแนบรูปในช่อง)
-window.printReport = function() {
-    const { jsPDF } = window.jspdf;
+window.printReport = async function() {
+    const siteData = sites[currentSiteKey];
+    const result = await Swal.fire({ 
+        title: 'เลือกประเภทรายงาน', 
+        input: 'radio', 
+        inputOptions: { 
+            'all': 'อุปกรณ์ทั้งหมด', 
+            'broken': 'เฉพาะอุปกรณ์ที่กำลังชำรุด/ผิดปกติ', 
+            'history_broken': 'อุปกรณ์ที่เคยชำรุด/ผิดปกติทั้งหมด' 
+        }, 
+        inputValidator: (value) => { if (!value) return 'กรุณาเลือกประเภทรายงาน'; }, 
+        showCancelButton: true, 
+        confirmButtonText: 'สร้างรายงาน', 
+        cancelButtonText: 'ยกเลิก' 
+    });
     
-    // ดึงข้อมูลแถวทั้งหมดจากตาราง
-    const table = document.getElementById('deviceTable');
-    if (!table) return;
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    if (!result.isConfirmed) return; 
+    const reportType = result.value;
 
-    // เตรียมข้อมูล HTML สำหรับแต่ละแถว
-    const tableContent = rows.map(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length < 6) return '';
+    Swal.fire({ title: 'กำลังสร้างรายงาน...', didOpen: () => { Swal.showLoading(); } });
+    
+    const docsSnap = await getSiteCollection(currentSiteKey).get(); 
+    const dataMap = {}; 
+    docsSnap.forEach(d => dataMap[d.id] = d.data());
+    
+    const now = new Date(); 
+    const printDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    const printTime = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    
+    let tableContent = ''; 
+    let itemNo = 1;
 
-        const deviceName = cells[0].innerText;
-        const statusText = cells[1].innerText;
-        const problemText = cells[2].innerText.split('\n')[0]; // เอาเฉพาะข้อความบรรทัดแรก
-        const repairText = cells[3].innerText.split('\n')[0];  // เอาเฉพาะข้อความบรรทัดแรก
-        const dateStr = cells[4].innerText;
-        const recorder = cells[5].innerText;
+    for (const dev of siteData.devices) {
+        const docData = dataMap[dev] || {}; 
+        let records = docData.records || []; 
+        records.sort((a, b) => b.ts - a.ts); 
+        const assetInfo = docData.assetInfo || {};
+        
+        const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
+        
+        if (reportType === 'broken' && !isCurrentlyDown) continue; 
+        if (reportType === 'history_broken' && records.length === 0) continue;
 
-        // ดึง URL รูปภาพจาก <img> tag ที่อยู่ในตาราง (ถ้ามี)
-        const problemImg = cells[2].querySelector('img');
-        const repairImg = cells[3].querySelector('img');
+        const rowSpan = records.length > 0 ? records.length : 1;
+        for (let i = 0; i < rowSpan; i++) {
+            const r = records[i]; 
+            const isFirst = (i === 0);
+            tableContent += `<tr class="${isFirst ? 'device-group-start' : ''}">`;
+            
+            if (isFirst) {
+                const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
+                tableContent += `
+                    <td rowspan="${rowSpan}" class="col-no">${itemNo++}</td>
+                    <td rowspan="${rowSpan}" class="col-device">
+                        <div class="dev-title">${dev}</div>
+                        <div class="dev-specs">S/N: ${assetInfo.serial || '-'}<br>PEA: ${assetInfo.peaNo || '-'}</div>
+                        <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">${isDown ? 'Requires Attention' : 'Operational'}</div>
+                    </td>`;
+            }
 
-        const problemImgHtml = problemImg ? `<div class="img-container"><img src="${problemImg.src}"></div>` : '';
-        const repairImgHtml = repairImg ? `<div class="img-container"><img src="${repairImg.src}"></div>` : '';
+            if (r) {
+                // แยกรูปภาพตามประเภท
+                let problemImg = (r.brokenFileUrl && r.brokenFileType && r.brokenFileType.startsWith('image/')) 
+                    ? `<div class="img-box"><span class="img-label">📸 รูปภาพปัญหา</span><img src="${r.brokenFileUrl}"></div>` : '';
+                
+                let repairImg = (r.fixedFileUrl && r.fixedFileType && r.fixedFileType.startsWith('image/')) 
+                    ? `<div class="img-box"><span class="img-label">📸 รูปภาพซ่อมแซม</span><img src="${r.fixedFileUrl}"></div>` : '';
 
-        const statusClass = statusText.includes('ปกติ') ? 'status-ok' : 'status-bad';
+                let costText = r.repairCost ? `<div class="meta-item"><b>ค่าใช้จ่าย:</b> ${Number(r.repairCost).toLocaleString()} บาท</div>` : '';
+                let orderText = r.orderNumber ? `<div class="meta-item"><b>เลขที่ใบสั่ง:</b> ${r.orderNumber}</div>` : '';
 
-        return `
-            <tr>
-                <td style="width: 15%;">${deviceName}</td>
-                <td style="width: 10%; text-align: center;">
-                    <span class="status-badge ${statusClass}">${statusText}</span>
-                </td>
-                <td style="width: 25%;">
-                    <div class="cell-text">${problemText}</div>
-                    ${problemImgHtml}
-                </td>
-                <td style="width: 25%;">
-                    <div class="cell-text">${repairText}</div>
-                    ${repairImgHtml}
-                </td>
-                <td style="width: 15%; text-align: center;">${dateStr}</td>
-                <td style="width: 10%; text-align: center;">${recorder}</td>
-            </tr>
-        `;
-    }).join('');
+                tableContent += `
+                    <td class="text-center">${r.brokenDate || '-'}</td>
+                    <td class="text-center">${r.fixedDate || '<span class="urgent">กำลังดำเนินการ</span>'}</td>
+                    <td class="desc-cell">
+                        <div class="text-content">${r.description || '-'}</div>
+                        ${problemImg}
+                    </td>
+                    <td class="desc-cell">
+                        ${costText}${orderText}
+                        <div class="text-content">${r.solution || '-'}</div>
+                        ${repairImg}
+                    </td>
+                    <td class="text-center">${r.user || '-'}</td>
+                `;
+            } else {
+                tableContent += `<td colspan="5" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
+            }
+            tableContent += `</tr>`;
+        }
+    }
 
-    const printWindow = window.open('', '_blank');
+    Swal.close();
+    if (tableContent === '') { Swal.fire('ไม่พบข้อมูล', 'ไม่มีอุปกรณ์ตามเงื่อนไขที่เลือก', 'info'); return; }
+
+    const printWindow = window.open('', '', 'height=900,width=1300');
     printWindow.document.write(`
-        <html>
-        <head>
-            <title>รายงานสถานะอุปกรณ์ - ${sites[currentSiteKey].name}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+        <html><head><title>Maintenance_Report</title>
+            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
-                body { font-family: 'Sarabun', sans-serif; padding: 40px; color: #333; background: #fff; }
-                .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #0056b3; padding-bottom: 15px; }
-                .header h1 { margin: 0; color: #0056b3; font-size: 26px; }
-                .header p { margin: 5px 0; color: #555; font-size: 16px; }
+                @page { size: A4 landscape; margin: 10mm; }
+                body { font-family: 'Sarabun', sans-serif; color: #1e293b; margin: 0; padding: 20px; }
+                .report-header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #0f172a; padding-bottom: 10px; }
+                .report-header h1 { margin: 0; font-size: 22px; color: #0f172a; }
+                .meta-data { display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; }
                 
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 20px; }
-                th { background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; font-weight: bold; text-align: center; font-size: 14px; }
-                td { border: 1px solid #dee2e6; padding: 10px; vertical-align: top; font-size: 14px; word-wrap: break-word; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                th { background: #f1f5f9; padding: 10px; border: 1px solid #cbd5e1; font-size: 13px; }
+                td { padding: 8px; border: 1px solid #cbd5e1; vertical-align: top; font-size: 12px; word-wrap: break-word; }
                 
-                .status-badge { padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; display: inline-block; }
-                .status-ok { background: #e6fffa; color: #047481; border: 1px solid #b2f5ea; }
-                .status-bad { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+                .device-group-start td { border-top: 2px solid #0f172a; }
+                .dev-title { font-weight: bold; color: #1e40af; font-size: 14px; }
+                .status-pill { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-top: 5px; display: inline-block; }
+                .pill-ok { background: #dcfce7; color: #166534; }
+                .pill-down { background: #fee2e2; color: #991b1b; }
                 
-                .img-container { margin-top: 8px; text-align: center; }
-                .img-container img { max-width: 100%; max-height: 120px; border-radius: 4px; border: 1px solid #eee; }
-                .cell-text { margin-bottom: 5px; font-weight: 500; }
-
-                .footer { margin-top: 30px; text-align: right; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px; }
+                .desc-cell { line-height: 1.4; }
+                .text-content { margin-bottom: 8px; white-space: pre-wrap; }
+                .img-box { margin-top: 5px; border: 1px solid #e2e8f0; padding: 4px; border-radius: 4px; background: #fff; text-align: center; }
+                .img-label { display: block; font-size: 9px; color: #64748b; margin-bottom: 3px; font-weight: bold; }
+                .img-box img { max-width: 100%; max-height: 150px; object-fit: contain; }
                 
-                @media print {
-                    @page { size: landscape; margin: 10mm; }
-                    body { padding: 0; }
-                }
+                .text-center { text-align: center; }
+                .urgent { color: #e11d48; font-weight: bold; }
+                .meta-item { font-size: 11px; margin-bottom: 3px; background: #f8fafc; padding: 2px 4px; border-radius: 2px; }
+                
+                @media print { body { padding: 0; } .report-header { border-bottom-color: #000; } }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>รายงานสรุปสถานะอุปกรณ์และรายการซ่อมบำรุง</h1>
-                <p>📍 สถานที่: ${sites[currentSiteKey].name}</p>
-                <p>📅 ข้อมูล ณ วันที่: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <div class="report-header">
+                <h1>รายงานประวัติการบำรุงรักษาอุปกรณ์ (Maintenance Report)</h1>
+                <div class="meta-data">
+                    <span><b>โครงการ:</b> ${siteData.name}</span>
+                    <span><b>พิมพ์เมื่อ:</b> ${printDate} ${printTime}</span>
+                </div>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 15%;">ชื่ออุปกรณ์</th>
-                        <th style="width: 10%;">สถานะ</th>
-                        <th style="width: 25%;">รายละเอียดปัญหา / รูปภาพ</th>
-                        <th style="width: 25%;">วิธีการแก้ไข / รูปภาพ</th>
-                        <th style="width: 15%;">วันที่บันทึก</th>
-                        <th style="width: 10%;">ผู้บันทึก</th>
+                        <th style="width: 40px;">No.</th>
+                        <th style="width: 180px;">อุปกรณ์</th>
+                        <th style="width: 90px;">วันที่พบปัญหา</th>
+                        <th style="width: 90px;">วันที่ซ่อมเสร็จ</th>
+                        <th>รายละเอียดปัญหา</th>
+                        <th style="width: 300px;">รายละเอียดการซ่อมแซม</th>
+                        <th style="width: 100px;">ผู้บันทึก</th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${tableContent}
-                </tbody>
+                <tbody>${tableContent}</tbody>
             </table>
-            <div class="footer">
-                พิมพ์โดยระบบ Microgrid Asset Management System | เมื่อ: ${new Date().toLocaleString('th-TH')}
-            </div>
-            <script>
-                window.onload = () => {
-                    setTimeout(() => { 
-                        window.print(); 
-                        window.close();
-                    }, 1000);
-                };
-            </script>
-        </body>
-        </html>
+        </body></html>
     `);
     printWindow.document.close();
 };
@@ -942,5 +977,6 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
