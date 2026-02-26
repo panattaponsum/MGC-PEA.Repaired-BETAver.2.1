@@ -826,8 +826,7 @@ window.printReport = async function() {
             'broken': '2. เฉพาะอุปกรณ์ที่กำลังเสียหาย', 
             'history': '3. เฉพาะอุปกรณ์ที่มีประวัติเสียหาย' 
         },
-        inputValidator: (value) => { if (!value) return 'กรุณาเลือกประเภทรายงาน'; },
-        showCancelButton: true, confirmButtonText: 'เตรียมรายงาน', cancelButtonText: 'ยกเลิก'
+        showCancelButton: true, confirmButtonText: 'เตรียมรายงาน'
     });
 
     if (!result.isConfirmed) return;
@@ -843,7 +842,7 @@ window.printReport = async function() {
     const printDate = now.toISOString().split('T')[0]; 
     const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    let tableBodyHtml = '';
+    let tableRowsHtml = '';
     let itemNo = 1;
 
     for (const dev of siteData.devices) {
@@ -852,61 +851,53 @@ window.printReport = async function() {
         records.sort((a, b) => b.ts - a.ts); 
         
         const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '-' || r.fixedDate === 'null'));
-        const hasHistory = records.length > 0;
-
         if (reportType === 'broken' && !isCurrentlyDown) continue;
-        if (reportType === 'history' && !hasHistory) continue;
+        if (reportType === 'history' && records.length === 0) continue;
 
         const assetInfo = docData.assetInfo || {};
         const rowSpan = records.length > 0 ? records.length : 1;
 
-        // แยก tbody สำหรับแต่ละอุปกรณ์ เพื่อช่วยเบราว์เซอร์จัดการเรื่อง vertical-align และการตัดหน้า
-        tableBodyHtml += `<tbody style="page-break-inside: auto;">`;
         for (let i = 0; i < rowSpan; i++) {
             const r = records[i];
-            const isFirst = (i === 0);
+            const isFirstInGroup = (i === 0);
             const occurrenceNo = r ? (records.length - i) : '-';
 
-            tableBodyHtml += `<tr style="page-break-inside: avoid;">`;
-            if (isFirst) {
-                tableBodyHtml += `
-                    <td rowspan="${rowSpan}" class="col-device">
-                        <div class="dev-container">
-                            <div class="item-no-circle">${itemNo++}</div>
-                            <div class="dev-title">${dev}</div>
-                            <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
-                            <div class="dev-specs">
-                                <b>S/N:</b> ${assetInfo.serial || '-'}<br>
-                                <b>M/D:</b> ${assetInfo.model || '-'}<br>
-                                <b>PEA:</b> ${assetInfo.peaNo || '-'}
-                            </div>
-                        </div>
-                    </td>
-                `;
-            }
+            // ใช้คลาสพิเศษ device-row เพื่อควบคุมการแสดงผลชื่ออุปกรณ์ในทุกบรรทัด (ป้องกันการหายเมื่อขึ้นหน้าใหม่)
+            tableRowsHtml += `<tr class="${isFirstInGroup ? 'first-row' : 'sub-row'}">`;
+            
+            // คอลัมน์ข้อมูลอุปกรณ์ (แสดงทุกบรรทัดแต่บรรทัดที่ 2 เป็นต้นไปจะจางลง หรือแสดงซ้ำเพื่อกันพลาดเวลาตัดหน้า)
+            tableRowsHtml += `
+                <td class="col-device">
+                    <div class="dev-box">
+                        ${isFirstInGroup ? `<div class="item-no">${itemNo++}</div>` : ''}
+                        <div class="dev-name">${dev}</div>
+                        <div class="dev-sub">${assetInfo.manufacturer || ''} ${assetInfo.model || ''}</div>
+                        <div class="dev-sub">S/N: ${assetInfo.serial || '-'} | PEA: ${assetInfo.peaNo || '-'}</div>
+                    </div>
+                </td>
+            `;
 
             if (r) {
                 let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>` : '';
                 let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>` : '';
 
-                tableBodyHtml += `
-                    <td class="text-center font-bold" style="width: 35px;">${occurrenceNo}</td>
-                    <td class="text-center" style="width: 75px;">${r.brokenDate || '-'}</td>
-                    <td class="text-center" style="width: 75px;">${r.fixedDate || '<span style="color:red; font-weight:bold;">PENDING</span>'}</td>
+                tableRowsHtml += `
+                    <td class="text-center w-occ">${occurrenceNo}</td>
+                    <td class="text-center w-date">${r.brokenDate || '-'}</td>
+                    <td class="text-center w-date">${r.fixedDate || '<b style="color:red">PENDING</b>'}</td>
                     <td class="text-left desc-cell">${r.description || '-'}${imgBroken}</td>
                     <td class="text-left desc-cell">${r.solution || '-'}${imgFixed}</td>
-                    <td class="text-left" style="width: 110px;">
-                        <div class="cost-row"><span>O:</span> <b>${r.orderNumber || '-'}</b></div>
-                        <div class="cost-row" style="margin-top:3px;"><span>C:</span> <b style="color:#c2410c;">${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</b></div>
+                    <td class="text-left w-cost">
+                        <div>O: <b>${r.orderNumber || '-'}</b></div>
+                        <div style="color:#c2410c">C: <b>${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</b></div>
                     </td>
-                    <td class="text-center user-cell" style="width: 90px;">${r.user ? r.user.split('@')[0] : '-'}</td>
+                    <td class="text-center w-user">${r.user ? r.user.split('@')[0] : '-'}</td>
                 `;
             } else {
-                tableBodyHtml += `<td colspan="7" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
+                tableRowsHtml += `<td colspan="7" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
             }
-            tableBodyHtml += `</tr>`;
+            tableRowsHtml += `</tr>`;
         }
-        tableBodyHtml += `</tbody>`;
     }
 
     Swal.close();
@@ -915,71 +906,74 @@ window.printReport = async function() {
     printWindow.document.write(`
         <html>
         <head>
-            <title>MAINTENANCE_LOG_${siteData.name}</title>
+            <title>REPORT_${siteData.name}</title>
             <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
                 @page { size: A4 landscape; margin: 0.21in; }
-                body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+                body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; }
                 
-                .main-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; }
+                /* บังคับความกว้างตารางและคอลัมน์ */
+                .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; }
+                
+                /* Header ปรากฏทุกหน้า */
                 thead { display: table-header-group; }
+                .report-header-bg { background: #0f172a; color: white; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
+                
+                th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 6px; font-size: 11px; text-align: center; }
+                td { border: 1px solid #000; padding: 4px 6px; font-size: 10px; vertical-align: middle; word-wrap: break-word; }
+
+                /* คอลัมน์ที่ระบุขนาดเป๊ะๆ */
+                .col-device { width: 170px; text-align: center; background: #f8fafc; }
+                .w-occ { width: 35px; }
+                .w-date { width: 75px; }
+                .w-cost { width: 110px; }
+                .w-user { width: 90px; }
+
+                /* จัดการชื่ออุปกรณ์ */
+                .dev-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 40px; }
+                .item-no { background: #000; color: #fff; width: 16px; height: 16px; border-radius: 50%; font-size: 9px; line-height: 16px; margin-bottom: 3px; }
+                .dev-name { font-weight: 700; color: #1e40af; font-size: 11px; line-height: 1.2; }
+                .dev-sub { font-size: 8px; color: #64748b; line-height: 1.1; }
+
+                /* บรรทัดย่อย (กรณีมีประวัติเยอะ) */
+                .sub-row .item-no { display: none; }
+                .sub-row .dev-name, .sub-row .dev-sub { opacity: 0.4; } /* ให้จางลงในบรรทัดย่อย แต่ถ้าขึ้นหน้าใหม่จะยังเห็นว่าคืออุปกรณ์อะไร */
+
+                /* Footer (ลงนาม) */
                 tfoot { display: table-footer-group; }
+                .sig-wrapper { padding-top: 50px; border: none; }
+                .sig-container { display: flex; justify-content: center; gap: 150px; }
+                .sig-box { text-align: center; width: 220px; }
+                .sig-line { border-bottom: 1px solid #000; height: 40px; margin-bottom: 10px; }
 
-                /* Header Styling */
-                .report-header { background: #0f172a; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
-                
-                th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 8px 2px; font-size: 11px; text-align: center; }
-                td { border: 1px solid #000; padding: 5px; font-size: 10px; word-wrap: break-word; vertical-align: top; }
-
-                /* Device Column - กึ่งกลางแนวตั้ง */
-                .col-device { width: 170px; vertical-align: middle !important; text-align: center; background: #f8fafc; }
-                .dev-container { display: inline-block; width: 100%; }
-                .item-no-circle { background: #0f172a; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; line-height: 18px; margin: 0 auto 5px auto; }
-                .dev-title { font-weight: 700; color: #1e40af; font-size: 12px; margin-bottom: 2px; }
-                .brand-tag { font-size: 8px; background: #e2e8f0; padding: 1px 5px; border-radius: 3px; border: 0.5px solid #94a3b8; display: inline-block; margin-bottom: 5px; }
-                .dev-specs { font-size: 8.5px; text-align: left; line-height: 1.3; border-top: 1px solid #cbd5e1; padding-top: 4px; width: 90%; margin: 0 auto; }
-
-                /* Footer Signature Area */
-                .footer-wrapper { padding-top: 40px; border: none !important; }
-                .sig-area { display: flex; justify-content: center; gap: 150px; border: none; }
-                .sig-box { text-align: center; border: none; width: 250px; }
-                .sig-line { border-bottom: 1px solid #000; width: 100%; height: 35px; margin-bottom: 15px; }
-                
-                /* Utils */
-                .text-center { text-align: center; }
-                .text-left { text-align: left; }
-                .font-bold { font-weight: bold; }
-                .desc-cell { line-height: 1.4; white-space: pre-wrap; font-size: 9.5px; }
-                .img-wrap { margin-top: 5px; border: 1px solid #000; padding: 1px; }
-                .img-wrap img { width: 100%; height: 70px; object-fit: cover; display: block; }
-                .cost-row { display: flex; justify-content: space-between; font-size: 9px; }
-                .user-cell { font-weight: bold; white-space: nowrap; font-size: 9px; }
+                .img-wrap { margin-top: 4px; border: 1px solid #ddd; }
+                .img-wrap img { width: 100%; height: 60px; object-fit: cover; }
+                .desc-cell { vertical-align: top; padding-top: 8px; line-height: 1.3; }
 
                 @media print {
                     .no-print { display: none; }
-                    /* บังคับทำซ้ำ Header เมื่อขึ้นหน้าใหม่ */
+                    tr { page-break-inside: avoid; }
                     thead { display: table-header-group; }
                 }
             </style>
         </head>
         <body>
-            <div class="no-print" style="background:#f1f5f9; padding:15px; text-align:center; border-bottom:1px solid #cbd5e1;">
-                <button onclick="window.print()" style="padding:10px 30px; font-weight:bold; cursor:pointer; background:#0f172a; color:white; border:none; border-radius:5px; font-family:'Sarabun';">พิมพ์รายงาน หรือ บันทึกเป็น PDF</button>
-                <p style="margin:5px 0 0 0; font-size:11px; color:#64748b;">* ตรวจสอบความถูกต้องก่อนกดพิมพ์ </p>
+            <div class="no-print" style="background:#334155; padding:10px; text-align:center;">
+                <button onclick="window.print()" style="padding:10px 20px; font-weight:bold; cursor:pointer; background:#fff; border-radius:4px;">ตรวจสอบแล้ว สั่งพิมพ์/บันทึก PDF</button>
             </div>
 
-            <table class="main-table">
+            <table class="report-table">
                 <thead>
                     <tr>
                         <td colspan="8" style="border:none; padding:0;">
-                            <div class="report-header">
+                            <div class="report-header-bg">
                                 <div>
-                                    <h1 style="margin:0; font-size:18px; letter-spacing:1px;">ASSET MAINTENANCE REPORT</h1>
-                                    <div style="font-size:11px; opacity:0.9;">SITE: ${siteData.name}</div>
+                                    <h1 style="margin:0; font-size:16px;">ASSET MAINTENANCE LOG</h1>
+                                    <div style="font-size:10px;">โครงการ: ${siteData.name}</div>
                                 </div>
                                 <div style="text-align:right; font-size:9px;">
-                                    PRINTED: ${printDate} ${printTime}<br>
-                                    ISSUED BY: ${currentUserFullName || 'ADMIN'}
+                                    พิมพ์เมื่อ: ${printDate} ${printTime}<br>
+                                    โดย: ${currentUserFullName || 'Admin'}
                                 </div>
                             </div>
                         </td>
@@ -995,23 +989,23 @@ window.printReport = async function() {
                         <th style="width: 90px;">Recorded By</th>
                     </tr>
                 </thead>
-                
-                ${tableBodyHtml}
-
+                <tbody>
+                    ${tableRowsHtml}
+                </tbody>
                 <tfoot>
                     <tr>
                         <td colspan="8" style="border:none;">
-                            <div class="footer-wrapper">
-                                <div class="sig-area">
+                            <div class="sig-wrapper">
+                                <div class="sig-container">
                                     <div class="sig-box">
                                         <div class="sig-line"></div>
-                                        <div style="font-weight:bold; font-size:12px;">( ${currentUserFullName || '...........................................'} )</div>
-                                        <div style="font-size: 10px; margin-top: 5px; color: #475569;">ผู้จัดทำ (Prepared By)</div>
+                                        <div style="font-weight:bold; font-size:11px;">( ${currentUserFullName || '...........................................'} )</div>
+                                        <div style="font-size: 9px; margin-top: 3px;">ผู้จัดทำรายงาน</div>
                                     </div>
                                     <div class="sig-box">
                                         <div class="sig-line"></div>
-                                        <div style="font-weight:bold; font-size:12px;">( ............................................... )</div>
-                                        <div style="font-size: 10px; margin-top: 5px; color: #475569;">ผู้อนุมัติ (Approved By)</div>
+                                        <div style="font-weight:bold; font-size:11px;">( ...................................................... )</div>
+                                        <div style="font-size: 9px; margin-top: 3px;">ผู้อนุมัติ / ตรวจสอบ</div>
                                     </div>
                                 </div>
                             </div>
@@ -1031,6 +1025,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
