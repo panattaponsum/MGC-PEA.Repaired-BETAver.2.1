@@ -889,10 +889,10 @@ window.printReport = async function() {
                             <b>S/N:</b> ${assetInfo.serial || '-'}<br>
                             <b>Model:</b> ${assetInfo.model || '-'}<br>
                             <b>PEA No.:</b> ${assetInfo.peaNo || '-'}<br>
-                            <b>Price:</b> ${assetInfo.Price || '-'}<br>
-                             <b>Warranty:</b><br> ${assetInfo.WarrantyStart || '-'}<br>
-                             ${assetInfo.WarrantyEnd || '-'}<br>
-                             ${assetInfo.WarrantyStatus || '-'}
+                            <b>Price:</b> ${assetInfo.price || '-'}<br>
+                             <b>Warranty:</b><br> ${assetInfo.warrantyStart || '-'}<br>
+                             ${assetInfo.warrantyEnd || '-'}<br>
+                             ${assetInfo.warrantyStatusText || '-'}
                         </div>
                     </td>
                 `;
@@ -1114,6 +1114,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
