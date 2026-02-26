@@ -827,7 +827,7 @@ window.onload = function() { try { imageMapResize(); } catch (e) {} };
 
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
-    
+    const warrantyText = row[8];
     const result = await Swal.fire({
         title: 'ตั้งค่าการออกรายงาน',
         input: 'radio',
@@ -892,7 +892,7 @@ window.printReport = async function() {
                             <b>Price:</b> ${assetInfo.price || '-'}<br>
                              <b>Warranty:</b><br> ${assetInfo.warrantyStart || '-'}<br>
                              ${assetInfo.warrantyEnd || '-'}<br>
-                             ${warrantyStatusText || '-'}
+                            <td class="text-center">${assetInfo.warrantyStatusText || '-'}</td>
                         </div>
                     </td>
                 `;
@@ -1114,6 +1114,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
