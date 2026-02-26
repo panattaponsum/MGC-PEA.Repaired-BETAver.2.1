@@ -887,8 +887,11 @@ window.printReport = async function() {
                         <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
                         <div class="dev-specs">
                             <b>S/N:</b> ${assetInfo.serial || '-'}<br>
-                            <b>M/D:</b> ${assetInfo.model || '-'}<br>
-                            <b>PEA:</b> ${assetInfo.peaNo || '-'}
+                            <b>Model:</b> ${assetInfo.model || '-'}<br>
+                            <b>PEA No.:</b> ${assetInfo.peaNo || '-'}<br>
+                            <b>Price:</b> ${assetInfo.Price || '-'}<br>
+                             <b>Warranty:</b><br> ${assetInfo.WarrantyStart || '-'}<To>${assetInfo.WarrantyEnd || '-'}<br>
+                             ${assetInfo.WarrantyStatus || '-'}
                         </div>
                     </td>
                 `;
@@ -1110,6 +1113,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
