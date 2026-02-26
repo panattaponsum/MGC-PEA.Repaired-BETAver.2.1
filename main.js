@@ -687,11 +687,11 @@ window.importData = function(event) {
                 const assetRawData = XLSX.utils.sheet_to_json(wsAssets, { header: 1 });
                 if (assetRawData.length >= 2) { 
                     const headers = assetRawData[0];
-                    const headerMap = { 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 'Serial Number': headers.indexOf('Serial Number'), 'Model': headers.indexOf('Model'), 'PEA No.': headers.indexOf('PEA No.'), 'ราคา': headers.indexOf('ราคา'), 'Manufacturer': headers.indexOf('Manufacturer'), 'วันที่เริ่มประกัน': headers.indexOf('วันที่เริ่มประกัน'), 'วันที่หมดประกัน': headers.indexOf('วันที่หมดประกัน') };
+                    const headerMap = { 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 'Serial Number': headers.indexOf('Serial Number'), 'Model': headers.indexOf('Model'), 'PEA No.': headers.indexOf('PEA No.'), 'ราคาซื้อ': headers.indexOf('ราคาซื้อ'), 'Manufacturer': headers.indexOf('Manufacturer'), 'วันที่เริ่มประกัน': headers.indexOf('วันที่เริ่มประกัน'), 'วันที่หมดประกัน': headers.indexOf('วันที่หมดประกัน') };
                     if (headerMap['ชื่ออุปกรณ์'] !== -1) {
                         for (let i = 1; i < assetRawData.length; i++) {
                             const row = assetRawData[i]; const deviceName = row[headerMap['ชื่ออุปกรณ์']]; if (!deviceName) continue;
-                            assetsToImport.push({ deviceName, assetInfo: { serial: row[headerMap['Serial Number']] || '', model: row[headerMap['Model']] || '', peaNo: (headerMap['PEA No.'] !== -1) ? (row[headerMap['PEA No.']] || '') : '', price: (headerMap['ราคา'] !== -1) ? (row[headerMap['ราคา']] || '') : '', manufacturer: row[headerMap['Manufacturer']] || '', warrantyStart: cleanDate(row[headerMap['วันที่เริ่มประกัน']]), warrantyEnd: cleanDate(row[headerMap['วันที่หมดประกัน']]) } });
+                            assetsToImport.push({ deviceName, assetInfo: { serial: row[headerMap['Serial Number']] || '', model: row[headerMap['Model']] || '', peaNo: (headerMap['PEA No.'] !== -1) ? (row[headerMap['PEA No.']] || '') : '', price: (headerMap['ราคาซื้อ'] !== -1) ? (row[headerMap['ราคาซื้อ']] || '') : '', manufacturer: row[headerMap['Manufacturer']] || '', warrantyStart: cleanDate(row[headerMap['วันที่เริ่มประกัน']]), warrantyEnd: cleanDate(row[headerMap['วันที่หมดประกัน']]) } });
                         }
                     }
                 }
@@ -1114,6 +1114,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
