@@ -833,11 +833,7 @@ window.printReport = async function() {
     if (!result.isConfirmed) return;
     const reportType = result.value;
 
-    Swal.fire({
-        title: 'กำลังจัดเตรียมข้อมูล...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-    });
+    Swal.fire({ title: 'กำลังจัดเตรียมข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {};
@@ -874,18 +870,18 @@ window.printReport = async function() {
             if (isFirst) {
                 const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
                 tableContent += `
-                    <td rowspan="${rowSpan}" class="col-no text-center">${itemNo++}</td>
                     <td rowspan="${rowSpan}" class="col-device">
                         <div class="dev-info-container">
+                            <div class="item-no-circle">${itemNo++}</div>
                             <div class="dev-title">${dev}</div>
+                            <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
                             <div class="dev-specs">
-                                <b>Manufacturer:</b> ${assetInfo.manufacturer || '-'}<br>
                                 <b>S/N:</b> ${assetInfo.serial || '-'}<br>
                                 <b>Model:</b> ${assetInfo.model || '-'}<br>
                                 <b>PEA:</b> ${assetInfo.peaNo || '-'}
                             </div>
                             <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">
-                                ${isDown ? '● REQUIRES ATTENTION' : '● OPERATIONAL'}
+                                ${isDown ? '● DOWN' : '● OK'}
                             </div>
                         </div>
                     </td>
@@ -922,114 +918,77 @@ window.printReport = async function() {
         <html>
         <head>
             <title>REPORT_${siteData.name}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { 
-                    size: A4 landscape; 
-                    margin: 0.21in; 
-                }
-                body { 
-                    font-family: 'Inter', 'Sarabun', sans-serif; 
-                    color: #0f172a; 
-                    margin: 0; 
-                    padding-bottom: 100px; /* เว้นพื้นที่ให้ footer */
-                    counter-reset: page; 
-                }
+                @page { size: A4 landscape; margin: 0.21in; }
+                body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; counter-reset: page; }
                 
-                /* Header */
-                .report-header { display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: white; padding: 15px 20px; border-radius: 4px; margin-bottom: 10px; }
-                .report-header h1 { margin: 0; font-size: 18px; text-transform: uppercase; font-weight: 700; }
-                .header-meta { text-align: right; font-size: 10px; opacity: 0.9; }
+                /* ใช้ระบบ Table Layout เพื่อแก้ปัญหาการทับกัน */
+                .main-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                
+                /* Header ของตารางที่จะปรากฏทุกหน้า */
+                thead { display: table-header-group; }
+                /* Footer ของตารางที่จะปรากฏทุกหน้า */
+                tfoot { display: table-footer-group; }
 
-                /* Table */
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; }
-                th { background: #1e293b !important; color: white !important; padding: 8px 4px; font-size: 11px; border: 1px solid #000; }
-                td { padding: 5px; border: 1px solid #000; vertical-align: middle; font-size: 10.5px; word-wrap: break-word; }
+                .header-content { background: #0f172a; color: white; padding: 15px; border-radius: 5px 5px 0 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
                 
-                /* จัดการการตัดหน้า */
-                tr { page-break-inside: auto; }
-                td { page-break-inside: avoid; }
+                th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 8px; font-size: 11px; }
+                td { border: 1px solid #000; padding: 6px; font-size: 11px; vertical-align: middle; word-wrap: break-word; }
+                
+                /* แก้ปัญหาชื่ออุปกรณ์กึ่งกลาง */
+                .col-device { width: 170px; background: #f8fafc; vertical-align: middle; }
+                .dev-info-container { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+                .item-no-circle { background: #0f172a; color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; line-height: 20px; margin-bottom: 5px; }
+                .dev-title { font-weight: 700; color: #1e40af; font-size: 13px; margin-bottom: 2px; }
+                .brand-tag { font-size: 9px; background: #e2e8f0; padding: 1px 5px; border-radius: 3px; margin-bottom: 4px; border: 0.5px solid #94a3b8; }
+                .dev-specs { font-size: 9px; text-align: left; line-height: 1.3; border-top: 1px solid #cbd5e1; padding-top: 3px; }
+
+                /* ส่วนลงนาม (Footer Group) */
+                .footer-wrapper { padding-top: 20px; }
+                .sig-area { display: flex; justify-content: center; gap: 120px; margin-bottom: 10px; }
+                .sig-box { text-align: center; }
+                .sig-line { border-bottom: 1px solid #000; width: 220px; margin-bottom: 12px; height: 30px; }
+                
+                /* เลขหน้าแก้ไขใหม่ */
+                .page-number-box { text-align: right; font-size: 10px; font-weight: bold; padding-top: 5px; }
+                .page-number-box::after { content: "หน้า " counter(page) " / " counter(pages); }
+
+                .img-wrap { margin-top: 5px; border: 1px solid #000; padding: 1px; }
+                .img-wrap img { width: 100%; height: 75px; object-fit: cover; display: block; }
                 .device-group-start td { border-top: 2.5px solid #000; }
-
-                /* ชื่ออุปกรณ์กึ่งกลางแนวตั้ง */
-                .dev-info-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
-                .col-device { width: 160px; vertical-align: middle !important; background: #f8fafc; }
-                .dev-title { font-size: 13px; font-weight: 700; color: #1e40af; margin-bottom: 4px; line-height: 1.2; }
                 
-                .brand-tag { font-size: 9px; font-weight: 700; background: #e2e8f0; padding: 2px 5px; border-radius: 3px; margin-bottom: 5px; color: #475569; border: 0.5px solid #94a3b8; }
-                .dev-specs { font-size: 9px; color: #475569; line-height: 1.3; text-align: left; width: 90%; border-top: 1px solid #cbd5e1; padding-top: 3px; }
-                
-                .status-pill { margin-top: 5px; font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 1px solid #000; }
-                .pill-ok { background: #dcfce7; } .pill-down { background: #fee2e2; }
-                
-                /* รูปภาพ */
-                .img-wrap { margin-top: 5px; border: 1px solid #000; padding: 1px; background: #fff; }
-                .img-wrap img { width: 100%; height: 70px; object-fit: cover; display: block; }
-                
-                .cost-row { display: flex; justify-content: space-between; font-size: 10px; }
-                .user-cell { white-space: nowrap; font-weight: 600; }
-
-                /* Footer: ลายเซ็นอยู่กึ่งกลาง */
-                .fixed-footer {
-                    position: fixed;
-                    bottom: 0.21in;
-                    left: 0;
-                    width: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    z-index: 1000;
-                    background: white;
-                }
-                .sig-wrapper {
-                    display: flex;
-                    justify-content: center;
-                    gap: 100px;
-                    width: 100%;
-                    padding-bottom: 10px;
-                }
-                .sig-box { text-align: center; font-size: 11px; }
-                .sig-line { border-bottom: 1px solid #000; width: 200px; margin-bottom: 15px; } /* เว้นช่องว่างระหว่างเส้นกับชื่อมากขึ้น */
-                
-                .page-number-box {
-                    width: 100%;
-                    text-align: right;
-                    padding-right: 0.21in;
-                    font-size: 10px;
-                    font-weight: 700;
-                }
-                .page-number-box:after {
-                    content: "หน้า " counter(page) " / " counter(pages);
-                }
-
                 @media print {
-                    body { -webkit-print-color-adjust: exact; }
-                    thead { display: table-header-group; }
                     .no-print { display: none; }
+                    tr { page-break-inside: avoid; }
+                    /* แก้ไข Chrome Bug สำหรับ counter-pages */
+                    body { -webkit-print-color-adjust: exact; }
                 }
             </style>
         </head>
         <body>
-            <div class="no-print" style="background:#f1f5f9; padding:10px; text-align:center; border-bottom:1px solid #cbd5e1;">
-                <button onclick="window.print()" style="padding:8px 20px; cursor:pointer; font-weight:bold; background:#0f172a; color:white; border-radius:4px; border:none;">คลิกเพื่อสั่งพิมพ์ / บันทึกเป็น PDF</button>
+            <div class="no-print" style="background:#eee; padding:10px; text-align:center;">
+                <button onclick="window.print()" style="padding:10px 25px; font-weight:bold; cursor:pointer;">กดที่นี่เพื่อพิมพ์รายงาน</button>
             </div>
 
-            <div class="page-wrapper">
-                <div class="report-header">
-                    <div>
-                        <h1>Asset Maintenance Report</h1>
-                        <div class="site-name">PROJECT: ${siteData.name}</div>
-                    </div>
-                    <div class="header-meta">
-                        PRINTED: ${printDate} | ${printTime}<br>
-                        OPERATOR: ${currentUserFullName || 'ADMIN'}
-                    </div>
-                </div>
-                
-                <table>
-                    <thead>
-                        <tr>
-                             <th style="width: 30px;">No.</th>
+            <table class="main-table">
+                <thead>
+                    <tr>
+                        <td colspan="9" style="border:none; padding:0;">
+                            <div class="header-content">
+                                <div>
+                                    <h1 style="margin:0; font-size:18px;">Asset Maintenance Report</h1>
+                                    <div style="font-size:12px;">โครงการ: ${siteData.name}</div>
+                                </div>
+                                <div style="text-align:right; font-size:10px;">
+                                    วันที่ออกรายงาน: ${printDate} ${printTime}<br>
+                                    ผู้ออกรายงาน: ${currentUserFullName || 'ADMIN'}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                            <th style="width: 30px;">No.</th>
                             <th style="width: 170px;">Device & Specs</th>
                             <th style="width: 35px;">Occ.</th>
                             <th style="width: 75px;">Down Date</th>
@@ -1038,29 +997,35 @@ window.printReport = async function() {
                             <th>Solution</th>
                             <th style="width: 110px;">Order & Cost</th>
                             <th style="width: 90px;">Recorded By</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableContent}
-                    </tbody>
-                </table>
-            </div>
+                    </tr>
+                </thead>
+                
+                <tbody>
+                    ${tableContent}
+                </tbody>
 
-            <div class="fixed-footer">
-                <div class="sig-wrapper">
-                    <div class="sig-box">
-                        <div class="sig-line"></div>
-                        <div style="font-weight:bold;">( ${currentUserFullName || '................................................'} )</div>
-                        <div style="font-size: 9px;">ผู้จัดทำรายงาน</div>
-                    </div>
-                    <div class="sig-box">
-                        <div class="sig-line"></div>
-                        <div style="font-weight:bold;">( ............................................................ )</div>
-                        <div style="font-size: 9px;">ผู้อนุมัติ / ผู้ตรวจสอบ</div>
-                    </div>
-                </div>
-                <div class="page-number-box"></div>
-            </div>
+                <tfoot>
+                    <tr>
+                        <td colspan="9" style="border:none; padding:0;">
+                            <div class="footer-wrapper">
+                                <div class="sig-area">
+                                    <div class="sig-box">
+                                        <div class="sig-line"></div>
+                                        <div style="font-weight:bold;">( ${currentUserFullName || '...........................................'} )</div>
+                                        <div style="font-size: 10px; margin-top: 4px;">ผู้จัดทำรายงาน</div>
+                                    </div>
+                                    <div class="sig-box">
+                                        <div class="sig-line"></div>
+                                        <div style="font-weight:bold;">( .................................................. )</div>
+                                        <div style="font-size: 10px; margin-top: 4px;">ผู้อนุมัติ / ผู้ตรวจสอบ</div>
+                                    </div>
+                                </div>
+                                <div class="page-number-box"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
         </body>
         </html>
     `);
@@ -1073,6 +1038,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
