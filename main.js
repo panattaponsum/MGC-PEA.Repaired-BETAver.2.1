@@ -892,7 +892,7 @@ window.printReport = async function() {
                             <b>Price:</b> ${assetInfo.price || '-'}<br>
                              <b>Warranty:</b><br> ${assetInfo.warrantyStart || '-'}<br>
                              ${assetInfo.warrantyEnd || '-'}<br>
-                             ${assetInfo.warrantyStatusText || '-'}
+                             ${assetInfo.warrantyStatus || '-'}
                         </div>
                     </td>
                 `;
@@ -1114,6 +1114,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
