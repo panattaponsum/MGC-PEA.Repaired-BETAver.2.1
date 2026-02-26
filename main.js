@@ -859,7 +859,7 @@ window.printReport = async function() {
     for (const dev of siteData.devices) {
         const docData = dataMap[dev] || {};
         let records = docData.records || [];
-        records.sort((a, b) => b.ts - a.ts); 
+        records.sort((a, b) => a.ts - b.ts); 
         
         const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '-' || r.fixedDate === 'null'));
         const hasHistory = records.length > 0;
@@ -998,10 +998,13 @@ window.printReport = async function() {
 .w-device { width: auto; }
 .w-cost   { width: auto; }
 
-/* คอลัมน์เนื้อหา ให้กินพื้นที่มากสุด */
+
 .desc-cell { 
-    width: auto; 
-    min-width: 180px;
+    width: 50%;
+    max-width: 50%;
+    min-width: 50%;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
                 /* ข้อมูลอุปกรณ์กึ่งกลางแนวตั้ง */
                 .col-device { vertical-align: middle !important; text-align: center; background: #f8fafc; }
@@ -1023,7 +1026,7 @@ window.printReport = async function() {
                 
                 
                 .img-wrap { margin-top: 4px; border: 1px solid #000; padding: 1px; }
-                .img-wrap img { width: 100%; height: 65px; object-fit: cover; display: block; }
+                .img-wrap img { width: 100%; height: 120px; object-fit: cover; display: block; }
                 
                 .text-center { text-align: center; }
                 .text-left { text-align: left; }
@@ -1107,6 +1110,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
