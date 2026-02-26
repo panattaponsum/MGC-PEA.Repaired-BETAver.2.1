@@ -843,7 +843,7 @@ window.printReport = async function() {
     const printDate = now.toISOString().split('T')[0]; 
     const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    let tableContent = '';
+    let tableBodyHtml = '';
     let itemNo = 1;
 
     for (const dev of siteData.devices) {
@@ -860,41 +860,35 @@ window.printReport = async function() {
         const assetInfo = docData.assetInfo || {};
         const rowSpan = records.length > 0 ? records.length : 1;
 
+        // ใช้ tbody เป็นตัวคุมกลุ่มอุปกรณ์หนึ่งตัว เพื่อช่วยเรื่องการตัดหน้ากระดาษ
+        tableBodyHtml += `<tbody class="device-group">`;
         for (let i = 0; i < rowSpan; i++) {
             const r = records[i];
             const isFirst = (i === 0);
             const occurrenceNo = r ? (records.length - i) : '-';
 
-            tableContent += `<tr class="${isFirst ? 'device-group-start' : ''}">`;
-            
-            // ช่องที่ 1: ข้อมูลอุปกรณ์ (ใช้ rowspan)
+            tableBodyHtml += `<tr>`;
             if (isFirst) {
                 const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
-                tableContent += `
+                tableBodyHtml += `
                     <td rowspan="${rowSpan}" class="col-device">
-                        <div class="dev-info-container">
-                            <div class="item-no-circle">${itemNo++}</div>
-                            <div class="dev-title">${dev}</div>
-                            <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
-                            <div class="dev-specs">
-                                <b>S/N:</b> ${assetInfo.serial || '-'}<br>
-                                <b>Model:</b> ${assetInfo.model || '-'}<br>
-                                <b>PEA:</b> ${assetInfo.peaNo || '-'}
-                            </div>
-                            <div class="status-pill ${isDown ? 'pill-down' : 'pill-ok'}">
-                                ${isDown ? '● DOWN' : '● OK'}
-                            </div>
+                        <div class="item-no-circle">${itemNo++}</div>
+                        <div class="dev-title">${dev}</div>
+                        <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
+                        <div class="dev-specs">
+                            <b>S/N:</b> ${assetInfo.serial || '-'}<br>
+                            <b>M/D:</b> ${assetInfo.model || '-'}<br>
+                            <b>PEA:</b> ${assetInfo.peaNo || '-'}
                         </div>
                     </td>
                 `;
             }
 
-            // ช่องที่ 2-8: ประวัติการซ่อม (ต้องมีจำนวนช่องเท่ากับ Header ที่เหลือ)
             if (r) {
                 let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>` : '';
                 let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>` : '';
 
-                tableContent += `
+                tableBodyHtml += `
                     <td class="text-center font-bold">${occurrenceNo}</td>
                     <td class="text-center">${r.brokenDate || '-'}</td>
                     <td class="text-center">${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
@@ -902,16 +896,16 @@ window.printReport = async function() {
                     <td class="text-left desc-cell">${r.solution || '-'}${imgFixed}</td>
                     <td class="text-left">
                         <div class="cost-row"><span>O:</span> <b>${r.orderNumber || '-'}</b></div>
-                        <div class="cost-row" style="margin-top:3px;"><span>C:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</b></div>
+                        <div class="cost-row" style="margin-top:2px;"><span>C:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</b></div>
                     </td>
                     <td class="text-center user-cell">${r.user ? r.user.split('@')[0] : '-'}</td>
                 `;
             } else {
-                // ถ้าไม่มีประวัติ ต้องใส่ช่องว่างให้ครบตามจำนวนคอลัมน์ที่เหลือ (7 คอลัมน์)
-                tableContent += `<td colspan="7" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
+                tableBodyHtml += `<td colspan="7" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
             }
-            tableContent += `</tr>`;
+            tableBodyHtml += `</tr>`;
         }
+        tableBodyHtml += `</tbody>`;
     }
 
     Swal.close();
@@ -923,113 +917,119 @@ window.printReport = async function() {
             <title>REPORT_${siteData.name}</title>
             <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
             <style>
-                @page { size: A4 landscape; margin: 0.21in; }
+                @page { 
+                    size: A4 landscape; 
+                    margin: 0.21in; 
+                    @bottom-right { content: "หน้า " counter(page) " / " counter(pages); font-family: 'Sarabun'; font-size: 10px; }
+                }
                 body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; counter-reset: page; }
                 
                 .main-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; }
+                
+                /* Header */
                 thead { display: table-header-group; }
+                .header-container { background: #0f172a; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px 4px 0 0; }
+                
+                th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 6px 2px; font-size: 11px; text-align: center; }
+                td { border: 1px solid #000; padding: 5px; font-size: 10px; vertical-align: top; word-wrap: break-word; }
+
+                /* บังคับความกว้างตามสั่ง */
+                .w-device { width: 170px; }
+                .w-occ { width: 35px; }
+                .w-date { width: 75px; }
+                .w-cost { width: 110px; }
+                .w-user { width: 90px; }
+
+                /* ข้อมูลอุปกรณ์กึ่งกลางแนวตั้ง */
+                .col-device { vertical-align: middle !important; text-align: center; background: #f8fafc; }
+                .item-no-circle { background: #0f172a; color: white; width: 16px; height: 16px; border-radius: 50%; font-size: 9px; line-height: 16px; margin: 0 auto 4px auto; }
+                .dev-title { font-weight: 700; color: #1e40af; font-size: 11.5px; line-height: 1.2; margin-bottom: 3px; }
+                .brand-tag { font-size: 8px; background: #e2e8f0; padding: 1px 4px; border-radius: 3px; border: 0.5px solid #94a3b8; display: inline-block; margin-bottom: 4px; }
+                .dev-specs { font-size: 8.5px; text-align: left; line-height: 1.2; border-top: 1px solid #cbd5e1; padding-top: 3px; width: 95%; margin: 0 auto; }
+
+                /* การตัดหน้ากระดาษ */
+                .device-group { page-break-inside: auto; }
+                tr { page-break-inside: avoid; page-break-after: auto; }
+                
+                /* Footer (ลงนาม) */
                 tfoot { display: table-footer-group; }
-
-                .header-content { background: #0f172a; color: white; padding: 15px; border-radius: 5px 5px 0 0; display: flex; justify-content: space-between; align-items: center; }
+                .footer-wrapper { padding-top: 30px; border: none !important; }
+                .sig-area { display: flex; justify-content: center; gap: 150px; border: none; }
+                .sig-box { text-align: center; border: none; }
+                .sig-line { border-bottom: 1px solid #000; width: 220px; height: 35px; margin-bottom: 15px; }
                 
-                th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 8px; font-size: 11px; text-align: center; }
-                td { border: 1px solid #000; padding: 6px; font-size: 10.5px; vertical-align: middle; word-wrap: break-word; }
-                
-                /* บังคับความกว้างคอลัมน์ให้ตรงกันเป๊ะ */
-                .w-device { width: 180px; }
-                .w-occ { width: 40px; }
-                .w-date { width: 85px; }
-                .w-desc { width: auto; }
-                .w-cost { width: 115px; }
-                .w-user { width: 95px; }
+                .page-num { text-align: right; font-size: 10px; font-weight: bold; padding: 10px 0; }
+                .page-num:after { content: "หน้า " counter(page) " / " counter(pages); }
 
-                .col-device { vertical-align: middle; background: #f8fafc; }
-                .dev-info-container { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-                .item-no-circle { background: #0f172a; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; line-height: 18px; margin-bottom: 5px; }
-                .dev-title { font-weight: 700; color: #1e40af; font-size: 12.5px; margin-bottom: 2px; }
-                .brand-tag { font-size: 9px; background: #e2e8f0; padding: 1px 5px; border-radius: 3px; margin-bottom: 4px; border: 0.5px solid #94a3b8; }
-                .dev-specs { font-size: 9px; text-align: left; line-height: 1.3; border-top: 1px solid #cbd5e1; padding-top: 3px; width: 90%; margin: 0 auto; }
-
-                .footer-wrapper { padding-top: 30px; width: 100%; }
-                .sig-area { display: flex; justify-content: center; gap: 150px; margin-bottom: 15px; width: 100%; }
-                .sig-box { text-align: center; }
-                .sig-line { border-bottom: 1px solid #000; width: 230px; margin-bottom: 20px; height: 40px; }
+                .img-wrap { margin-top: 4px; border: 1px solid #000; padding: 1px; }
+                .img-wrap img { width: 100%; height: 65px; object-fit: cover; display: block; }
                 
-                .page-number-box { text-align: right; font-size: 10px; font-weight: bold; padding: 10px 0; }
-                .page-number-box::after { content: "หน้า " counter(page) " / " counter(pages); }
-
-                .img-wrap { margin-top: 5px; border: 1px solid #000; padding: 1px; }
-                .img-wrap img { width: 100%; height: 75px; object-fit: cover; display: block; }
-                
-                .device-group-start td { border-top: 2.5px solid #000; }
                 .text-center { text-align: center; }
                 .text-left { text-align: left; }
                 .font-bold { font-weight: bold; }
-                .cost-row { display: flex; justify-content: space-between; font-size: 10px; }
+                .cost-row { display: flex; justify-content: space-between; font-size: 9.5px; }
                 .cost-val { color: #c2410c; }
-                .user-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
+                .user-cell { white-space: nowrap; font-weight: bold; font-size: 9px; }
+                .urgent { color: red; font-weight: bold; }
 
                 @media print {
                     .no-print { display: none; }
-                    tr { page-break-inside: avoid; }
                     body { -webkit-print-color-adjust: exact; }
                 }
             </style>
         </head>
         <body>
             <div class="no-print" style="background:#eee; padding:10px; text-align:center;">
-                <button onclick="window.print()" style="padding:10px 25px; font-weight:bold; cursor:pointer; background:#0f172a; color:white; border:none; border-radius:4px;">กดที่นี่เพื่อพิมพ์รายงาน / บันทึก PDF</button>
+                <button onclick="window.print()" style="padding:10px 25px; font-weight:bold; cursor:pointer; background:#0f172a; color:white; border:none; border-radius:4px;">ตรวจสอบเรียบร้อยแล้ว กดเพื่อสั่งพิมพ์ / PDF</button>
             </div>
 
             <table class="main-table">
                 <thead>
                     <tr>
                         <td colspan="8" style="border:none; padding:0;">
-                            <div class="header-content">
+                            <div class="header-container">
                                 <div>
-                                    <h1 style="margin:0; font-size:18px;">Asset Maintenance Report</h1>
-                                    <div style="font-size:12px;">โครงการ: ${siteData.name}</div>
+                                    <h1 style="margin:0; font-size:16px; text-transform:uppercase;">Asset Maintenance Report</h1>
+                                    <div style="font-size:11px;">SITE: ${siteData.name}</div>
                                 </div>
-                                <div style="text-align:right; font-size:10px;">
-                                    วันที่ออกรายงาน: ${printDate} ${printTime}<br>
-                                    ผู้ออกรายงาน: ${currentUserFullName || 'ADMIN'}
+                                <div style="text-align:right; font-size:9px;">
+                                    DATE: ${printDate} | TIME: ${printTime}<br>
+                                    ISSUED BY: ${currentUserFullName || 'SYSTEM ADMIN'}
                                 </div>
                             </div>
                         </td>
                     </tr>
                     <tr>
-                            <th style="width: 170px;">Device & Specs</th>
-                            <th style="width: 35px;">Occ.</th>
-                            <th style="width: 75px;">Down Date</th>
-                            <th style="width: 75px;">Fixed Date</th>
-                            <th>Description</th>
-                            <th>Solution</th>
-                            <th style="width: 110px;">Order & Cost</th>
-                            <th style="width: 90px;">Recorded By</th>
+                        <th class="w-device">Device & Specs</th>
+                        <th class="w-occ">Occ.</th>
+                        <th class="w-date">Down Date</th>
+                        <th class="w-date">Fixed Date</th>
+                        <th>Description</th>
+                        <th>Solution</th>
+                        <th class="w-cost">Order & Cost</th>
+                        <th class="w-user">Recorded By</th>
                     </tr>
                 </thead>
                 
-                <tbody>
-                    ${tableContent}
-                </tbody>
+                ${tableBodyHtml}
 
                 <tfoot>
                     <tr>
-                        <td colspan="8" style="border:none; padding:0;">
+                        <td colspan="8" style="border:none;">
                             <div class="footer-wrapper">
                                 <div class="sig-area">
                                     <div class="sig-box">
                                         <div class="sig-line"></div>
-                                        <div style="font-weight:bold;">( ${currentUserFullName || '...........................................'} )</div>
-                                        <div style="font-size: 10px; margin-top: 5px;">ผู้จัดทำรายงาน</div>
+                                        <div style="font-weight:bold; font-size:11px;">( ${currentUserFullName || '...........................................'} )</div>
+                                        <div style="font-size: 9px; margin-top: 5px;">ผู้จัดทำรายงาน (Prepared By)</div>
                                     </div>
                                     <div class="sig-box">
                                         <div class="sig-line"></div>
-                                        <div style="font-weight:bold;">( ........................................................... )</div>
-                                        <div style="font-size: 10px; margin-top: 5px;">ผู้อนุมัติ / ผู้ตรวจสอบ</div>
+                                        <div style="font-weight:bold; font-size:11px;">( .................................................... )</div>
+                                        <div style="font-size: 9px; margin-top: 5px;">ผู้รับรองรายงาน (Approved By)</div>
                                     </div>
                                 </div>
-                                <div class="page-number-box"></div>
+                                <div class="page-num"></div>
                             </div>
                         </td>
                     </tr>
@@ -1047,6 +1047,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
