@@ -867,6 +867,7 @@ window.printReport = async function() {
 
             tableContent += `<tr class="${isFirst ? 'device-group-start' : ''}">`;
             
+            // ช่องที่ 1: ข้อมูลอุปกรณ์ (ใช้ rowspan)
             if (isFirst) {
                 const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
                 tableContent += `
@@ -888,6 +889,7 @@ window.printReport = async function() {
                 `;
             }
 
+            // ช่องที่ 2-8: ประวัติการซ่อม (ต้องมีจำนวนช่องเท่ากับ Header ที่เหลือ)
             if (r) {
                 let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>` : '';
                 let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>` : '';
@@ -905,6 +907,7 @@ window.printReport = async function() {
                     <td class="text-center user-cell">${r.user ? r.user.split('@')[0] : '-'}</td>
                 `;
             } else {
+                // ถ้าไม่มีประวัติ ต้องใส่ช่องว่างให้ครบตามจำนวนคอลัมน์ที่เหลือ (7 คอลัมน์)
                 tableContent += `<td colspan="7" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
             }
             tableContent += `</tr>`;
@@ -923,58 +926,65 @@ window.printReport = async function() {
                 @page { size: A4 landscape; margin: 0.21in; }
                 body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; counter-reset: page; }
                 
-                /* ใช้ระบบ Table Layout เพื่อแก้ปัญหาการทับกัน */
-                .main-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-                
-                /* Header ของตารางที่จะปรากฏทุกหน้า */
+                .main-table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; }
                 thead { display: table-header-group; }
-                /* Footer ของตารางที่จะปรากฏทุกหน้า */
                 tfoot { display: table-footer-group; }
 
-                .header-content { background: #0f172a; color: white; padding: 15px; border-radius: 5px 5px 0 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
+                .header-content { background: #0f172a; color: white; padding: 15px; border-radius: 5px 5px 0 0; display: flex; justify-content: space-between; align-items: center; }
                 
-                th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 8px; font-size: 11px; }
-                td { border: 1px solid #000; padding: 6px; font-size: 11px; vertical-align: middle; word-wrap: break-word; }
+                th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 8px; font-size: 11px; text-align: center; }
+                td { border: 1px solid #000; padding: 6px; font-size: 10.5px; vertical-align: middle; word-wrap: break-word; }
                 
-                /* แก้ปัญหาชื่ออุปกรณ์กึ่งกลาง */
-                .col-device { width: 170px; background: #f8fafc; vertical-align: middle; }
-                .dev-info-container { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-                .item-no-circle { background: #0f172a; color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 10px; line-height: 20px; margin-bottom: 5px; }
-                .dev-title { font-weight: 700; color: #1e40af; font-size: 13px; margin-bottom: 2px; }
-                .brand-tag { font-size: 9px; background: #e2e8f0; padding: 1px 5px; border-radius: 3px; margin-bottom: 4px; border: 0.5px solid #94a3b8; }
-                .dev-specs { font-size: 9px; text-align: left; line-height: 1.3; border-top: 1px solid #cbd5e1; padding-top: 3px; }
+                /* บังคับความกว้างคอลัมน์ให้ตรงกันเป๊ะ */
+                .w-device { width: 180px; }
+                .w-occ { width: 40px; }
+                .w-date { width: 85px; }
+                .w-desc { width: auto; }
+                .w-cost { width: 115px; }
+                .w-user { width: 95px; }
 
-                /* ส่วนลงนาม (Footer Group) */
-                .footer-wrapper { padding-top: 20px; }
-                .sig-area { display: flex; justify-content: center; gap: 120px; margin-bottom: 10px; }
+                .col-device { vertical-align: middle; background: #f8fafc; }
+                .dev-info-container { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+                .item-no-circle { background: #0f172a; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; line-height: 18px; margin-bottom: 5px; }
+                .dev-title { font-weight: 700; color: #1e40af; font-size: 12.5px; margin-bottom: 2px; }
+                .brand-tag { font-size: 9px; background: #e2e8f0; padding: 1px 5px; border-radius: 3px; margin-bottom: 4px; border: 0.5px solid #94a3b8; }
+                .dev-specs { font-size: 9px; text-align: left; line-height: 1.3; border-top: 1px solid #cbd5e1; padding-top: 3px; width: 90%; margin: 0 auto; }
+
+                .footer-wrapper { padding-top: 30px; width: 100%; }
+                .sig-area { display: flex; justify-content: center; gap: 150px; margin-bottom: 15px; width: 100%; }
                 .sig-box { text-align: center; }
-                .sig-line { border-bottom: 1px solid #000; width: 220px; margin-bottom: 12px; height: 30px; }
+                .sig-line { border-bottom: 1px solid #000; width: 230px; margin-bottom: 20px; height: 40px; }
                 
-                /* เลขหน้าแก้ไขใหม่ */
-                .page-number-box { text-align: right; font-size: 10px; font-weight: bold; padding-top: 5px; }
+                .page-number-box { text-align: right; font-size: 10px; font-weight: bold; padding: 10px 0; }
                 .page-number-box::after { content: "หน้า " counter(page) " / " counter(pages); }
 
                 .img-wrap { margin-top: 5px; border: 1px solid #000; padding: 1px; }
                 .img-wrap img { width: 100%; height: 75px; object-fit: cover; display: block; }
-                .device-group-start td { border-top: 2.5px solid #000; }
                 
+                .device-group-start td { border-top: 2.5px solid #000; }
+                .text-center { text-align: center; }
+                .text-left { text-align: left; }
+                .font-bold { font-weight: bold; }
+                .cost-row { display: flex; justify-content: space-between; font-size: 10px; }
+                .cost-val { color: #c2410c; }
+                .user-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
+
                 @media print {
                     .no-print { display: none; }
                     tr { page-break-inside: avoid; }
-                    /* แก้ไข Chrome Bug สำหรับ counter-pages */
                     body { -webkit-print-color-adjust: exact; }
                 }
             </style>
         </head>
         <body>
             <div class="no-print" style="background:#eee; padding:10px; text-align:center;">
-                <button onclick="window.print()" style="padding:10px 25px; font-weight:bold; cursor:pointer;">กดที่นี่เพื่อพิมพ์รายงาน</button>
+                <button onclick="window.print()" style="padding:10px 25px; font-weight:bold; cursor:pointer; background:#0f172a; color:white; border:none; border-radius:4px;">กดที่นี่เพื่อพิมพ์รายงาน / บันทึก PDF</button>
             </div>
 
             <table class="main-table">
                 <thead>
                     <tr>
-                        <td colspan="9" style="border:none; padding:0;">
+                        <td colspan="8" style="border:none; padding:0;">
                             <div class="header-content">
                                 <div>
                                     <h1 style="margin:0; font-size:18px;">Asset Maintenance Report</h1>
@@ -988,7 +998,6 @@ window.printReport = async function() {
                         </td>
                     </tr>
                     <tr>
-                            <th style="width: 30px;">No.</th>
                             <th style="width: 170px;">Device & Specs</th>
                             <th style="width: 35px;">Occ.</th>
                             <th style="width: 75px;">Down Date</th>
@@ -1006,18 +1015,18 @@ window.printReport = async function() {
 
                 <tfoot>
                     <tr>
-                        <td colspan="9" style="border:none; padding:0;">
+                        <td colspan="8" style="border:none; padding:0;">
                             <div class="footer-wrapper">
                                 <div class="sig-area">
                                     <div class="sig-box">
                                         <div class="sig-line"></div>
                                         <div style="font-weight:bold;">( ${currentUserFullName || '...........................................'} )</div>
-                                        <div style="font-size: 10px; margin-top: 4px;">ผู้จัดทำรายงาน</div>
+                                        <div style="font-size: 10px; margin-top: 5px;">ผู้จัดทำรายงาน</div>
                                     </div>
                                     <div class="sig-box">
                                         <div class="sig-line"></div>
-                                        <div style="font-weight:bold;">( .................................................. )</div>
-                                        <div style="font-size: 10px; margin-top: 4px;">ผู้อนุมัติ / ผู้ตรวจสอบ</div>
+                                        <div style="font-weight:bold;">( ........................................................... )</div>
+                                        <div style="font-size: 10px; margin-top: 5px;">ผู้อนุมัติ / ผู้ตรวจสอบ</div>
                                     </div>
                                 </div>
                                 <div class="page-number-box"></div>
@@ -1038,6 +1047,7 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 };
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
 
 
 
