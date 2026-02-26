@@ -936,9 +936,56 @@ window.printReport = async function() {
                 
                 .main-table { width: 100%; border-collapse: collapse; table-layout: auto; border: 1px solid #000; }
                 
-                /* Header */
-                thead { display: table-header-group; }
-                .header-container { background: #0f172a; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px 4px 0 0; }
+             /* ===== PEA HEADER THEME (override old header) ===== */
+.pea-header{
+    background: #6a1b9a;              /* 💜 สีม่วง PEA */
+    color: white;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 6px 6px 0 0;
+}
+
+/* ฝั่งซ้าย */
+.header-left{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* โลโก้ PEA */
+.pea-logo{
+    height: 55px;
+    width: auto;
+}
+
+/* กล่องหัวข้อ */
+.header-title{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.main-title{
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 1.1;
+}
+
+.site-title{
+    font-size: 12px;
+    margin-top: 4px;
+    opacity: 0.95;
+}
+
+/* ฝั่งขวา */
+.header-right{
+    text-align: right;
+    font-size: 10px;
+    line-height: 1.4;
+}
                 
                 th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 6px 2px; font-size: 11px; text-align: center; }
                 td { border: 1px solid #000; padding: 5px; font-size: 10px; vertical-align: top; word-wrap: break-word; }
@@ -1001,16 +1048,22 @@ window.printReport = async function() {
                 <thead>
                     <tr>
                         <td colspan="8" style="border:none; padding:0;">
-                            <div class="header-container">
-                                <div>
-                                    <h1 style="margin:0; font-size:16px; text-transform:uppercase;">Asset Maintenance Report</h1>
-                                    <div style="font-size:11px;">SITE: ${siteData.name}</div>
-                                </div>
-                                <div style="text-align:right; font-size:9px;">
-                                    DATE: ${printDate} | TIME: ${printTime}<br>
-                                    ISSUED BY: ${currentUserFullName || 'SYSTEM ADMIN'}
-                                </div>
-                            </div>
+                          <div class="pea-header">
+    <div class="header-left">
+        <img src="provincial-electricity-authority.png" class="pea-logo" />
+        <div class="header-title">
+            <div class="main-title">ASSET MAINTENANCE REPORT</div>
+            <div class="site-title">
+                SITE: ${siteData.name}
+            </div>
+        </div>
+    </div>
+
+    <div class="header-right">
+        DATE: ${printDate} | TIME: ${printTime}<br>
+        ISSUED BY: ${currentUserFullName || 'SYSTEM ADMIN'}
+    </div>
+</div>
                         </td>
                     </tr>
                     <tr>
@@ -1054,6 +1107,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
