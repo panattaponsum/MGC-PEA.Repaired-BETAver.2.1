@@ -824,7 +824,6 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
 
-ช่องตารางรายงานอยากให้แบ่งความกว้างตามความจำเป็น ไม่ต้องให้เท่ากันทุกช่อง 
 
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
@@ -1055,6 +1054,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
