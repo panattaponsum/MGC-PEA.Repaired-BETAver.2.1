@@ -370,7 +370,7 @@ const statusEl = document.getElementById('warrantyStatusDisplay'); const infoEl 
 if (assetInfo && assetInfo.warrantyEnd) {
 statusEl.innerHTML = getWarrantyStatusHTML(getWarrantyStatus(assetInfo.warrantyEnd));
 let infoParts = [];
-if (assetInfo.model) infoParts.push(`รุ่น: ${escapeHtml(assetInfo.model)}`); if (assetInfo.serial) infoParts.push(`S/N: ${escapeHtml(assetInfo.serial)}`); if (assetInfo.peaNo) infoParts.push(`PEA: ${escapeHtml(assetInfo.peaNo)}`);
+if (assetInfo.model) infoParts.push(`รุ่น: ${escapeHtml(assetInfo.model)}`); if (assetInfo.serial) infoParts.push(`S/N: ${escapeHtml(assetInfo.serial)}`); if (assetInfo.peaNo) infoParts.push(`PEA No. : ${escapeHtml(assetInfo.peaNo)}`);
 infoEl.innerHTML = infoParts.join(' | ') || 'ลงทะเบียนแล้ว';
 } else { statusEl.innerHTML = '<span class="tag tag-warranty-bad">🚫 ยังไม่ลงทะเบียน</span>'; infoEl.innerHTML = 'กรุณาคลิก "ดู/แก้ไขข้อมูลทรัพย์สิน"'; }
 }
@@ -892,7 +892,7 @@ window.printReport = async function() {
                             <b>Price:</b> ${assetInfo.price || '-'}<br>
                              <b>Warranty:</b><br> ${assetInfo.warrantyStart || '-'}<br>
                              ${assetInfo.warrantyEnd || '-'}<br>
-                             ${assetInfo.warrantyStatus || '-'}
+                             ${warrantyStatusText || '-'}
                         </div>
                     </td>
                 `;
@@ -1114,6 +1114,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
