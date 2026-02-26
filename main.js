@@ -875,7 +875,7 @@ window.printReport = async function() {
         for (let i = 0; i < rowSpan; i++) {
             const r = records[i];
             const isFirst = (i === 0);
-            const occurrenceNo = r ? (records.length - i) : '-';
+           const occurrenceNo = r ? (i + 1) : '-'; 
 
             tableBodyHtml += `<tr>`;
             if (isFirst) {
@@ -1110,6 +1110,7 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
 
 
