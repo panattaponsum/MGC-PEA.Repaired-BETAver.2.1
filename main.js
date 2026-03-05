@@ -24,6 +24,8 @@ const pageSize = 7;
 let currentUser = null;
 let currentUserRole = 'viewer'; 
 let currentUserFullName = ''; 
+let currentUserPosition = ''; 
+let currentUserDept = '';
 const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
 
 const sites = {
@@ -329,7 +331,7 @@ window.saveData = async function() {
         baseRec.subDevice = document.getElementById('othersDeviceSelect').value;
     }
 
-    if (editIndex >= 0) {
+   if (editIndex >= 0) {
         const originalRecord = records[editIndex];
         baseRec.brokenFileUrl = originalRecord.brokenFileUrl || null;
         baseRec.brokenFileType = originalRecord.brokenFileType || null;
@@ -337,20 +339,32 @@ window.saveData = async function() {
         baseRec.fixedFileType = originalRecord.fixedFileType || null;
         baseRec.ts = originalRecord.ts;
         
-        // Handle brokenUser and fixedUser
+        // Handle User Data
         baseRec.brokenUser = originalRecord.brokenUser || originalRecord.user || currentUserStr;
+        baseRec.brokenUserPos = originalRecord.brokenUserPos || '';
+        baseRec.brokenUserDept = originalRecord.brokenUserDept || '';
+
         if (statusVal === 'ok' && !originalRecord.fixedDate) {
             baseRec.fixedUser = currentUserStr;
+            baseRec.fixedUserPos = currentUserPosition;
+            baseRec.fixedUserDept = currentUserDept;
         } else {
             baseRec.fixedUser = originalRecord.fixedUser || (originalRecord.fixedDate ? originalRecord.user : null);
+            baseRec.fixedUserPos = originalRecord.fixedUserPos || '';
+            baseRec.fixedUserDept = originalRecord.fixedUserDept || '';
         }
         baseRec.user = currentUserStr; // legacy
     } else {
         baseRec.brokenUser = currentUserStr;
+        baseRec.brokenUserPos = currentUserPosition;
+        baseRec.brokenUserDept = currentUserDept;
         baseRec.user = currentUserStr; // legacy
-        if (statusVal === 'ok') baseRec.fixedUser = currentUserStr;
+        if (statusVal === 'ok') {
+            baseRec.fixedUser = currentUserStr;
+            baseRec.fixedUserPos = currentUserPosition;
+            baseRec.fixedUserDept = currentUserDept;
+        }
     }
-
     // อัปโหลดไฟล์ใหม่ถ้ามีการเลือก
     try {
         if (brokenFile) {
@@ -581,10 +595,22 @@ window.loadUsers = async function() {
             const userData = doc.data(); const email = userData.email; const role = userData.role || 'viewer'; const fullName = userData.fullName || ''; 
             const position = userData.position || ''; const department = userData.department || '';
             const isMe = (email === currentUser.email); const isAdminMain = (email === ADMIN_EMAIL); const safeId = email.replace(/[@.]/g, ''); 
-            const div = document.createElement('div'); div.className = 'user-item flex flex-col sm:flex-row justify-between sm:items-start gap-2 p-3 border-b border-gray-200 hover:bg-gray-50 transition-colors';
+            
+            const div = document.createElement('div'); 
+            // แก้ไข Class ให้เป็นแนวนอนแถวเดียว (flex-row, items-center)
+            div.className = 'user-item flex flex-row items-center gap-2 p-2 border-b border-gray-200 hover:bg-gray-50 transition-colors overflow-x-auto';
             const roleOptions = `<option value="viewer" ${role==='viewer'?'selected':''}>Viewer</option><option value="editor" ${role==='editor'?'selected':''}>Editor</option><option value="admin" ${role==='admin'?'selected':''}>Admin</option>`;
-            let deleteBtn = ''; if (!isAdminMain && !isMe) deleteBtn = `<button onclick="deleteUser('${email}')" class="p-2 mt-1 text-gray-400 hover:text-red-600 transition-colors" title="ลบผู้ใช้"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
-            div.innerHTML = `<div class="flex flex-col flex-1 gap-1 pr-2 w-full"><span class="font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}">${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}</span><div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1"><input type="text" id="name-${safeId}" value="${escapeHtml(fullName)}" placeholder="ระบุชื่อ-นามสกุลจริง..." class="text-xs border border-gray-300 rounded p-1.5 w-full outline-none focus:border-blue-500"><input type="text" id="pos-${safeId}" value="${escapeHtml(position)}" placeholder="ระบุตำแหน่ง..." class="text-xs border border-gray-300 rounded p-1.5 w-full outline-none focus:border-blue-500"><input type="text" id="dept-${safeId}" value="${escapeHtml(department)}" placeholder="ระบุสังกัด..." class="text-xs border border-gray-300 rounded p-1.5 w-full outline-none focus:border-blue-500"></div></div><div class="flex items-center gap-2 mt-2 sm:mt-0 pt-1"><select id="role-${safeId}" class="bg-white border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block p-1.5 outline-none cursor-pointer">${roleOptions}</select><button onclick="updateUserFull('${email}', '${safeId}')" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors text-xs font-bold shadow-sm" title="บันทึกการแก้ไขสิทธิ์และชื่อ">💾 บันทึก</button>${deleteBtn}</div>`;
+            let deleteBtn = ''; if (!isAdminMain && !isMe) deleteBtn = `<button onclick="deleteUser('${email}')" class="p-1.5 text-gray-400 hover:text-red-600 transition-colors shrink-0" title="ลบผู้ใช้"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
+            
+            div.innerHTML = `
+                <div class="w-48 shrink-0 truncate font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}" title="${escapeHtml(email)}">${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}</div>
+                <input type="text" id="name-${safeId}" value="${escapeHtml(fullName)}" placeholder="ชื่อ-นามสกุล..." class="flex-1 min-w-[120px] text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
+                <input type="text" id="pos-${safeId}" value="${escapeHtml(position)}" placeholder="ตำแหน่ง..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
+                <input type="text" id="dept-${safeId}" value="${escapeHtml(department)}" placeholder="สังกัด..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
+                <select id="role-${safeId}" class="w-24 shrink-0 bg-white border border-gray-300 text-gray-900 text-xs rounded focus:ring-blue-500 focus:border-blue-500 p-1.5 outline-none cursor-pointer">${roleOptions}</select>
+                <button onclick="updateUserFull('${email}', '${safeId}')" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors text-xs font-bold shadow-sm shrink-0" title="บันทึก">💾 บันทึก</button>
+                ${deleteBtn}
+            `;
             listContainer.appendChild(div);
         });
     } catch (error) { listContainer.innerHTML = `<div class="text-red-500 text-center py-4">โหลดไม่สำเร็จ: ${error.message}</div>`; }
@@ -748,10 +774,15 @@ window.importData = function(event) {
                 const recordRawData = XLSX.utils.sheet_to_json(wsRecords, { header: 1 });
                 if (recordRawData.length >= 2) { 
                     const headers = recordRawData[0];
+        
                     const headerMap = { 'Timestamp': headers.indexOf('Timestamp'), 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 
                                         'วันที่เกิดเหตุ': headers.indexOf('วันที่เกิดเหตุ') !== -1 ? headers.indexOf('วันที่เกิดเหตุ') : headers.indexOf('วันที่ชำรุด'), 
                                         'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'), 'สถานะ': headers.indexOf('สถานะ'), 'คำอธิบาย': headers.indexOf('คำอธิบาย'), 'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'), 
-                                        'เลขที่ใบสั่ง': headers.indexOf('เลขที่ใบสั่ง'), 'ราคาซ่อม': headers.indexOf('ราคาซ่อม'), 'ผู้บันทึก': headers.indexOf('ผู้บันทึก') };
+                                        'เลขที่ใบสั่ง': headers.indexOf('เลขที่ใบสั่ง'), 'ราคาซ่อม': headers.indexOf('ราคาซ่อม'), 
+                                        'หนังสือ มท.': headers.indexOf('หนังสือ มท.'), 'หนังสือ กฟภ.': headers.indexOf('หนังสือ กฟภ.'),
+                                        'ผู้แจ้งชำรุด': headers.indexOf('ผู้แจ้งชำรุด') !== -1 ? headers.indexOf('ผู้แจ้งชำรุด') : headers.indexOf('ผู้บันทึก'),
+                                        'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
+                                        'ผู้แจ้งซ่อมเสร็จ': headers.indexOf('ผู้แจ้งซ่อมเสร็จ'), 'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด') };
                     
                     if (headerMap['ชื่ออุปกรณ์'] !== -1 && headerMap['วันที่เกิดเหตุ'] !== -1) {
                         for (let i = 1; i < recordRawData.length; i++) {
@@ -761,10 +792,18 @@ window.importData = function(event) {
                             let finalStatus = 'ok'; if (statusValue.includes('ชำรุด')) finalStatus = 'down'; else if (statusValue.includes('ผิดปกติ')) finalStatus = 'abnormal';
                             if (importedBrokenDate && !importedFixedDate && finalStatus === 'ok') finalStatus = 'down'; 
                             
-                            recordsToImport.push({ deviceName, record: {
+                           recordsToImport.push({ deviceName, record: {
                                 ts: importedTs ? parseInt(importedTs) : Date.now() + i, brokenDate: importedBrokenDate || '', fixedDate: importedFixedDate || null, 
                                 status: finalStatus, description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel', solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
                                 orderNumber: (headerMap['เลขที่ใบสั่ง'] !== -1) ? (row[headerMap['เลขที่ใบสั่ง']] || '').toString() : '', repairCost: (headerMap['ราคาซ่อม'] !== -1) ? (row[headerMap['ราคาซ่อม']] || '').toString() : '',
+                                docMinistry: (headerMap['หนังสือ มท.'] !== -1) ? (row[headerMap['หนังสือ มท.']] || '').toString() : '',
+                                docPEA: (headerMap['หนังสือ กฟภ.'] !== -1) ? (row[headerMap['หนังสือ กฟภ.']] || '').toString() : '',
+                                brokenUser: (headerMap['ผู้แจ้งชำรุด'] !== -1) ? (row[headerMap['ผู้แจ้งชำรุด']] || '').toString() : (currentUserFullName || currentUser.email), 
+                                brokenUserPos: (headerMap['ตำแหน่ง'] !== -1) ? (row[headerMap['ตำแหน่ง']]).toString() : '',
+                                brokenUserDept: (headerMap['สังกัด'] !== -1) ? (row[headerMap['สังกัด']]).toString() : '',
+                                fixedUser: (headerMap['ผู้แจ้งซ่อมเสร็จ'] !== -1) ? (row[headerMap['ผู้แจ้งซ่อมเสร็จ']] || '').toString() : '',
+                                fixedUserPos: (headerMap['ตำแหน่ง'] !== -1) ? (row[headerMap['ตำแหน่ง']]).toString() : '',
+                                fixedUserDept: (headerMap['สังกัด'] !== -1) ? (row[headerMap['สังกัด']]).toString() : '',
                                 user: (row[headerMap['ผู้บันทึก']] || '').toString() || (currentUserFullName || currentUser.email), counted: !!importedBrokenDate, 
                             } });
                         }
@@ -782,7 +821,7 @@ window.exportAllDataExcel = async function() {
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
 
     // เพิ่มคอลัมน์ใหม่ใน Excel
-    const recordsData = [['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 'ผู้แจ้งชำรุด', 'ผู้แจ้งซ่อมเสร็จ']]; 
+   const recordsData = [['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด']];
     const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
     for (const devName of siteData.devices) {
@@ -797,7 +836,18 @@ window.exportAllDataExcel = async function() {
             let statusTH = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
             let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
             
-            recordsData.push([ r.ts || '-', devNameFinal, sequenceNumber, (r.brokenDate || '-').replace(/-/g, '/'), (r.fixedDate || '-').replace(/-/g, '/'), duration, statusTH, r.description || '-', r.solution || '-', r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', r.brokenUser || r.user || '-', r.fixedUser || '-' ]);
+            recordsData.push([ 
+                r.ts || '-', devNameFinal, sequenceNumber, 
+                (r.brokenDate || '-').replace(/-/g, '/'), (r.fixedDate || '-').replace(/-/g, '/'), 
+                duration, statusTH, r.description || '-', r.solution || '-', 
+                r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', 
+                r.brokenUser || r.user || '-', 
+                r.brokenUserPos || '-', 
+                r.brokenUserDept || '-', 
+                r.fixedUser || '-',
+                r.fixedUserPos || '-',
+                r.fixedUserDept || '-'
+            ]);
         });
     }
 
@@ -837,7 +887,12 @@ auth.onAuthStateChanged(async user => {
         try {
             const userSnap = await db.collection('users').doc(user.email).get();
             if (!userSnap.exists) { let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer'; await db.collection('users').doc(user.email).set({ email: user.email, role: initialRole, fullName: '', position: '', department: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); currentUserRole = initialRole; currentUserFullName = ''; } 
-            else { currentUserRole = userSnap.data().role || 'viewer'; currentUserFullName = userSnap.data().fullName || ''; }
+            else { 
+    currentUserRole = userSnap.data().role || 'viewer'; 
+    currentUserFullName = userSnap.data().fullName || ''; 
+    currentUserPosition = userSnap.data().position || ''; 
+    currentUserDept = userSnap.data().department || '';
+}
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
             document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email; 
             const sessionLogKey = `logged_in_${user.uid}`; if (!sessionStorage.getItem(sessionLogKey)) { await createLog("AUTH_LOGIN", `เข้าสู่ระบบ (Role: ${currentUserRole})`); sessionStorage.setItem(sessionLogKey, "true"); }
@@ -991,7 +1046,7 @@ window.generateSelectedReport = async function() {
                     <td rowspan="${rowSpan}" class="col-device">
                         <div class="item-no-circle">${itemNo++}</div>
                         <div class="dev-title">${dev}</div>
-                        <div class="brand-tag">${assetInfo.manufacturer || 'General'}</div>
+                        <div class="brand-tag">${assetInfo.manufacturer || '-'}</div>
                         <div class="dev-specs">
                             <b>S/N:</b> ${assetInfo.serial || '-'}<br>
                             <b>Model:</b> ${assetInfo.model || '-'}<br>
@@ -1007,6 +1062,17 @@ window.generateSelectedReport = async function() {
             let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>` : '';
             let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>` : '';
             let subTagHtml = r.subDevice ? `<div style="color:#2563eb; font-weight:bold; margin-bottom: 4px;">[${r.subDevice}]</div>` : '';
+            let brokenUserInfo = r.brokenUser ? r.brokenUser.split('@')[0] : (r.user ? r.user.split('@')[0] : '-');
+            if (r.brokenUserPos || r.brokenUserDept) {
+                let details = [r.brokenUserPos, r.brokenUserDept].filter(Boolean).join(' / ');
+                brokenUserInfo += `<br><span style="font-weight:normal; color:#64748b;">${details}</span>`;
+            }
+
+            let fixedUserInfo = r.fixedUser ? r.fixedUser.split('@')[0] : '-';
+            if (r.fixedUser && (r.fixedUserPos || r.fixedUserDept)) {
+                let details = [r.fixedUserPos, r.fixedUserDept].filter(Boolean).join(' / ');
+                fixedUserInfo += `<br><span style="font-weight:normal; color:#64748b;">${details}</span>`;
+            }
 
             tableBodyHtml += `
                 <td class="text-center font-bold">${item.occurrenceNo}</td>
@@ -1017,19 +1083,15 @@ window.generateSelectedReport = async function() {
                 <td class="text-left">
                     <div class="cost-row"><span>Ticket:</span> <b class="cost-val">${r.orderNumber || '-'}</b></div>
                     <div class="cost-row" style="margin-top:2px;"><span>Cost:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</b></div>
-                    <div class="cost-row" style="margin-top:4px; font-size:8.5px; border-top: 1px dotted #ccc; padding-top: 2px;"><span>มท.:</span> <b>${r.docMinistry || '-'}</b></div>
-                    <div class="cost-row" style="margin-top:2px; font-size:8.5px;"><span>กฟภ.:</span> <b>${r.docPEA || '-'}</b></div>
+                    <div class="cost-row" style="margin-top:4px; font-size:8.5px; border-top: 1px dotted #ccc; padding-top: 2px;"><span>มท.</span> <b>${r.docMinistry || '-'}</b></div>
+                    <div class="cost-row" style="margin-top:2px; font-size:8.5px;"><span>กฟภ.</span> <b>${r.docPEA || '-'}</b></div>
                 </td>
                 <td class="text-left user-cell" style="font-size: 8.5px;">
-                    <div><span style="color:#991b1b; font-weight: bold;">แจ้ง:</span> ${r.brokenUser ? r.brokenUser.split('@')[0] : (r.user ? r.user.split('@')[0] : '-')}</div>
-                    <div style="margin-top:4px; border-top: 1px dotted #ccc; padding-top: 2px;"><span style="color:#065f46; font-weight: bold;">ซ่อม:</span> ${r.fixedUser ? r.fixedUser.split('@')[0] : '-'}</div>
+                    <div><span style="color:#991b1b; font-weight: bold;">ผู้แจ้งเสีย:</span> ${brokenUserInfo}</div>
+                    <div style="margin-top:4px; border-top: 1px dotted #ccc; padding-top: 2px;"><span style="color:#065f46; font-weight: bold;">ผู้แจ้งซ่อม:</span> ${fixedUserInfo}</div>
                 </td>
             `;
             tableBodyHtml += `</tr>`;
-        }
-        tableBodyHtml += `</tbody>`;
-    }
-
     closeReportModal();
 
     const printWindow = window.open('', '', 'height=900,width=1400');
@@ -1170,3 +1232,4 @@ window.generateSelectedReport = async function() {
     `);
     printWindow.document.close();
 };
+
