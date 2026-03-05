@@ -1091,7 +1091,10 @@ window.generateSelectedReport = async function() {
                     <div style="margin-top:4px; border-top: 1px dotted #ccc; padding-top: 2px;"><span style="color:#065f46; font-weight: bold;">ผู้แจ้งซ่อม:</span> ${fixedUserInfo}</div>
                 </td>
             `;
-            tableBodyHtml += `</tr>`;
+            tableBodyHtml += `</tr>`;}
+
+        tableBodyHtml += `</tbody>`;
+    }
     closeReportModal();
 
     const printWindow = window.open('', '', 'height=900,width=1400');
@@ -1232,4 +1235,5 @@ window.generateSelectedReport = async function() {
     `);
     printWindow.document.close();
 };
+
 
