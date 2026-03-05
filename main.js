@@ -993,7 +993,7 @@ window.toggleDeviceGroup = function(cb, safeDevId) {
     document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked);
 };
 
-window.generateSelectedReport = async function () {
+window.generateSelectedReport = async function() {
 
 const siteData = sites[currentSiteKey];
 
@@ -1001,7 +1001,7 @@ const selectedCheckboxes =
 Array.from(document.querySelectorAll('.record-checkbox:checked'))
 .map(cb => cb.value);
 
-if(selectedCheckboxes.length === 0){
+if(selectedCheckboxes.length===0){
 Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการ','warning');
 return;
 }
@@ -1016,8 +1016,8 @@ selectedMap[dev].push(String(ts));
 
 const dataMap = window.tempReportDataMap;
 
-let tableBodyHtml='';
-let itemNo=1;
+let bodyHtml='';
+let deviceNo=1;
 
 for(const dev of siteData.devices){
 
@@ -1029,105 +1029,120 @@ let allRecords=docData.records||[];
 allRecords.sort((a,b)=>a.ts-b.ts);
 
 let filtered=allRecords
-.map((r,i)=>({r,occurrenceNo:i+1}))
+.map((r,i)=>({r,occ:i+1}))
 .filter(o=>selectedMap[dev].includes(String(o.r.ts)));
 
 if(filtered.length===0) continue;
 
 const assetInfo=docData.assetInfo||{};
-const rowSpan=filtered.length;
 
-tableBodyHtml+=`<tbody class="device-group">`;
+bodyHtml+=`
 
-for(let i=0;i<rowSpan;i++){
+<div class="device-section">
 
-const item=filtered[i];
-const r=item.r;
-const first=i===0;
+<div class="device-header">
 
-tableBodyHtml+=`<tr>`;
+<div class="device-title">
 
-if(first){
-
-tableBodyHtml+=`
-
-<td rowspan="${rowSpan}" class="deviceCell">
-
-<div class="deviceNo">${itemNo++}</div>
-
-<div class="deviceName">${dev}</div>
-
-<div class="deviceInfo">
-
-<b>S/N:</b> ${assetInfo.serial||'-'}<br>
-<b>Model:</b> ${assetInfo.model||'-'}<br>
-<b>PEA No:</b> ${assetInfo.peaNo||'-'}<br>
-<b>Price:</b> ${assetInfo.price||'-'}<br>
-<b>Warranty:</b><br>
-${assetInfo.warrantyStart||'-'}<br>
-${assetInfo.warrantyEnd||'-'}
+${deviceNo++}. ${dev}
 
 </div>
 
-</td>
+<div class="device-spec">
+
+S/N : ${assetInfo.serial||'-'} |
+Model : ${assetInfo.model||'-'} |
+PEA No : ${assetInfo.peaNo||'-'} |
+Price : ${assetInfo.price||'-'} |
+Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'} 
+
+</div>
+
+</div>
+
+<table class="device-table">
+
+<thead>
+
+<tr>
+<th style="width:5%">Occ</th>
+<th style="width:10%">Down</th>
+<th style="width:10%">Fixed</th>
+<th style="width:30%">Description</th>
+<th style="width:30%">Solution</th>
+<th style="width:8%">Cost</th>
+<th style="width:7%">User</th>
+</tr>
+
+</thead>
+
+<tbody>
 
 `;
-}
+
+filtered.forEach(item=>{
+
+const r=item.r;
 
 let imgBroken=r.brokenFileUrl?
-`<div class="imgWrap"><img src="${r.brokenFileUrl}"></div>`:'';
+`<div class="img"><img src="${r.brokenFileUrl}"></div>`:'';
 
 let imgFixed=r.fixedFileUrl?
-`<div class="imgWrap"><img src="${r.fixedFileUrl}"></div>`:'';
+`<div class="img"><img src="${r.fixedFileUrl}"></div>`:'';
 
-tableBodyHtml+=`
+bodyHtml+=`
 
-<td class="center">${item.occurrenceNo}</td>
+<tr>
+
+<td class="center">${item.occ}</td>
 
 <td class="center">${r.brokenDate||'-'}</td>
 
 <td class="center">${r.fixedDate||'<span class="pending">PENDING</span>'}</td>
 
-<td>${r.description||'-'}${imgBroken}</td>
+<td>
+${r.description||'-'}
+${imgBroken}
+</td>
 
-<td>${r.solution||'-'}${imgFixed}</td>
+<td>
+${r.solution||'-'}
+${imgFixed}
+</td>
+
+<td class="center">
+${r.repairCost?Number(r.repairCost).toLocaleString():'-'}
+</td>
 
 <td>
 
-<div>Ticket : <b>${r.orderNumber||'-'}</b></div>
-<div>Cost : <b>${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</b></div>
-
-<div class="docLine">
-มท. ${r.docMinistry||'-'}
-</div>
-
-<div>
-กฟภ. ${r.docPEA||'-'}
-</div>
+<b>D</b>: ${(r.brokenUser||'-').split('@')[0]}<br>
+<b>F</b>: ${(r.fixedUser||'-').split('@')[0]}
 
 </td>
 
-<td class="userCell">
-
-<div><b>Down</b><br>${(r.brokenUser||'-').split('@')[0]}</div>
-
-<div class="fixUser"><b>Fix</b><br>${(r.fixedUser||'-').split('@')[0]}</div>
-
-</td>
+</tr>
 
 `;
 
-tableBodyHtml+=`</tr>`;
-}
+});
 
-tableBodyHtml+=`</tbody>`;
+bodyHtml+=`
+
+</tbody>
+</table>
+
+</div>
+
+`;
+
 }
 
 closeReportModal();
 
-const printWindow=window.open('','','width=1200,height=900');
+const w=window.open('','','width=1200,height=900');
 
-printWindow.document.write(`
+w.document.write(`
 
 <html>
 
@@ -1139,16 +1154,14 @@ printWindow.document.write(`
 
 <style>
 
-/* PAGE */
-
 @page{
 size:A4 portrait;
-margin:18mm 12mm 18mm 12mm;
+margin:18mm;
 }
 
 body{
 font-family:'Sarabun',sans-serif;
-font-size:10.5px;
+font-size:11px;
 margin:0;
 }
 
@@ -1159,47 +1172,80 @@ margin:0;
 display:flex;
 align-items:center;
 border-bottom:3px solid #6a1b9a;
+margin-bottom:15px;
 padding-bottom:8px;
-margin-bottom:12px;
 
 }
 
 .logo{
 
-width:70px;
+width:65px;
+margin-right:10px;
 
 }
 
-.titleArea{
+.title{
 
 flex:1;
 text-align:center;
 
 }
 
-.titleMain{
+.title-main{
 
 font-size:16px;
 font-weight:700;
 
 }
 
-.titleSub{
+.title-sub{
 
 font-size:11px;
 
 }
 
-.headerRight{
+.header-right{
 
 font-size:10px;
 text-align:right;
 
 }
 
+/* DEVICE SECTION */
+
+.device-section{
+
+margin-bottom:18px;
+page-break-inside:avoid;
+
+}
+
+.device-header{
+
+background:#f3f0ff;
+border-left:5px solid #6a1b9a;
+padding:6px 8px;
+margin-bottom:4px;
+
+}
+
+.device-title{
+
+font-weight:700;
+font-size:12px;
+
+}
+
+.device-spec{
+
+font-size:10px;
+color:#444;
+
+}
+
 /* TABLE */
 
-table{
+.device-table{
 
 width:100%;
 border-collapse:collapse;
@@ -1207,17 +1253,17 @@ table-layout:fixed;
 
 }
 
-th{
+.device-table th{
 
 background:#6a1b9a;
 color:#fff;
 border:1px solid #000;
-padding:5px;
-font-size:10.5px;
+padding:4px;
+font-size:10px;
 
 }
 
-td{
+.device-table td{
 
 border:1px solid #000;
 padding:4px;
@@ -1226,52 +1272,20 @@ word-break:break-word;
 
 }
 
-.center{text-align:center;}
-
-.deviceCell{
-
-background:#f4f4ff;
+.center{
 text-align:center;
-
 }
 
-.deviceNo{
+/* IMAGE */
 
-background:#000;
-color:#fff;
-width:18px;
-height:18px;
-border-radius:50%;
-font-size:9px;
-line-height:18px;
-margin:auto;
-
-}
-
-.deviceName{
-
-font-weight:700;
-font-size:10.5px;
-margin-top:3px;
-
-}
-
-.deviceInfo{
-
-font-size:9px;
-text-align:left;
-margin-top:4px;
-
-}
-
-.imgWrap{
+.img{
 
 margin-top:4px;
-border:1px solid #000;
+border:1px solid #aaa;
 
 }
 
-.imgWrap img{
+.img img{
 
 width:100%;
 height:70px;
@@ -1282,29 +1296,7 @@ object-fit:cover;
 .pending{
 
 color:red;
-font-weight:700;
-
-}
-
-.docLine{
-
-border-top:1px dotted #999;
-margin-top:3px;
-padding-top:3px;
-
-}
-
-.userCell{
-
-font-size:9px;
-
-}
-
-.fixUser{
-
-border-top:1px dotted #999;
-margin-top:3px;
-padding-top:3px;
+font-weight:bold;
 
 }
 
@@ -1317,41 +1309,17 @@ bottom:0;
 left:0;
 right:0;
 font-size:9px;
-border-top:1px solid #999;
-padding-top:3px;
-
 display:flex;
 justify-content:space-between;
+border-top:1px solid #aaa;
+padding-top:3px;
 
 }
 
-.signature{
+.page:after{
 
-margin-top:35px;
-display:flex;
-justify-content:space-around;
-
-}
-
-.sigBox{text-align:center;}
-
-.sigLine{
-
-border-bottom:1px solid #000;
-width:200px;
-height:35px;
-margin-bottom:5px;
-
-}
-
-.device-group{
-page-break-inside:avoid;
-}
-
-/* PAGE NUMBER */
-
-.pageNumber:after{
 content:"Page " counter(page);
+
 }
 
 </style>
@@ -1361,22 +1329,24 @@ content:"Page " counter(page);
 <body>
 
 <div style="text-align:center;margin-bottom:10px">
-<button onclick="window.print()" style="padding:8px 20px;font-weight:bold">PRINT / SAVE PDF</button>
+<button onclick="window.print()">PRINT / SAVE PDF</button>
 </div>
 
 <div class="header">
 
-<img class="logo" src="https://upload.wikimedia.org/wikipedia/th/thumb/9/97/Provincial_Electricity_Authority_%28Thailand%29_logo.svg/512px-Provincial_Electricity_Authority_%28Thailand%29_logo.svg.png">
+<img class="logo" src="main/provincial-electricity-authority.png">
 
-<div class="titleArea">
+<div class="title">
 
-<div class="titleMain">ASSET MAINTENANCE REPORT</div>
+<div class="title-main">ASSET MAINTENANCE REPORT</div>
 
-<div class="titleSub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
+<div class="title-sub">
+การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)
+</div>
 
 </div>
 
-<div class="headerRight">
+<div class="header-right">
 
 SITE : ${siteData.name}<br>
 DATE : ${new Date().toLocaleDateString('th-TH')}<br>
@@ -1386,68 +1356,13 @@ TIME : ${new Date().toLocaleTimeString('th-TH')}
 
 </div>
 
-<table>
-
-<thead>
-
-<tr>
-
-<th style="width:18%">DEVICE</th>
-<th style="width:5%">OCC</th>
-<th style="width:9%">DOWN</th>
-<th style="width:9%">FIX</th>
-<th style="width:20%">DESCRIPTION</th>
-<th style="width:20%">SOLUTION</th>
-<th style="width:10%">COST</th>
-<th style="width:9%">USER</th>
-
-</tr>
-
-</thead>
-
-${tableBodyHtml}
-
-</table>
-
-<div class="signature">
-
-<div class="sigBox">
-
-<div class="sigLine"></div>
-
-<b>${currentUserFullName||''}</b><br>
-
-Prepared By
-
-</div>
-
-<div class="sigBox">
-
-<div class="sigLine"></div>
-
-..............................<br>
-
-Checked By
-
-</div>
-
-<div class="sigBox">
-
-<div class="sigLine"></div>
-
-..............................<br>
-
-Approved By
-
-</div>
-
-</div>
+${bodyHtml}
 
 <div class="footer">
 
 <div>PEA Asset Maintenance System</div>
 
-<div class="pageNumber"></div>
+<div class="page"></div>
 
 </div>
 
@@ -1457,7 +1372,9 @@ Approved By
 
 `);
 
-printWindow.document.close();
+w.document.close();
 
 };
+};
+
 
