@@ -993,146 +993,141 @@ window.toggleDeviceGroup = function(cb, safeDevId) {
     document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked);
 };
 
-window.generateSelectedReport = async function() {
+window.generateSelectedReport = async function () {
 
-    const siteData = sites[currentSiteKey];
-    const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+const siteData = sites[currentSiteKey];
 
-    if(selectedCheckboxes.length === 0){
-        Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการเพื่อสร้างรายงาน','warning');
-        return;
-    }
+const selectedCheckboxes =
+Array.from(document.querySelectorAll('.record-checkbox:checked'))
+.map(cb => cb.value);
 
-    const selectedMap = {};
-    selectedCheckboxes.forEach(val=>{
-        const [dev,ts] = val.split('|');
-        if(!selectedMap[dev]) selectedMap[dev]=[];
-        selectedMap[dev].push(String(ts));
-    });
+if(selectedCheckboxes.length === 0){
+Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการ','warning');
+return;
+}
 
-    const dataMap = window.tempReportDataMap;
-    const now = new Date();
+const selectedMap={};
 
-    const printDate = now.toLocaleDateString('th-TH');
-    const printTime = now.toLocaleTimeString('th-TH');
+selectedCheckboxes.forEach(v=>{
+const [dev,ts]=v.split('|');
+if(!selectedMap[dev]) selectedMap[dev]=[];
+selectedMap[dev].push(String(ts));
+});
 
-    let tableBodyHtml='';
-    let itemNo=1;
+const dataMap = window.tempReportDataMap;
 
-    for (const dev of siteData.devices){
+let tableBodyHtml='';
+let itemNo=1;
 
-        if(!selectedMap[dev]) continue;
+for(const dev of siteData.devices){
 
-        const docData = dataMap[dev] || {};
-        let allRecords = docData.records || [];
+if(!selectedMap[dev]) continue;
 
-        allRecords.sort((a,b)=>a.ts-b.ts);
+const docData=dataMap[dev]||{};
+let allRecords=docData.records||[];
 
-        let filteredRecordsWithIndex = allRecords
-            .map((r,idx)=>({r,occurrenceNo:idx+1}))
-            .filter(obj=>selectedMap[dev].includes(String(obj.r.ts)));
+allRecords.sort((a,b)=>a.ts-b.ts);
 
-        if(filteredRecordsWithIndex.length===0) continue;
+let filtered=allRecords
+.map((r,i)=>({r,occurrenceNo:i+1}))
+.filter(o=>selectedMap[dev].includes(String(o.r.ts)));
 
-        const assetInfo = docData.assetInfo || {};
-        const rowSpan = filteredRecordsWithIndex.length;
+if(filtered.length===0) continue;
 
-        tableBodyHtml+=`<tbody class="device-group">`;
+const assetInfo=docData.assetInfo||{};
+const rowSpan=filtered.length;
 
-        for(let i=0;i<rowSpan;i++){
+tableBodyHtml+=`<tbody class="device-group">`;
 
-            const item=filteredRecordsWithIndex[i];
-            const r=item.r;
-            const isFirst=i===0;
+for(let i=0;i<rowSpan;i++){
 
-            tableBodyHtml+=`<tr>`;
+const item=filtered[i];
+const r=item.r;
+const first=i===0;
 
-            if(isFirst){
+tableBodyHtml+=`<tr>`;
 
-                tableBodyHtml+=`
-                <td rowspan="${rowSpan}" class="device-cell">
+if(first){
 
-                    <div class="device-number">${itemNo++}</div>
+tableBodyHtml+=`
 
-                    <div class="device-name">${dev}</div>
+<td rowspan="${rowSpan}" class="deviceCell">
 
-                    <div class="device-brand">${assetInfo.manufacturer||'-'}</div>
+<div class="deviceNo">${itemNo++}</div>
 
-                    <div class="device-spec">
+<div class="deviceName">${dev}</div>
 
-                        <b>S/N:</b> ${assetInfo.serial||'-'}<br>
-                        <b>Model:</b> ${assetInfo.model||'-'}<br>
-                        <b>PEA No:</b> ${assetInfo.peaNo||'-'}<br>
-                        <b>Price:</b> ${assetInfo.price||'-'}<br>
-                        <b>Warranty:</b><br>
-                        ${assetInfo.warrantyStart||'-'}<br>
-                        ${assetInfo.warrantyEnd||'-'}
+<div class="deviceInfo">
 
-                    </div>
+<b>S/N:</b> ${assetInfo.serial||'-'}<br>
+<b>Model:</b> ${assetInfo.model||'-'}<br>
+<b>PEA No:</b> ${assetInfo.peaNo||'-'}<br>
+<b>Price:</b> ${assetInfo.price||'-'}<br>
+<b>Warranty:</b><br>
+${assetInfo.warrantyStart||'-'}<br>
+${assetInfo.warrantyEnd||'-'}
 
-                </td>
-                `;
-            }
+</div>
 
-            let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>`:'';
-            let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>`:'';
+</td>
 
-            let subTagHtml = r.subDevice ? `<div class="sub-tag">[${r.subDevice}]</div>`:'';
+`;
+}
 
-            tableBodyHtml+=`
+let imgBroken=r.brokenFileUrl?
+`<div class="imgWrap"><img src="${r.brokenFileUrl}"></div>`:'';
 
-            <td class="center">${item.occurrenceNo}</td>
+let imgFixed=r.fixedFileUrl?
+`<div class="imgWrap"><img src="${r.fixedFileUrl}"></div>`:'';
 
-            <td class="center">${r.brokenDate||'-'}</td>
+tableBodyHtml+=`
 
-            <td class="center">${r.fixedDate||'<span class="pending">PENDING</span>'}</td>
+<td class="center">${item.occurrenceNo}</td>
 
-            <td class="desc">${subTagHtml}${r.description||'-'}${imgBroken}</td>
+<td class="center">${r.brokenDate||'-'}</td>
 
-            <td class="desc">${r.solution||'-'}${imgFixed}</td>
+<td class="center">${r.fixedDate||'<span class="pending">PENDING</span>'}</td>
 
-            <td>
+<td>${r.description||'-'}${imgBroken}</td>
 
-                <div>Ticket : <b>${r.orderNumber||'-'}</b></div>
-                <div>Cost : <b>${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</b></div>
+<td>${r.solution||'-'}${imgFixed}</td>
 
-                <div class="doc-line">
-                    มท. ${r.docMinistry||'-'}
-                </div>
+<td>
 
-                <div>
-                    กฟภ. ${r.docPEA||'-'}
-                </div>
+<div>Ticket : <b>${r.orderNumber||'-'}</b></div>
+<div>Cost : <b>${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</b></div>
 
-            </td>
+<div class="docLine">
+มท. ${r.docMinistry||'-'}
+</div>
 
-            <td class="user-cell">
+<div>
+กฟภ. ${r.docPEA||'-'}
+</div>
 
-                <div>
-                <b>ผู้แจ้งเสีย</b><br>
-                ${(r.brokenUser||'-').split('@')[0]}
-                </div>
+</td>
 
-                <div class="fix-user">
-                <b>ผู้แจ้งซ่อม</b><br>
-                ${(r.fixedUser||'-').split('@')[0]}
-                </div>
+<td class="userCell">
 
-            </td>
+<div><b>Down</b><br>${(r.brokenUser||'-').split('@')[0]}</div>
 
-            `;
+<div class="fixUser"><b>Fix</b><br>${(r.fixedUser||'-').split('@')[0]}</div>
 
-            tableBodyHtml+=`</tr>`;
-        }
+</td>
 
-        tableBodyHtml+=`</tbody>`;
-    }
+`;
 
-    closeReportModal();
+tableBodyHtml+=`</tr>`;
+}
 
-    const printWindow = window.open('','','height=900,width=1200');
+tableBodyHtml+=`</tbody>`;
+}
 
-    printWindow.document.write(`
+closeReportModal();
+
+const printWindow=window.open('','','width=1200,height=900');
+
+printWindow.document.write(`
 
 <html>
 
@@ -1144,65 +1139,58 @@ window.generateSelectedReport = async function() {
 
 <style>
 
+/* PAGE */
+
 @page{
 size:A4 portrait;
-margin:0.5in;
+margin:18mm 12mm 18mm 12mm;
 }
 
 body{
 font-family:'Sarabun',sans-serif;
-font-size:11px;
+font-size:10.5px;
 margin:0;
 }
 
 /* HEADER */
 
-.report-header{
-
-border-bottom:3px solid #6a1b9a;
-padding-bottom:10px;
-margin-bottom:15px;
-
-}
-
-.header-top{
+.header{
 
 display:flex;
-justify-content:space-between;
 align-items:center;
+border-bottom:3px solid #6a1b9a;
+padding-bottom:8px;
+margin-bottom:12px;
 
 }
 
-.pea-logo{
+.logo{
 
-font-size:26px;
-font-weight:700;
-color:#6a1b9a;
+width:70px;
 
 }
 
-.header-title{
+.titleArea{
 
+flex:1;
 text-align:center;
-flex-grow:1;
 
 }
 
-.main-title{
+.titleMain{
 
-font-size:18px;
+font-size:16px;
 font-weight:700;
 
 }
 
-.sub-title{
+.titleSub{
 
 font-size:11px;
-margin-top:4px;
 
 }
 
-.header-info{
+.headerRight{
 
 font-size:10px;
 text-align:right;
@@ -1211,7 +1199,7 @@ text-align:right;
 
 /* TABLE */
 
-.main-table{
+table{
 
 width:100%;
 border-collapse:collapse;
@@ -1222,33 +1210,32 @@ table-layout:fixed;
 th{
 
 background:#6a1b9a;
-color:white;
+color:#fff;
 border:1px solid #000;
-padding:6px;
-font-size:11px;
+padding:5px;
+font-size:10.5px;
 
 }
 
 td{
 
 border:1px solid #000;
-padding:5px;
+padding:4px;
 vertical-align:top;
+word-break:break-word;
 
 }
 
-.center{
+.center{text-align:center;}
+
+.deviceCell{
+
+background:#f4f4ff;
 text-align:center;
-}
-
-.device-cell{
-
-background:#f8f8ff;
-text-align:center;
 
 }
 
-.device-number{
+.deviceNo{
 
 background:#000;
 color:#fff;
@@ -1261,57 +1248,33 @@ margin:auto;
 
 }
 
-.device-name{
+.deviceName{
 
 font-weight:700;
-color:#1e40af;
+font-size:10.5px;
 margin-top:3px;
 
 }
 
-.device-brand{
+.deviceInfo{
 
-font-size:8px;
-background:#eee;
-padding:2px 4px;
-margin:4px auto;
-display:inline-block;
-
-}
-
-.device-spec{
-
-font-size:8.5px;
+font-size:9px;
 text-align:left;
 margin-top:4px;
 
 }
 
-.desc{
-
-word-break:break-word;
-
-}
-
-.sub-tag{
-
-color:#2563eb;
-font-weight:600;
-margin-bottom:3px;
-
-}
-
-.img-wrap{
+.imgWrap{
 
 margin-top:4px;
 border:1px solid #000;
 
 }
 
-.img-wrap img{
+.imgWrap img{
 
 width:100%;
-height:80px;
+height:70px;
 object-fit:cover;
 
 }
@@ -1323,51 +1286,72 @@ font-weight:700;
 
 }
 
-.doc-line{
+.docLine{
 
-margin-top:4px;
-border-top:1px dotted #aaa;
+border-top:1px dotted #999;
+margin-top:3px;
 padding-top:3px;
 
 }
 
-.user-cell{
+.userCell{
 
 font-size:9px;
 
 }
 
-.fix-user{
+.fixUser{
 
-margin-top:5px;
-border-top:1px dotted #aaa;
+border-top:1px dotted #999;
+margin-top:3px;
 padding-top:3px;
 
 }
 
-/* SIGNATURE */
+/* FOOTER */
+
+.footer{
+
+position:fixed;
+bottom:0;
+left:0;
+right:0;
+font-size:9px;
+border-top:1px solid #999;
+padding-top:3px;
+
+display:flex;
+justify-content:space-between;
+
+}
 
 .signature{
 
-margin-top:40px;
+margin-top:35px;
 display:flex;
 justify-content:space-around;
 
 }
 
-.sig-box{
+.sigBox{text-align:center;}
 
-text-align:center;
+.sigLine{
+
+border-bottom:1px solid #000;
+width:200px;
+height:35px;
+margin-bottom:5px;
 
 }
 
-.sig-line{
+.device-group{
+page-break-inside:avoid;
+}
 
-border-bottom:1px solid #000;
-width:220px;
-height:40px;
-margin-bottom:6px;
+/* PAGE NUMBER */
 
+.pageNumber:after{
+content:"Page " counter(page);
 }
 
 </style>
@@ -1376,52 +1360,46 @@ margin-bottom:6px;
 
 <body>
 
-<div style="text-align:center;margin-bottom:10px;">
-<button onclick="window.print()" style="padding:10px 20px;font-weight:bold;">พิมพ์ / Save PDF</button>
+<div style="text-align:center;margin-bottom:10px">
+<button onclick="window.print()" style="padding:8px 20px;font-weight:bold">PRINT / SAVE PDF</button>
 </div>
 
-<div class="report-header">
+<div class="header">
 
-<div class="header-top">
+<img class="logo" src="https://upload.wikimedia.org/wikipedia/th/thumb/9/97/Provincial_Electricity_Authority_%28Thailand%29_logo.svg/512px-Provincial_Electricity_Authority_%28Thailand%29_logo.svg.png">
 
-<div class="pea-logo">PEA</div>
+<div class="titleArea">
 
-<div class="header-title">
+<div class="titleMain">ASSET MAINTENANCE REPORT</div>
 
-<div class="main-title">ASSET MAINTENANCE REPORT</div>
-
-<div class="sub-title">
-การไฟฟ้าส่วนภูมิภาค
-</div>
+<div class="titleSub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
 
 </div>
 
-<div class="header-info">
+<div class="headerRight">
 
-DATE : ${printDate}<br>
-TIME : ${printTime}<br>
-SITE : ${siteData.name}
+SITE : ${siteData.name}<br>
+DATE : ${new Date().toLocaleDateString('th-TH')}<br>
+TIME : ${new Date().toLocaleTimeString('th-TH')}
 
 </div>
 
 </div>
 
-</div>
-
-<table class="main-table">
+<table>
 
 <thead>
 
 <tr>
 
-<th style="width:18%">Device</th>
-<th style="width:4%">Occ</th>
-<th style="width:8%">Down</th>
-<th style="width:8%">Fixed</th>
-<th style="width:20%">Description</th>
-<th style="width:20%">Solution</th>
-<th style="width:12%">Order / Cost</th>
-<th style="width:10%">User</th>
+<th style="width:18%">DEVICE</th>
+<th style="width:5%">OCC</th>
+<th style="width:9%">DOWN</th>
+<th style="width:9%">FIX</th>
+<th style="width:20%">DESCRIPTION</th>
+<th style="width:20%">SOLUTION</th>
+<th style="width:10%">COST</th>
+<th style="width:9%">USER</th>
 
 </tr>
 
@@ -1433,35 +1411,43 @@ ${tableBodyHtml}
 
 <div class="signature">
 
-<div class="sig-box">
+<div class="sigBox">
 
-<div class="sig-line"></div>
+<div class="sigLine"></div>
 
 <b>${currentUserFullName||''}</b><br>
 
-ผู้จัดทำรายงาน
+Prepared By
 
 </div>
 
-<div class="sig-box">
+<div class="sigBox">
 
-<div class="sig-line"></div>
+<div class="sigLine"></div>
 
-........................................<br>
+..............................<br>
 
-ผู้ตรวจสอบ
+Checked By
+
+</div>
+
+<div class="sigBox">
+
+<div class="sigLine"></div>
+
+..............................<br>
+
+Approved By
 
 </div>
 
-<div class="sig-box">
-
-<div class="sig-line"></div>
-
-........................................<br>
-
-ผู้อนุมัติ
-
 </div>
+
+<div class="footer">
+
+<div>PEA Asset Maintenance System</div>
+
+<div class="pageNumber"></div>
 
 </div>
 
@@ -1471,7 +1457,7 @@ ${tableBodyHtml}
 
 `);
 
-    printWindow.document.close();
-};
+printWindow.document.close();
 
+};
 
