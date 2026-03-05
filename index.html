@@ -443,6 +443,20 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div id="othersDeviceContainer" class="hidden sm:col-span-2 bg-blue-50 p-3 rounded-lg border border-blue-100 mb-2">
+                  <label class="text-sm font-bold text-blue-800">ระบุอุปกรณ์ (Others)</label>
+                  <select id="othersDeviceSelect" class="w-full mt-1 border-blue-300 rounded p-1.5">
+                      <option value="Office">Office</option>
+                      <option value="Current Transformer">Current Transformer</option>
+                      <option value="Voltage Transformer">Voltage Transformer</option>
+                      <option value="Step-up Transformer 500 MVA">Step-up Transformer 500 MVA</option>
+                      <option value="Service Transformer 160 KVA">Service Transformer 160 KVA</option>
+                      <option value="Disconnecting Switch">Disconnecting Switch</option>
+                      <option value="Fire Alarm">Fire Alarm</option>
+                      <option value="The Other">The Other</option>
+                  </select>
+              </div>
+
               <div>
                 <label class="text-sm font-semibold text-gray-700">ชื่อผู้บันทึก</label>
                 <input type="text" id="userName" class="w-full" readOnly/>
@@ -471,6 +485,15 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
               <div>
                 <label class="text-sm font-semibold text-gray-700">ราคาซ่อมแซม (บาท)</label>
                 <input type="number" id="repairCost" placeholder="0.00" class="w-full"/>
+              </div>
+
+              <div>
+                <label class="text-sm font-semibold text-gray-700">เลขที่หนังสือ มท.</label>
+                <input type="text" id="docMinistry" placeholder="ระบุเลขที่..." class="w-full"/>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700">เลขที่หนังสือ กฟภ.</label>
+                <input type="text" id="docPEA" placeholder="ระบุเลขที่..." class="w-full"/>
               </div>
 
               <div>
@@ -544,6 +567,22 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <div id="userListContainer" class="flex-1 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
         <div class="text-center py-4 text-gray-400">กำลังโหลดรายชื่อ...</div>
     </div>
+</div>
+
+<div id="reportModal" class="hidden fixed inset-0 z-[1002] bg-slate-900/60 flex items-center justify-center p-4">
+   <div class="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
+      <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-xl">
+         <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><span class="text-blue-600">🖨️</span> เลือกรายการเพื่อออกรายงาน PDF</h3>
+         <button onclick="closeReportModal()" class="text-red-500 hover:text-red-700 font-bold px-3 py-1 rounded bg-red-50 transition-colors">✖ ปิด</button>
+      </div>
+      <div class="p-4 flex-1 overflow-auto bg-white" id="reportSelectionContainer">
+      </div>
+      <div class="p-4 border-t flex justify-end items-center gap-3 bg-slate-50 rounded-b-xl">
+         <button class="btn btn-ghost text-sm font-semibold" onclick="selectAllReport(true)">✅ เลือกทั้งหมด</button>
+         <button class="btn btn-ghost text-sm font-semibold text-slate-500" onclick="selectAllReport(false)">🔳 เอาออกทั้งหมด</button>
+         <button class="btn btn-brand" onclick="generateSelectedReport()">📑 สร้างรายงาน PDF</button>
+      </div>
+   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
