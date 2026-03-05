@@ -994,245 +994,483 @@ window.toggleDeviceGroup = function(cb, safeDevId) {
 };
 
 window.generateSelectedReport = async function() {
+
     const siteData = sites[currentSiteKey];
     const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
 
-    if(selectedCheckboxes.length === 0) { 
-        Swal.fire('ระบุข้อมูล', 'กรุณาเลือกรายการอย่างน้อย 1 รายการเพื่อสร้างรายงาน', 'warning'); return; 
+    if(selectedCheckboxes.length === 0){
+        Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการเพื่อสร้างรายงาน','warning');
+        return;
     }
 
-    const selectedMap = {}; // Format: { devName: [ts1, ts2, ...] }
-    selectedCheckboxes.forEach(val => {
-        const parts = val.split('|');
-        const dev = parts[0]; const ts = parts[1];
-        if(!selectedMap[dev]) selectedMap[dev] = [];
+    const selectedMap = {};
+    selectedCheckboxes.forEach(val=>{
+        const [dev,ts] = val.split('|');
+        if(!selectedMap[dev]) selectedMap[dev]=[];
         selectedMap[dev].push(String(ts));
     });
 
     const dataMap = window.tempReportDataMap;
     const now = new Date();
-    const printDate = now.toISOString().split('T')[0]; 
-    const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    let tableBodyHtml = '';
-    let itemNo = 1;
+    const printDate = now.toLocaleDateString('th-TH');
+    const printTime = now.toLocaleTimeString('th-TH');
 
-    for (const dev of siteData.devices) {
+    let tableBodyHtml='';
+    let itemNo=1;
+
+    for (const dev of siteData.devices){
+
         if(!selectedMap[dev]) continue;
+
         const docData = dataMap[dev] || {};
         let allRecords = docData.records || [];
-        allRecords.sort((a, b) => a.ts - b.ts); 
-        
-        // Filter to only included ts, but keep the original occurrence number (idx + 1)
-        let filteredRecordsWithIndex = allRecords
-            .map((r, idx) => ({r, occurrenceNo: idx + 1}))
-            .filter(obj => selectedMap[dev].includes(String(obj.r.ts)));
 
-        if(filteredRecordsWithIndex.length === 0) continue;
+        allRecords.sort((a,b)=>a.ts-b.ts);
+
+        let filteredRecordsWithIndex = allRecords
+            .map((r,idx)=>({r,occurrenceNo:idx+1}))
+            .filter(obj=>selectedMap[dev].includes(String(obj.r.ts)));
+
+        if(filteredRecordsWithIndex.length===0) continue;
 
         const assetInfo = docData.assetInfo || {};
         const rowSpan = filteredRecordsWithIndex.length;
 
-        // ใช้ tbody เป็นตัวคุมกลุ่มอุปกรณ์หนึ่งตัว เพื่อช่วยเรื่องการตัดหน้ากระดาษ
-        tableBodyHtml += `<tbody class="device-group">`;
-        for (let i = 0; i < rowSpan; i++) {
-            const item = filteredRecordsWithIndex[i];
-            const r = item.r;
-            const isFirst = (i === 0);
+        tableBodyHtml+=`<tbody class="device-group">`;
 
-            tableBodyHtml += `<tr>`;
-            if (isFirst) {
-                tableBodyHtml += `
-                    <td rowspan="${rowSpan}" class="col-device">
-                        <div class="item-no-circle">${itemNo++}</div>
-                        <div class="dev-title">${dev}</div>
-                        <div class="brand-tag">${assetInfo.manufacturer || '-'}</div>
-                        <div class="dev-specs">
-                            <b>S/N:</b> ${assetInfo.serial || '-'}<br>
-                            <b>Model:</b> ${assetInfo.model || '-'}<br>
-                            <b>PEA No.:</b> ${assetInfo.peaNo || '-'}<br>
-                            <b>Price:</b> ${assetInfo.price || '-'}<br>
-                            <b>Warranty:</b><br> ${assetInfo.warrantyStart || '-'}<br>
-                            ${assetInfo.warrantyEnd || '-'}
-                        </div>
-                    </td>
+        for(let i=0;i<rowSpan;i++){
+
+            const item=filteredRecordsWithIndex[i];
+            const r=item.r;
+            const isFirst=i===0;
+
+            tableBodyHtml+=`<tr>`;
+
+            if(isFirst){
+
+                tableBodyHtml+=`
+                <td rowspan="${rowSpan}" class="device-cell">
+
+                    <div class="device-number">${itemNo++}</div>
+
+                    <div class="device-name">${dev}</div>
+
+                    <div class="device-brand">${assetInfo.manufacturer||'-'}</div>
+
+                    <div class="device-spec">
+
+                        <b>S/N:</b> ${assetInfo.serial||'-'}<br>
+                        <b>Model:</b> ${assetInfo.model||'-'}<br>
+                        <b>PEA No:</b> ${assetInfo.peaNo||'-'}<br>
+                        <b>Price:</b> ${assetInfo.price||'-'}<br>
+                        <b>Warranty:</b><br>
+                        ${assetInfo.warrantyStart||'-'}<br>
+                        ${assetInfo.warrantyEnd||'-'}
+
+                    </div>
+
+                </td>
                 `;
             }
 
-            let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>` : '';
-            let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>` : '';
-            let subTagHtml = r.subDevice ? `<div style="color:#2563eb; font-weight:bold; margin-bottom: 4px;">[${r.subDevice}]</div>` : '';
-            let brokenUserInfo = r.brokenUser ? r.brokenUser.split('@')[0] : (r.user ? r.user.split('@')[0] : '-');
-            if (r.brokenUserPos || r.brokenUserDept) {
-                let details = [r.brokenUserPos, r.brokenUserDept].filter(Boolean).join(' / ');
-                brokenUserInfo += `<br><span style="font-weight:normal; color:#64748b;">${details}</span>`;
-            }
+            let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>`:'';
+            let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>`:'';
 
-            let fixedUserInfo = r.fixedUser ? r.fixedUser.split('@')[0] : '-';
-            if (r.fixedUser && (r.fixedUserPos || r.fixedUserDept)) {
-                let details = [r.fixedUserPos, r.fixedUserDept].filter(Boolean).join(' / ');
-                fixedUserInfo += `<br><span style="font-weight:normal; color:#64748b;">${details}</span>`;
-            }
+            let subTagHtml = r.subDevice ? `<div class="sub-tag">[${r.subDevice}]</div>`:'';
 
-            tableBodyHtml += `
-                <td class="text-center font-bold">${item.occurrenceNo}</td>
-                <td class="text-center">${r.brokenDate || '-'}</td>
-                <td class="text-center">${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
-                <td class="text-left desc-cell">${subTagHtml}${r.description || '-'}${imgBroken}</td>
-                <td class="text-left desc-cell">${r.solution || '-'}${imgFixed}</td>
-                <td class="text-left">
-                    <div class="cost-row"><span>Ticket:</span> <b class="cost-val">${r.orderNumber || '-'}</b></div>
-                    <div class="cost-row" style="margin-top:2px;"><span>Cost:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</b></div>
-                    <div class="cost-row" style="margin-top:4px; font-size:8.5px; border-top: 1px dotted #ccc; padding-top: 2px;"><span>มท.</span> <b>${r.docMinistry || '-'}</b></div>
-                    <div class="cost-row" style="margin-top:2px; font-size:8.5px;"><span>กฟภ.</span> <b>${r.docPEA || '-'}</b></div>
-                </td>
-                <td class="text-left user-cell" style="font-size: 8.5px;">
-                    <div><span style="color:#991b1b; font-weight: bold;">ผู้แจ้งเสีย:</span> ${brokenUserInfo}</div>
-                    <div style="margin-top:4px; border-top: 1px dotted #ccc; padding-top: 2px;"><span style="color:#065f46; font-weight: bold;">ผู้แจ้งซ่อม:</span> ${fixedUserInfo}</div>
-                </td>
+            tableBodyHtml+=`
+
+            <td class="center">${item.occurrenceNo}</td>
+
+            <td class="center">${r.brokenDate||'-'}</td>
+
+            <td class="center">${r.fixedDate||'<span class="pending">PENDING</span>'}</td>
+
+            <td class="desc">${subTagHtml}${r.description||'-'}${imgBroken}</td>
+
+            <td class="desc">${r.solution||'-'}${imgFixed}</td>
+
+            <td>
+
+                <div>Ticket : <b>${r.orderNumber||'-'}</b></div>
+                <div>Cost : <b>${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</b></div>
+
+                <div class="doc-line">
+                    มท. ${r.docMinistry||'-'}
+                </div>
+
+                <div>
+                    กฟภ. ${r.docPEA||'-'}
+                </div>
+
+            </td>
+
+            <td class="user-cell">
+
+                <div>
+                <b>ผู้แจ้งเสีย</b><br>
+                ${(r.brokenUser||'-').split('@')[0]}
+                </div>
+
+                <div class="fix-user">
+                <b>ผู้แจ้งซ่อม</b><br>
+                ${(r.fixedUser||'-').split('@')[0]}
+                </div>
+
+            </td>
+
             `;
-            tableBodyHtml += `</tr>`;}
 
-        tableBodyHtml += `</tbody>`;
+            tableBodyHtml+=`</tr>`;
+        }
+
+        tableBodyHtml+=`</tbody>`;
     }
+
     closeReportModal();
 
-    const printWindow = window.open('', '', 'height=900,width=1400');
+    const printWindow = window.open('','','height=900,width=1200');
+
     printWindow.document.write(`
-        <html>
-        <head>
-            <title>REPORT_${siteData.name}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-            <style>
-                @page { 
-                    size: A4 landscape; 
-                    margin: 0.21in; 
-                    @bottom-right { content: "หน้า " counter(page) " / " counter(pages); font-family: 'Sarabun'; font-size: 10px; }
-                }
-                body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; counter-reset: page; }
-                
-                .main-table { width: 100%; border-collapse: collapse; table-layout: auto; border: 1px solid #000; }
-                
-                /* ===== PEA HEADER THEME ===== */
-                .pea-header{
-                    background: #6a1b9a; color: white; padding: 14px 18px; display: flex;
-                    justify-content: space-between; align-items: center; border-radius: 6px 6px 0 0;
-                }
-                .header-left{ display: flex; align-items: center; gap: 14px; }
-                .pea-logo{ height: 55px; width: auto; }
-                .header-title{ display: flex; flex-direction: column; justify-content: center; }
-                .main-title{ font-size: 20px; font-weight: 700; letter-spacing: 1px; line-height: 1.1; }
-                .site-title{ font-size: 12px; margin-top: 4px; opacity: 0.95; }
-                .header-right{ text-align: right; font-size: 10px; line-height: 1.4; }
-                
-                th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 6px 2px; font-size: 11px; text-align: center; }
-                td { border: 1px solid #000; padding: 5px; font-size: 10px; vertical-align: top; word-wrap: break-word; }
 
-                .w-occ  { width: 42px; min-width: 42px; text-align: center; }
-                .w-date { width: 82px; min-width: 82px; text-align: center; }
-                .w-user { width: 95px; min-width: 95px; white-space: nowrap; }
-                .w-device { width: auto; }
-                .w-cost   { width: auto; }
+<html>
 
-                .desc-cell { width: 50%; max-width: 50%; min-width: 50%; word-break: break-word; overflow-wrap: anywhere; }
-                .col-device { vertical-align: middle !important; text-align: center; background: #f8fafc; }
-                .item-no-circle { background: #0f172a; color: white; width: 16px; height: 16px; border-radius: 50%; font-size: 9px; line-height: 16px; margin: 0 auto 4px auto; }
-                .dev-title { font-weight: 700; color: #1e40af; font-size: 11.5px; line-height: 1.2; margin-bottom: 3px; }
-                .brand-tag { font-size: 8px; background: #e2e8f0; padding: 1px 4px; border-radius: 3px; border: 0.5px solid #94a3b8; display: inline-block; margin-bottom: 4px; }
-                .dev-specs { font-size: 8.5px; text-align: left; line-height: 1.2; border-top: 1px solid #cbd5e1; padding-top: 3px; width: 95%; margin: 0 auto; }
+<head>
 
-                .device-group { page-break-inside: auto; }
-                tr { page-break-inside: avoid; page-break-after: auto; }
-                
-                tfoot { display: table-footer-group; }
-                .footer-wrapper { padding-top: 30px; border: none !important; }
-                .sig-area { display: flex; justify-content: center; gap: 150px; border: none; }
-                .sig-box { text-align: center; border: none; }
-                .sig-line { border-bottom: 1px solid #000; width: 220px; height: 35px; margin-bottom: 15px; }
-                
-                .img-wrap { margin-top: 4px; border: 1px solid #000; padding: 1px; }
-                .img-wrap img { width: 100%; height: 120px; object-fit: cover; display: block; }
-                
-                .text-center { text-align: center; }
-                .text-left { text-align: left; }
-                .font-bold { font-weight: bold; }
-                .cost-row { display: flex; justify-content: space-between; font-size: 9.5px; }
-                .cost-val { color: #c2410c; }
-                .user-cell { white-space: nowrap; }
-                .urgent { color: red; font-weight: bold; }
+<title>PEA_REPORT_${siteData.name}</title>
 
-                @media print {
-                    .no-print { display: none; }
-                    body { -webkit-print-color-adjust: exact; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="no-print" style="background:#eee; padding:10px; text-align:center;">
-                <button onclick="window.print()" style="padding:10px 25px; font-weight:bold; cursor:pointer; background:#0f172a; color:white; border:none; border-radius:4px;">ตรวจสอบเรียบร้อยแล้ว กดเพื่อสั่งพิมพ์ / PDF</button>
-            </div>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 
-            <table class="main-table">
-                <thead>
-                    <tr>
-                        <td colspan="8" style="border:none; padding:0;">
-                          <div class="pea-header">
-                            <div class="header-left">
-                                <div style="font-size:24px; font-weight:bold;">PEA</div> 
-                                <div class="header-title">
-                                    <div class="main-title">ASSET MAINTENANCE REPORT</div>
-                                    <div class="site-title">
-                                        SITE: ${siteData.name}
-                                    </div>
-                                </div>
-                            </div>
+<style>
 
-                            <div class="header-right">
-                                DATE: ${printDate} | TIME: ${printTime}<br>
-                                ISSUED BY: ${currentUserFullName || 'SYSTEM ADMIN'}
-                            </div>
-                        </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th class="w-device">Device & Specs</th>
-                        <th class="w-occ">Occ.</th>
-                        <th class="w-date">Down Date</th>
-                        <th class="w-date">Fixed Date</th>
-                        <th>Description</th>
-                        <th>Solution</th>
-                        <th class="w-cost">Order, Cost & Doc</th>
-                        <th class="w-user">Recorded By<br>(Down / Fixed)</th>
-                    </tr>
-                </thead>
-                
-                ${tableBodyHtml}
+@page{
+size:A4 portrait;
+margin:0.5in;
+}
 
-                <tfoot>
-                    <tr>
-                        <td colspan="8" style="border:none;">
-                            <div class="footer-wrapper">
-                                <div class="sig-area">
-                                    <div class="sig-box">
-                                        <div class="sig-line"></div>
-                                        <div style="font-weight:bold; font-size:11px;">( ${currentUserFullName || '...........................................'} )</div>
-                                        <div style="font-size: 9px; margin-top: 5px;">ผู้จัดทำรายงาน (Prepared By)</div>
-                                    </div>
-                                    <div class="sig-box">
-                                        <div class="sig-line"></div>
-                                        <div style="font-weight:bold; font-size:11px;">( ........................................................... )</div>
-                                        <div style="font-size: 9px; margin-top: 5px;">ผู้รับรองรายงาน (Approved By)</div>
-                                    </div>
-                                </div>
-                                
-                            </div>
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-        </body>
-        </html>
-    `);
+body{
+font-family:'Sarabun',sans-serif;
+font-size:11px;
+margin:0;
+}
+
+/* HEADER */
+
+.report-header{
+
+border-bottom:3px solid #6a1b9a;
+padding-bottom:10px;
+margin-bottom:15px;
+
+}
+
+.header-top{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+}
+
+.pea-logo{
+
+font-size:26px;
+font-weight:700;
+color:#6a1b9a;
+
+}
+
+.header-title{
+
+text-align:center;
+flex-grow:1;
+
+}
+
+.main-title{
+
+font-size:18px;
+font-weight:700;
+
+}
+
+.sub-title{
+
+font-size:11px;
+margin-top:4px;
+
+}
+
+.header-info{
+
+font-size:10px;
+text-align:right;
+
+}
+
+/* TABLE */
+
+.main-table{
+
+width:100%;
+border-collapse:collapse;
+table-layout:fixed;
+
+}
+
+th{
+
+background:#6a1b9a;
+color:white;
+border:1px solid #000;
+padding:6px;
+font-size:11px;
+
+}
+
+td{
+
+border:1px solid #000;
+padding:5px;
+vertical-align:top;
+
+}
+
+.center{
+text-align:center;
+}
+
+.device-cell{
+
+background:#f8f8ff;
+text-align:center;
+
+}
+
+.device-number{
+
+background:#000;
+color:#fff;
+width:18px;
+height:18px;
+border-radius:50%;
+font-size:9px;
+line-height:18px;
+margin:auto;
+
+}
+
+.device-name{
+
+font-weight:700;
+color:#1e40af;
+margin-top:3px;
+
+}
+
+.device-brand{
+
+font-size:8px;
+background:#eee;
+padding:2px 4px;
+margin:4px auto;
+display:inline-block;
+
+}
+
+.device-spec{
+
+font-size:8.5px;
+text-align:left;
+margin-top:4px;
+
+}
+
+.desc{
+
+word-break:break-word;
+
+}
+
+.sub-tag{
+
+color:#2563eb;
+font-weight:600;
+margin-bottom:3px;
+
+}
+
+.img-wrap{
+
+margin-top:4px;
+border:1px solid #000;
+
+}
+
+.img-wrap img{
+
+width:100%;
+height:80px;
+object-fit:cover;
+
+}
+
+.pending{
+
+color:red;
+font-weight:700;
+
+}
+
+.doc-line{
+
+margin-top:4px;
+border-top:1px dotted #aaa;
+padding-top:3px;
+
+}
+
+.user-cell{
+
+font-size:9px;
+
+}
+
+.fix-user{
+
+margin-top:5px;
+border-top:1px dotted #aaa;
+padding-top:3px;
+
+}
+
+/* SIGNATURE */
+
+.signature{
+
+margin-top:40px;
+display:flex;
+justify-content:space-around;
+
+}
+
+.sig-box{
+
+text-align:center;
+
+}
+
+.sig-line{
+
+border-bottom:1px solid #000;
+width:220px;
+height:40px;
+margin-bottom:6px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div style="text-align:center;margin-bottom:10px;">
+<button onclick="window.print()" style="padding:10px 20px;font-weight:bold;">พิมพ์ / Save PDF</button>
+</div>
+
+<div class="report-header">
+
+<div class="header-top">
+
+<div class="pea-logo">PEA</div>
+
+<div class="header-title">
+
+<div class="main-title">ASSET MAINTENANCE REPORT</div>
+
+<div class="sub-title">
+การไฟฟ้าส่วนภูมิภาค
+</div>
+
+</div>
+
+<div class="header-info">
+
+DATE : ${printDate}<br>
+TIME : ${printTime}<br>
+SITE : ${siteData.name}
+
+</div>
+
+</div>
+
+</div>
+
+<table class="main-table">
+
+<thead>
+
+<tr>
+
+<th style="width:18%">Device</th>
+<th style="width:4%">Occ</th>
+<th style="width:8%">Down</th>
+<th style="width:8%">Fixed</th>
+<th style="width:20%">Description</th>
+<th style="width:20%">Solution</th>
+<th style="width:12%">Order / Cost</th>
+<th style="width:10%">User</th>
+
+</tr>
+
+</thead>
+
+${tableBodyHtml}
+
+</table>
+
+<div class="signature">
+
+<div class="sig-box">
+
+<div class="sig-line"></div>
+
+<b>${currentUserFullName||''}</b><br>
+
+ผู้จัดทำรายงาน
+
+</div>
+
+<div class="sig-box">
+
+<div class="sig-line"></div>
+
+........................................<br>
+
+ผู้ตรวจสอบ
+
+</div>
+
+<div class="sig-box">
+
+<div class="sig-line"></div>
+
+........................................<br>
+
+ผู้อนุมัติ
+
+</div>
+
+</div>
+
+</body>
+
+</html>
+
+`);
+
     printWindow.document.close();
 };
 
