@@ -1059,15 +1059,17 @@ Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}
 <table class="device-table">
 
 <thead>
+
 <tr>
-<th style="width:5%">Occ</th>
-<th style="width:10%">Down</th>
-<th style="width:10%">Fixed</th>
-<th style="width:28%">Description</th>
-<th style="width:28%">Solution</th>
-<th style="width:12%">Details</th>
-<th style="width:7%">User</th>
+<th style="width:5%">No.</th>
+<th style="width:9%">Down</th>
+<th style="width:9%">Fixed</th>
+<th style="width:24%">Description</th>
+<th style="width:24%">Solution</th>
+<th style="width:15%">Details</th>
+<th style="width:14%">User</th>
 </tr>
+
 </thead>
 
 <tbody>
@@ -1082,6 +1084,14 @@ let imgBroken=r.brokenFileUrl?
 
 let imgFixed=r.fixedFileUrl?
 `<div class="img"><img src="${r.fixedFileUrl}"></div>`:'';
+
+let brokenName=r.brokenUserName||'-';
+let brokenPos=r.brokenUserPos||'';
+let brokenDept=r.brokenUserDept||'';
+
+let fixedName=r.fixedUserName||'-';
+let fixedPos=r.fixedUserPos||'';
+let fixedDept=r.fixedUserDept||'';
 
 bodyHtml+=`
 
@@ -1105,23 +1115,30 @@ ${imgFixed}
 
 <td class="details">
 
-<div><b>Cost:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div>
-<div><b>Ticket:</b> ${r.orderNumber||'-'}</div>
+<div><b>ราคาซ่อม:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div>
+<div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber||'-'}</div>
 
 <div class="doc-line">
-<b>มท.</b> ${r.docMinistry||'-'}
+<b>เลขที่ มท.</b> ${r.docMinistry||'-'}
 </div>
 
 <div>
-<b>กฟภ.</b> ${r.docPEA||'-'}
+<b>เลขที่ กฟภ.</b> ${r.docPEA||'-'}
 </div>
 
 </td>
 
 <td class="user">
 
-<b>D:</b> ${(r.brokenUser||'-').split('@')[0]}<br>
-<b>F:</b> ${(r.fixedUser||'-').split('@')[0]}
+<div class="user-block">
+${brokenName}
+<div class="user-sub">(${brokenPos} ${brokenDept})</div>
+</div>
+
+<div class="user-block">
+${fixedName}
+<div class="user-sub">(${fixedPos} ${fixedDept})</div>
+</div>
 
 </td>
 
@@ -1151,7 +1168,7 @@ w.document.write(`
 <html>
 <head>
 
-<title>PEA_REPORT_${siteData.name}</title>
+
 
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -1171,13 +1188,11 @@ margin:0;
 /* HEADER */
 
 .header{
-
 display:flex;
 align-items:center;
 border-bottom:3px solid #6a1b9a;
-margin-bottom:15px;
 padding-bottom:8px;
-
+margin-bottom:15px;
 }
 
 .logo{
@@ -1204,19 +1219,23 @@ font-size:11px;
 text-align:right;
 }
 
-/* DEVICE SECTION */
+
+
+thead{
+display:table-header-group;
+}
+
+/* DEVICE */
 
 .device-section{
-margin-bottom:20px;
+margin-bottom:18px;
 }
 
 .device-header{
-
 background:#f3f0ff;
 border-left:5px solid #6a1b9a;
 padding:6px 8px;
 margin-bottom:5px;
-
 }
 
 .device-title{
@@ -1237,23 +1256,19 @@ table-layout:fixed;
 }
 
 .device-table th{
-
 background:#6a1b9a;
 color:#fff;
 border:1px solid #000;
 padding:5px;
 font-size:11px;
-
 }
 
 .device-table td{
-
 border:1px solid #000;
 padding:5px;
 font-size:11px;
 vertical-align:top;
 word-break:break-word;
-
 }
 
 .center{
@@ -1270,8 +1285,20 @@ margin-top:3px;
 padding-top:3px;
 }
 
+/* USER */
+
 .user{
 font-size:11px;
+}
+
+.user-block{
+margin-bottom:6px;
+}
+
+.user-sub{
+white-space:nowrap;
+font-size:10px;
+color:#444;
 }
 
 /* IMAGE */
@@ -1283,7 +1310,7 @@ border:1px solid #aaa;
 
 .img img{
 width:100%;
-height:75px;
+height:80px;
 object-fit:cover;
 }
 
@@ -1295,11 +1322,9 @@ font-weight:bold;
 /* SIGNATURE */
 
 .signature{
-
 margin-top:40px;
 display:flex;
 justify-content:space-around;
-
 }
 
 .sig-box{
@@ -1307,12 +1332,10 @@ text-align:center;
 }
 
 .sig-line{
-
 border-bottom:1px solid #000;
 width:220px;
 height:35px;
 margin-bottom:6px;
-
 }
 
 </style>
@@ -1320,10 +1343,6 @@ margin-bottom:6px;
 </head>
 
 <body>
-
-<div style="text-align:center;margin-bottom:10px">
-<button onclick="window.print()">PRINT / SAVE PDF</button>
-</div>
 
 <div class="header">
 
