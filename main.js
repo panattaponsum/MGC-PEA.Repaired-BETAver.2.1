@@ -220,6 +220,15 @@ window.closeLogModal = function() { const modal = document.getElementById('logMo
 window.openForm = async function(deviceName) {
     currentDevice = deviceName; editIndex = -1;
     document.getElementById('formTitle').textContent = `บันทึกข้อมูล: ${deviceName}`;
+    
+    // จัดการการแสดงผล Others Dropdown สำหรับไซต์ phrao
+    const othersContainer = document.getElementById('othersDeviceContainer');
+    if (deviceName === 'others' && currentSiteKey === 'phrao') {
+        othersContainer.classList.remove('hidden');
+    } else {
+        othersContainer.classList.add('hidden');
+    }
+    
     document.getElementById('overlay').style.display = 'block'; document.getElementById('formModal').style.display = 'flex';
     document.getElementById('editHint').classList.add('hidden'); document.getElementById('warrantyStatusDisplay').innerHTML = 'กำลังโหลด...'; document.getElementById('assetInfoDisplay').innerHTML = '';
     clearForm(); await loadHistory(); 
@@ -240,11 +249,16 @@ function clearForm() {
 
     document.getElementById('brokenDate').value = ''; document.getElementById('description').value = ''; document.getElementById('solution').value = ''; 
     document.getElementById('orderNumber').value = ''; document.getElementById('repairCost').value = '';
+    document.getElementById('docMinistry').value = ''; document.getElementById('docPEA').value = '';
     
     // Clear files
     document.getElementById('brokenFile').value = ''; document.getElementById('brokenFileLink').innerHTML = '';
     document.getElementById('fixedFile').value = ''; document.getElementById('fixedFileLink').innerHTML = '';
     
+    // Clear others dropdown if exist
+    const othersSelect = document.getElementById('othersDeviceSelect');
+    if(othersSelect) othersSelect.selectedIndex = 0;
+
     editIndex = -1; document.getElementById('editHint').classList.add('hidden');
 }
 
@@ -268,6 +282,7 @@ window.saveData = async function() {
     const brokenDate = document.getElementById('brokenDate').value;
     const fixedDate = document.getElementById('fixedDate').value;
     const isEditing = editIndex >= 0;
+    const currentUserStr = document.getElementById('userName').value || "ไม่ระบุ";
 
     let statusTextTH = statusVal === 'down' ? 'ชำรุด' : (statusVal === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
 
@@ -300,14 +315,19 @@ window.saveData = async function() {
     let records = await getDeviceRecords(currentSiteKey, currentDevice); 
     
     let baseRec = {
-        user: document.getElementById('userName').value || "ไม่ระบุ",
         status: statusVal, brokenDate, fixedDate,
         description: document.getElementById('description').value,
         solution: document.getElementById('solution').value, 
         orderNumber: document.getElementById('orderNumber').value,
         repairCost: document.getElementById('repairCost').value,
-       ts: Date.now(), counted: true 
+        docMinistry: document.getElementById('docMinistry').value,
+        docPEA: document.getElementById('docPEA').value,
+        ts: Date.now(), counted: true 
     };
+
+    if (currentDevice === 'others' && currentSiteKey === 'phrao') {
+        baseRec.subDevice = document.getElementById('othersDeviceSelect').value;
+    }
 
     if (editIndex >= 0) {
         const originalRecord = records[editIndex];
@@ -316,6 +336,19 @@ window.saveData = async function() {
         baseRec.fixedFileUrl = originalRecord.fixedFileUrl || null;
         baseRec.fixedFileType = originalRecord.fixedFileType || null;
         baseRec.ts = originalRecord.ts;
+        
+        // Handle brokenUser and fixedUser
+        baseRec.brokenUser = originalRecord.brokenUser || originalRecord.user || currentUserStr;
+        if (statusVal === 'ok' && !originalRecord.fixedDate) {
+            baseRec.fixedUser = currentUserStr;
+        } else {
+            baseRec.fixedUser = originalRecord.fixedUser || (originalRecord.fixedDate ? originalRecord.user : null);
+        }
+        baseRec.user = currentUserStr; // legacy
+    } else {
+        baseRec.brokenUser = currentUserStr;
+        baseRec.user = currentUserStr; // legacy
+        if (statusVal === 'ok') baseRec.fixedUser = currentUserStr;
     }
 
     // อัปโหลดไฟล์ใหม่ถ้ามีการเลือก
@@ -406,6 +439,8 @@ window.loadHistory = async function() {
         if(r.status === 'down') { statusClass = 'tag-bad'; statusText = '❎ ชำรุด'; }
         else if(r.status === 'abnormal') { statusClass = 'tag-warn'; statusText = '⚠️ ผิดปกติ'; }
 
+        let subTag = r.subDevice ? `<span class="tag bg-blue-100 text-blue-800 ml-2 border border-blue-200">${r.subDevice}</span>` : '';
+
         // ส่วนแสดงลิงก์ไฟล์แนบ
         let brokenLinkHtml = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="text-blue-500 hover:underline inline-flex items-center gap-1">📄 หลักฐานแจ้งปัญหา</a>` : '';
         let fixedLinkHtml = r.fixedFileUrl ? `<a href="${r.fixedFileUrl}" target="_blank" class="text-green-600 hover:underline inline-flex items-center gap-1">📄 หลักฐานซ่อมแซม</a>` : '';
@@ -416,13 +451,18 @@ window.loadHistory = async function() {
 
         div.innerHTML = `
             <div class="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
-                <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span><span class="ml-2 text-base text-gray-500">| ครั้งที่ ${recordSequence}</span></div>
-                <div class="text-sm text-gray-500">โดย: <span class="font-semibold text-slate-700">${escapeHtml(r.user || 'ไม่ระบุ')}</span></div>
+                <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span>${subTag}<span class="ml-2 text-base text-gray-500">| ครั้งที่ ${recordSequence}</span></div>
+                <div class="text-sm text-gray-500 text-right">
+                    <div><span class="text-red-600">แจ้ง:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
+                    <div><span class="text-green-600">ซ่อม:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
                 <div>วันที่เกิดเหตุ: ${r.brokenDate || '-'}</div><div>วันที่ซ่อม: ${r.fixedDate || '-'}</div>
                 <div>เลขที่ใบสั่ง: <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
                 <div>ราคาซ่อมแซม: <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
+                <div>หนังสือ มท.: <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
+                <div>หนังสือ กฟภ.: <span class="font-semibold">${escapeHtml(r.docPEA || '-')}</span></div>
                 <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
             </div>
             <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียด:</b> "${escapeHtml(r.description || '-')}"</div>
@@ -472,6 +512,11 @@ window.editRecord = async function(ts) {
     document.getElementById('brokenDate').value = r.brokenDate || ''; fixedInput.value = r.fixedDate || '';
     document.getElementById('description').value = r.description || ''; document.getElementById('solution').value = r.solution || ''; 
     document.getElementById('orderNumber').value = r.orderNumber || ''; document.getElementById('repairCost').value = r.repairCost || ''; 
+    document.getElementById('docMinistry').value = r.docMinistry || ''; document.getElementById('docPEA').value = r.docPEA || ''; 
+
+    if (currentDevice === 'others' && currentSiteKey === 'phrao' && r.subDevice) {
+        document.getElementById('othersDeviceSelect').value = r.subDevice;
+    }
 
     // แสดงลิงก์ไฟล์เดิมเผื่อต้องการเขียนทับ
     document.getElementById('brokenFileLink').innerHTML = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="hover:underline">มีไฟล์แนบเดิม (คลิกดู) - อัปโหลดใหม่เพื่อเขียนทับ</a>` : '';
@@ -533,19 +578,22 @@ window.loadUsers = async function() {
         const snapshot = await db.collection('users').get(); if (snapshot.empty) { listContainer.innerHTML = '<div class="text-center py-4 text-gray-500">ยังไม่มีผู้ใช้งาน</div>'; return; }
         listContainer.innerHTML = '';
         snapshot.forEach(doc => {
-            const userData = doc.data(); const email = userData.email; const role = userData.role || 'viewer'; const fullName = userData.fullName || ''; const isMe = (email === currentUser.email); const isAdminMain = (email === ADMIN_EMAIL); const safeId = email.replace(/[@.]/g, ''); 
-            const div = document.createElement('div'); div.className = 'user-item flex flex-col sm:flex-row justify-between sm:items-center gap-2 p-3 border-b border-gray-200 hover:bg-gray-50 transition-colors';
+            const userData = doc.data(); const email = userData.email; const role = userData.role || 'viewer'; const fullName = userData.fullName || ''; 
+            const position = userData.position || ''; const department = userData.department || '';
+            const isMe = (email === currentUser.email); const isAdminMain = (email === ADMIN_EMAIL); const safeId = email.replace(/[@.]/g, ''); 
+            const div = document.createElement('div'); div.className = 'user-item flex flex-col sm:flex-row justify-between sm:items-start gap-2 p-3 border-b border-gray-200 hover:bg-gray-50 transition-colors';
             const roleOptions = `<option value="viewer" ${role==='viewer'?'selected':''}>Viewer</option><option value="editor" ${role==='editor'?'selected':''}>Editor</option><option value="admin" ${role==='admin'?'selected':''}>Admin</option>`;
-            let deleteBtn = ''; if (!isAdminMain && !isMe) deleteBtn = `<button onclick="deleteUser('${email}')" class="p-2 text-gray-400 hover:text-red-600 transition-colors" title="ลบผู้ใช้"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
-            div.innerHTML = `<div class="flex flex-col flex-1 gap-1 pr-2"><span class="font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}">${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}</span><input type="text" id="name-${safeId}" value="${escapeHtml(fullName)}" placeholder="ระบุชื่อ-นามสกุลจริง..." class="text-xs border border-gray-300 rounded p-1.5 w-full outline-none focus:border-blue-500"></div><div class="flex items-center gap-2 mt-2 sm:mt-0"><select id="role-${safeId}" class="bg-white border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block p-1.5 outline-none cursor-pointer">${roleOptions}</select><button onclick="updateUserFull('${email}', '${safeId}')" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors text-xs font-bold shadow-sm" title="บันทึกการแก้ไขสิทธิ์และชื่อ">💾 บันทึก</button>${deleteBtn}</div>`;
+            let deleteBtn = ''; if (!isAdminMain && !isMe) deleteBtn = `<button onclick="deleteUser('${email}')" class="p-2 mt-1 text-gray-400 hover:text-red-600 transition-colors" title="ลบผู้ใช้"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
+            div.innerHTML = `<div class="flex flex-col flex-1 gap-1 pr-2 w-full"><span class="font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}">${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}</span><div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1"><input type="text" id="name-${safeId}" value="${escapeHtml(fullName)}" placeholder="ระบุชื่อ-นามสกุลจริง..." class="text-xs border border-gray-300 rounded p-1.5 w-full outline-none focus:border-blue-500"><input type="text" id="pos-${safeId}" value="${escapeHtml(position)}" placeholder="ระบุตำแหน่ง..." class="text-xs border border-gray-300 rounded p-1.5 w-full outline-none focus:border-blue-500"><input type="text" id="dept-${safeId}" value="${escapeHtml(department)}" placeholder="ระบุสังกัด..." class="text-xs border border-gray-300 rounded p-1.5 w-full outline-none focus:border-blue-500"></div></div><div class="flex items-center gap-2 mt-2 sm:mt-0 pt-1"><select id="role-${safeId}" class="bg-white border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block p-1.5 outline-none cursor-pointer">${roleOptions}</select><button onclick="updateUserFull('${email}', '${safeId}')" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors text-xs font-bold shadow-sm" title="บันทึกการแก้ไขสิทธิ์และชื่อ">💾 บันทึก</button>${deleteBtn}</div>`;
             listContainer.appendChild(div);
         });
     } catch (error) { listContainer.innerHTML = `<div class="text-red-500 text-center py-4">โหลดไม่สำเร็จ: ${error.message}</div>`; }
 }
 window.updateUserFull = async function(email, safeId) {
     if (currentUserRole !== 'admin') return; const newRole = document.getElementById(`role-${safeId}`).value; const newName = document.getElementById(`name-${safeId}`).value.trim();
+    const newPos = document.getElementById(`pos-${safeId}`).value.trim(); const newDept = document.getElementById(`dept-${safeId}`).value.trim();
     if (email === ADMIN_EMAIL && newRole !== 'admin') { Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Admin หลักได้', 'error'); return; }
-    try { await db.collection('users').doc(email).set({ role: newRole, fullName: newName }, { merge: true }); Swal.fire({ icon: 'success', title: `อัปเดตข้อมูล ${email} แล้ว`, timer: 1500, showConfirmButton: false }); await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ ${email} (Role: ${newRole}, ชื่อ: ${newName||'-'})`, "SYSTEM"); if(email === currentUser.email) { currentUserFullName = newName; document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; } loadUsers(); } catch (error) { Swal.fire('ผิดพลาด', error.message, 'error'); }
+    try { await db.collection('users').doc(email).set({ role: newRole, fullName: newName, position: newPos, department: newDept }, { merge: true }); Swal.fire({ icon: 'success', title: `อัปเดตข้อมูล ${email} แล้ว`, timer: 1500, showConfirmButton: false }); await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ ${email} (Role: ${newRole}, ชื่อ: ${newName||'-'})`, "SYSTEM"); if(email === currentUser.email) { currentUserFullName = newName; document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; } loadUsers(); } catch (error) { Swal.fire('ผิดพลาด', error.message, 'error'); }
 };
 window.deleteUser = async function(email) {
     if (currentUserRole !== 'admin') { Swal.fire('ปฏิเสธ', 'คุณไม่มีสิทธิ์ลบผู้ใช้งาน', 'error'); return; }
@@ -700,7 +748,6 @@ window.importData = function(event) {
                 const recordRawData = XLSX.utils.sheet_to_json(wsRecords, { header: 1 });
                 if (recordRawData.length >= 2) { 
                     const headers = recordRawData[0];
-                    // แก้ไขหา วันที่เกิดเหตุ เพื่อแก้ปัญหา Import ทับของเดิม
                     const headerMap = { 'Timestamp': headers.indexOf('Timestamp'), 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 
                                         'วันที่เกิดเหตุ': headers.indexOf('วันที่เกิดเหตุ') !== -1 ? headers.indexOf('วันที่เกิดเหตุ') : headers.indexOf('วันที่ชำรุด'), 
                                         'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'), 'สถานะ': headers.indexOf('สถานะ'), 'คำอธิบาย': headers.indexOf('คำอธิบาย'), 'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'), 
@@ -735,7 +782,7 @@ window.exportAllDataExcel = async function() {
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
 
     // เพิ่มคอลัมน์ใหม่ใน Excel
-    const recordsData = [['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'ผู้บันทึก']]; 
+    const recordsData = [['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 'ผู้แจ้งชำรุด', 'ผู้แจ้งซ่อมเสร็จ']]; 
     const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
     for (const devName of siteData.devices) {
@@ -748,7 +795,9 @@ window.exportAllDataExcel = async function() {
             let duration = '-', sequenceNumber = '-'; if (r.counted) { downCount++; sequenceNumber = downCount; }
             if (r.brokenDate) { if (r.fixedDate) duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate)); else if (r.status === 'down' || r.status === 'abnormal') duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' (ยังไม่ซ่อม)'; }
             let statusTH = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
-            recordsData.push([ r.ts || '-', devName, sequenceNumber, (r.brokenDate || '-').replace(/-/g, '/'), (r.fixedDate || '-').replace(/-/g, '/'), duration, statusTH, r.description || '-', r.solution || '-', r.orderNumber || '-', r.repairCost || '-', r.user || '-', ]);
+            let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
+            
+            recordsData.push([ r.ts || '-', devNameFinal, sequenceNumber, (r.brokenDate || '-').replace(/-/g, '/'), (r.fixedDate || '-').replace(/-/g, '/'), duration, statusTH, r.description || '-', r.solution || '-', r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', r.brokenUser || r.user || '-', r.fixedUser || '-' ]);
         });
     }
 
@@ -787,7 +836,7 @@ auth.onAuthStateChanged(async user => {
         currentUser = user; document.getElementById('userInfo').classList.remove('hidden'); document.getElementById('loginButton').classList.add('hidden');
         try {
             const userSnap = await db.collection('users').doc(user.email).get();
-            if (!userSnap.exists) { let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer'; await db.collection('users').doc(user.email).set({ email: user.email, role: initialRole, fullName: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); currentUserRole = initialRole; currentUserFullName = ''; } 
+            if (!userSnap.exists) { let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer'; await db.collection('users').doc(user.email).set({ email: user.email, role: initialRole, fullName: '', position: '', department: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); currentUserRole = initialRole; currentUserFullName = ''; } 
             else { currentUserRole = userSnap.data().role || 'viewer'; currentUserFullName = userSnap.data().fullName || ''; }
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
             document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email; 
@@ -825,30 +874,87 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
 
 
+// ======= Report Selection & Generation (Req 3, 5) =======
+
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     
-    const result = await Swal.fire({
-        title: 'ตั้งค่าการออกรายงาน',
-        input: 'radio',
-        inputOptions: { 
-            'all': '1. อุปกรณ์ทั้งหมด', 
-            'broken': '2. เฉพาะอุปกรณ์ที่กำลังเสียหาย', 
-            'history': '3. เฉพาะอุปกรณ์ที่มีประวัติเสียหาย' 
-        },
-        inputValidator: (value) => { if (!value) return 'กรุณาเลือกประเภทรายงาน'; },
-        showCancelButton: true, confirmButtonText: 'เตรียมรายงาน', cancelButtonText: 'ยกเลิก'
-    });
-
-    if (!result.isConfirmed) return;
-    const reportType = result.value;
-
-    Swal.fire({ title: 'กำลังจัดเตรียมข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    Swal.fire({ title: 'กำลังโหลดข้อมูลประวัติ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {};
     docsSnap.forEach(d => dataMap[d.id] = d.data());
+    
+    Swal.close();
 
+    let html = '<div class="flex flex-col gap-4 text-left">';
+    let hasRecords = false;
+
+    for (const dev of siteData.devices) {
+        const docData = dataMap[dev] || {};
+        const records = docData.records || [];
+        if (records.length === 0) continue;
+        
+        hasRecords = true;
+        const safeDevId = dev.replace(/[^a-zA-Z0-9]/g, '_');
+
+        html += `<div class="border border-slate-200 p-4 rounded-xl bg-slate-50/50">
+                    <h4 class="font-bold text-blue-800 flex items-center gap-2 mb-2 pb-2 border-b border-slate-200">
+                        <input type="checkbox" onchange="toggleDeviceGroup(this, '${safeDevId}')" class="w-4 h-4 dev-checkbox cursor-pointer" checked>
+                        📦 ${dev}
+                    </h4>
+                    <div class="ml-6 flex flex-col gap-2" id="group-${safeDevId}">`;
+
+        // เรียงวันที่เก่า->ใหม่
+        records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
+            const statusText = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : '✅ ปกติ');
+            let subDeviceStr = r.subDevice ? ` <span class="text-blue-600 font-bold">[${r.subDevice}]</span>` : '';
+            html += `<label class="flex items-center gap-3 text-sm cursor-pointer hover:bg-white p-2 rounded transition-colors border border-transparent hover:border-slate-200">
+                        <input type="checkbox" class="record-checkbox w-4 h-4 text-blue-600" value="${dev.replace(/'/g,"\\'")}|${r.ts}" checked>
+                        <span class="flex-1 text-slate-700 font-medium">ครั้งที่ ${idx + 1}${subDeviceStr} - <span class="text-slate-500">วันที่เกิดเหตุ: ${r.brokenDate || '-'}</span></span>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${r.status !== 'ok' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">${statusText}</span>
+                     </label>`;
+        });
+        html += `</div></div>`;
+    }
+
+    if (!hasRecords) {
+        Swal.fire('ไม่มีข้อมูล', 'ไม่มีประวัติการชำรุดในสถานที่นี้เลย', 'info'); return;
+    }
+
+    html += '</div>';
+    document.getElementById('reportSelectionContainer').innerHTML = html;
+    document.getElementById('reportModal').classList.remove('hidden');
+    
+    // Store data for generation step
+    window.tempReportDataMap = dataMap;
+};
+
+window.closeReportModal = function() { document.getElementById('reportModal').classList.add('hidden'); };
+window.selectAllReport = function(isChecked) {
+    document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked);
+};
+window.toggleDeviceGroup = function(cb, safeDevId) {
+    document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked);
+};
+
+window.generateSelectedReport = async function() {
+    const siteData = sites[currentSiteKey];
+    const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+
+    if(selectedCheckboxes.length === 0) { 
+        Swal.fire('ระบุข้อมูล', 'กรุณาเลือกรายการอย่างน้อย 1 รายการเพื่อสร้างรายงาน', 'warning'); return; 
+    }
+
+    const selectedMap = {}; // Format: { devName: [ts1, ts2, ...] }
+    selectedCheckboxes.forEach(val => {
+        const parts = val.split('|');
+        const dev = parts[0]; const ts = parts[1];
+        if(!selectedMap[dev]) selectedMap[dev] = [];
+        selectedMap[dev].push(String(ts));
+    });
+
+    const dataMap = window.tempReportDataMap;
     const now = new Date();
     const printDate = now.toISOString().split('T')[0]; 
     const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -857,29 +963,30 @@ window.printReport = async function() {
     let itemNo = 1;
 
     for (const dev of siteData.devices) {
+        if(!selectedMap[dev]) continue;
         const docData = dataMap[dev] || {};
-        let records = docData.records || [];
-        records.sort((a, b) => a.ts - b.ts); 
+        let allRecords = docData.records || [];
+        allRecords.sort((a, b) => a.ts - b.ts); 
         
-        const isCurrentlyDown = records.some(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '-' || r.fixedDate === 'null'));
-        const hasHistory = records.length > 0;
+        // Filter to only included ts, but keep the original occurrence number (idx + 1)
+        let filteredRecordsWithIndex = allRecords
+            .map((r, idx) => ({r, occurrenceNo: idx + 1}))
+            .filter(obj => selectedMap[dev].includes(String(obj.r.ts)));
 
-        if (reportType === 'broken' && !isCurrentlyDown) continue;
-        if (reportType === 'history' && !hasHistory) continue;
+        if(filteredRecordsWithIndex.length === 0) continue;
 
         const assetInfo = docData.assetInfo || {};
-        const rowSpan = records.length > 0 ? records.length : 1;
+        const rowSpan = filteredRecordsWithIndex.length;
 
         // ใช้ tbody เป็นตัวคุมกลุ่มอุปกรณ์หนึ่งตัว เพื่อช่วยเรื่องการตัดหน้ากระดาษ
         tableBodyHtml += `<tbody class="device-group">`;
         for (let i = 0; i < rowSpan; i++) {
-            const r = records[i];
+            const item = filteredRecordsWithIndex[i];
+            const r = item.r;
             const isFirst = (i === 0);
-           const occurrenceNo = r ? (i + 1) : '-'; 
 
             tableBodyHtml += `<tr>`;
             if (isFirst) {
-                const isDown = records.length > 0 && (records[0].status === 'down' || records[0].status === 'abnormal') && !records[0].fixedDate;
                 tableBodyHtml += `
                     <td rowspan="${rowSpan}" class="col-device">
                         <div class="item-no-circle">${itemNo++}</div>
@@ -890,39 +997,40 @@ window.printReport = async function() {
                             <b>Model:</b> ${assetInfo.model || '-'}<br>
                             <b>PEA No.:</b> ${assetInfo.peaNo || '-'}<br>
                             <b>Price:</b> ${assetInfo.price || '-'}<br>
-                             <b>Warranty:</b><br> ${assetInfo.warrantyStart || '-'}<br>
-                             ${assetInfo.warrantyEnd || '-'}
-                           
+                            <b>Warranty:</b><br> ${assetInfo.warrantyStart || '-'}<br>
+                            ${assetInfo.warrantyEnd || '-'}
                         </div>
                     </td>
                 `;
             }
 
-            if (r) {
-                let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>` : '';
-                let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>` : '';
+            let imgBroken = r.brokenFileUrl ? `<div class="img-wrap"><img src="${r.brokenFileUrl}"></div>` : '';
+            let imgFixed = r.fixedFileUrl ? `<div class="img-wrap"><img src="${r.fixedFileUrl}"></div>` : '';
+            let subTagHtml = r.subDevice ? `<div style="color:#2563eb; font-weight:bold; margin-bottom: 4px;">[${r.subDevice}]</div>` : '';
 
-                tableBodyHtml += `
-                    <td class="text-center font-bold">${occurrenceNo}</td>
-                    <td class="text-center">${r.brokenDate || '-'}</td>
-                    <td class="text-center">${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
-                    <td class="text-left desc-cell">${r.description || '-'}${imgBroken}</td>
-                    <td class="text-left desc-cell">${r.solution || '-'}${imgFixed}</td>
-                    <td class="text-left">
-                        <div class="cost-row"><span>O:</span> <b>${r.orderNumber || '-'}</b></div>
-                        <div class="cost-row" style="margin-top:2px;"><span>C:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</b></div>
-                    </td>
-                    <td class="text-center user-cell">${r.user ? r.user.split('@')[0] : '-'}</td>
-                `;
-            } else {
-                tableBodyHtml += `<td colspan="7" class="empty-cell">ไม่มีประวัติการซ่อมบำรุง</td>`;
-            }
+            tableBodyHtml += `
+                <td class="text-center font-bold">${item.occurrenceNo}</td>
+                <td class="text-center">${r.brokenDate || '-'}</td>
+                <td class="text-center">${r.fixedDate || '<span class="urgent">PENDING</span>'}</td>
+                <td class="text-left desc-cell">${subTagHtml}${r.description || '-'}${imgBroken}</td>
+                <td class="text-left desc-cell">${r.solution || '-'}${imgFixed}</td>
+                <td class="text-left">
+                    <div class="cost-row"><span>Ticket:</span> <b class="cost-val">${r.orderNumber || '-'}</b></div>
+                    <div class="cost-row" style="margin-top:2px;"><span>Cost:</span> <b class="cost-val">${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</b></div>
+                    <div class="cost-row" style="margin-top:4px; font-size:8.5px; border-top: 1px dotted #ccc; padding-top: 2px;"><span>มท.:</span> <b>${r.docMinistry || '-'}</b></div>
+                    <div class="cost-row" style="margin-top:2px; font-size:8.5px;"><span>กฟภ.:</span> <b>${r.docPEA || '-'}</b></div>
+                </td>
+                <td class="text-left user-cell" style="font-size: 8.5px;">
+                    <div><span style="color:#991b1b; font-weight: bold;">แจ้ง:</span> ${r.brokenUser ? r.brokenUser.split('@')[0] : (r.user ? r.user.split('@')[0] : '-')}</div>
+                    <div style="margin-top:4px; border-top: 1px dotted #ccc; padding-top: 2px;"><span style="color:#065f46; font-weight: bold;">ซ่อม:</span> ${r.fixedUser ? r.fixedUser.split('@')[0] : '-'}</div>
+                </td>
+            `;
             tableBodyHtml += `</tr>`;
         }
         tableBodyHtml += `</tbody>`;
     }
 
-    Swal.close();
+    closeReportModal();
 
     const printWindow = window.open('', '', 'height=900,width=1400');
     printWindow.document.write(`
@@ -940,94 +1048,42 @@ window.printReport = async function() {
                 
                 .main-table { width: 100%; border-collapse: collapse; table-layout: auto; border: 1px solid #000; }
                 
-             /* ===== PEA HEADER THEME (override old header) ===== */
-.pea-header{
-    background: #6a1b9a;              /* 💜 สีม่วง PEA */
-    color: white;
-    padding: 14px 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-radius: 6px 6px 0 0;
-}
-
-/* ฝั่งซ้าย */
-.header-left{
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-/* โลโก้ PEA */
-.pea-logo{
-    height: 55px;
-    width: auto;
-}
-
-/* กล่องหัวข้อ */
-.header-title{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.main-title{
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    line-height: 1.1;
-}
-
-.site-title{
-    font-size: 12px;
-    margin-top: 4px;
-    opacity: 0.95;
-}
-
-/* ฝั่งขวา */
-.header-right{
-    text-align: right;
-    font-size: 10px;
-    line-height: 1.4;
-}
+                /* ===== PEA HEADER THEME ===== */
+                .pea-header{
+                    background: #6a1b9a; color: white; padding: 14px 18px; display: flex;
+                    justify-content: space-between; align-items: center; border-radius: 6px 6px 0 0;
+                }
+                .header-left{ display: flex; align-items: center; gap: 14px; }
+                .pea-logo{ height: 55px; width: auto; }
+                .header-title{ display: flex; flex-direction: column; justify-content: center; }
+                .main-title{ font-size: 20px; font-weight: 700; letter-spacing: 1px; line-height: 1.1; }
+                .site-title{ font-size: 12px; margin-top: 4px; opacity: 0.95; }
+                .header-right{ text-align: right; font-size: 10px; line-height: 1.4; }
                 
                 th { background: #1e293b !important; color: white !important; border: 1px solid #000; padding: 6px 2px; font-size: 11px; text-align: center; }
                 td { border: 1px solid #000; padding: 5px; font-size: 10px; vertical-align: top; word-wrap: break-word; }
 
-               .w-occ  { width: 42px; min-width: 42px; text-align: center; }
-.w-date { width: 82px; min-width: 82px; text-align: center; }
-.w-user { width: 95px; min-width: 95px; white-space: nowrap; }
+                .w-occ  { width: 42px; min-width: 42px; text-align: center; }
+                .w-date { width: 82px; min-width: 82px; text-align: center; }
+                .w-user { width: 95px; min-width: 95px; white-space: nowrap; }
+                .w-device { width: auto; }
+                .w-cost   { width: auto; }
 
-/* คอลัมน์หลัก ปล่อย auto */
-.w-device { width: auto; }
-.w-cost   { width: auto; }
-
-
-.desc-cell { 
-    width: 50%;
-    max-width: 50%;
-    min-width: 50%;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-}
-                /* ข้อมูลอุปกรณ์กึ่งกลางแนวตั้ง */
+                .desc-cell { width: 50%; max-width: 50%; min-width: 50%; word-break: break-word; overflow-wrap: anywhere; }
                 .col-device { vertical-align: middle !important; text-align: center; background: #f8fafc; }
                 .item-no-circle { background: #0f172a; color: white; width: 16px; height: 16px; border-radius: 50%; font-size: 9px; line-height: 16px; margin: 0 auto 4px auto; }
                 .dev-title { font-weight: 700; color: #1e40af; font-size: 11.5px; line-height: 1.2; margin-bottom: 3px; }
                 .brand-tag { font-size: 8px; background: #e2e8f0; padding: 1px 4px; border-radius: 3px; border: 0.5px solid #94a3b8; display: inline-block; margin-bottom: 4px; }
                 .dev-specs { font-size: 8.5px; text-align: left; line-height: 1.2; border-top: 1px solid #cbd5e1; padding-top: 3px; width: 95%; margin: 0 auto; }
 
-                /* การตัดหน้ากระดาษ */
                 .device-group { page-break-inside: auto; }
                 tr { page-break-inside: avoid; page-break-after: auto; }
                 
-                /* Footer (ลงนาม) */
                 tfoot { display: table-footer-group; }
                 .footer-wrapper { padding-top: 30px; border: none !important; }
                 .sig-area { display: flex; justify-content: center; gap: 150px; border: none; }
                 .sig-box { text-align: center; border: none; }
                 .sig-line { border-bottom: 1px solid #000; width: 220px; height: 35px; margin-bottom: 15px; }
-                
                 
                 .img-wrap { margin-top: 4px; border: 1px solid #000; padding: 1px; }
                 .img-wrap img { width: 100%; height: 120px; object-fit: cover; display: block; }
@@ -1037,7 +1093,7 @@ window.printReport = async function() {
                 .font-bold { font-weight: bold; }
                 .cost-row { display: flex; justify-content: space-between; font-size: 9.5px; }
                 .cost-val { color: #c2410c; }
-                .user-cell { white-space: nowrap; font-weight: bold; font-size: 9px; }
+                .user-cell { white-space: nowrap; }
                 .urgent { color: red; font-weight: bold; }
 
                 @media print {
@@ -1056,21 +1112,21 @@ window.printReport = async function() {
                     <tr>
                         <td colspan="8" style="border:none; padding:0;">
                           <div class="pea-header">
-    <div class="header-left">
-        <img src="provincial-electricity-authority.png" class="pea-logo" />
-        <div class="header-title">
-            <div class="main-title">ASSET MAINTENANCE REPORT</div>
-            <div class="site-title">
-                SITE: ${siteData.name}
-            </div>
-        </div>
-    </div>
+                            <div class="header-left">
+                                <div style="font-size:24px; font-weight:bold;">PEA</div> 
+                                <div class="header-title">
+                                    <div class="main-title">ASSET MAINTENANCE REPORT</div>
+                                    <div class="site-title">
+                                        SITE: ${siteData.name}
+                                    </div>
+                                </div>
+                            </div>
 
-    <div class="header-right">
-        DATE: ${printDate} | TIME: ${printTime}<br>
-        ISSUED BY: ${currentUserFullName || 'SYSTEM ADMIN'}
-    </div>
-</div>
+                            <div class="header-right">
+                                DATE: ${printDate} | TIME: ${printTime}<br>
+                                ISSUED BY: ${currentUserFullName || 'SYSTEM ADMIN'}
+                            </div>
+                        </div>
                         </td>
                     </tr>
                     <tr>
@@ -1080,8 +1136,8 @@ window.printReport = async function() {
                         <th class="w-date">Fixed Date</th>
                         <th>Description</th>
                         <th>Solution</th>
-                        <th class="w-cost">Order & Cost</th>
-                        <th class="w-user">Recorded By</th>
+                        <th class="w-cost">Order, Cost & Doc</th>
+                        <th class="w-user">Recorded By<br>(Down / Fixed)</th>
                     </tr>
                 </thead>
                 
@@ -1114,38 +1170,3 @@ window.printReport = async function() {
     `);
     printWindow.document.close();
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
