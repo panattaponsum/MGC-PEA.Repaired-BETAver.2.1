@@ -993,7 +993,16 @@ window.toggleDeviceGroup = function(cb, safeDevId) {
     document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked);
 };
 
-window.generateSelectedReport = async function() {
+window.generateSelectedReport = async function () {
+
+function formatThaiDate(dateStr){
+if(!dateStr) return '-';
+const d = new Date(dateStr);
+const day = String(d.getDate()).padStart(2,'0');
+const month = String(d.getMonth()+1).padStart(2,'0');
+const year = d.getFullYear()+543;
+return `${day}/${month}/${year}`;
+}
 
 const siteData = sites[currentSiteKey];
 
@@ -1059,17 +1068,15 @@ Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}
 <table class="device-table">
 
 <thead>
-
 <tr>
-<th style="width:5%">No.</th>
-<th style="width:9%">Down</th>
-<th style="width:9%">Fixed</th>
+<th style="width:3%">No.</th>
+<th style="width:10%">Down Date</th>
+<th style="width:10%">Fixed Date</th>
 <th style="width:24%">Description</th>
 <th style="width:24%">Solution</th>
 <th style="width:15%">Details</th>
 <th style="width:14%">User</th>
 </tr>
-
 </thead>
 
 <tbody>
@@ -1085,13 +1092,13 @@ let imgBroken=r.brokenFileUrl?
 let imgFixed=r.fixedFileUrl?
 `<div class="img"><img src="${r.fixedFileUrl}"></div>`:'';
 
-let brokenName=r.brokenUserName||'-';
-let brokenPos=r.brokenUserPos||'';
-let brokenDept=r.brokenUserDept||'';
+let brokenName = r.brokenUser || '-';
+let brokenPos  = r.brokenUserPos || '';
+let brokenDept = r.brokenUserDept || '';
 
-let fixedName=r.fixedUserName||'-';
-let fixedPos=r.fixedUserPos||'';
-let fixedDept=r.fixedUserDept||'';
+let fixedName  = r.fixedUser || '-';
+let fixedPos   = r.fixedUserPos || '';
+let fixedDept  = r.fixedUserDept || '';
 
 bodyHtml+=`
 
@@ -1099,9 +1106,11 @@ bodyHtml+=`
 
 <td class="center">${item.occ}</td>
 
-<td class="center">${r.brokenDate||'-'}</td>
+<td class="center">${formatThaiDate(r.brokenDate)}</td>
 
-<td class="center">${r.fixedDate||'<span class="pending">PENDING</span>'}</td>
+<td class="center">
+${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}
+</td>
 
 <td>
 ${r.description||'-'}
@@ -1115,15 +1124,15 @@ ${imgFixed}
 
 <td class="details">
 
-<div><b>ราคาซ่อม:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div>
-<div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber||'-'}</div>
+<div><b>Cost:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div>
+<div><b>Ticket:</b> ${r.orderNumber||'-'}</div>
 
 <div class="doc-line">
-<b>เลขที่ มท.</b> ${r.docMinistry||'-'}
+<b>มท.</b> ${r.docMinistry||'-'}
 </div>
 
 <div>
-<b>เลขที่ กฟภ.</b> ${r.docPEA||'-'}
+<b>กฟภ.</b> ${r.docPEA||'-'}
 </div>
 
 </td>
@@ -1149,14 +1158,10 @@ ${fixedName}
 });
 
 bodyHtml+=`
-
 </tbody>
 </table>
-
 </div>
-
 `;
-
 }
 
 closeReportModal();
@@ -1168,7 +1173,7 @@ w.document.write(`
 <html>
 <head>
 
-
+<title>PEA_REPORT_${siteData.name}</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -1219,7 +1224,7 @@ font-size:11px;
 text-align:right;
 }
 
-
+/* repeat header every page */
 
 thead{
 display:table-header-group;
@@ -1259,14 +1264,14 @@ table-layout:fixed;
 background:#6a1b9a;
 color:#fff;
 border:1px solid #000;
-padding:5px;
-font-size:11px;
+padding:4px;
+font-size:9px;
 }
 
 .device-table td{
 border:1px solid #000;
-padding:5px;
-font-size:11px;
+padding:4px;
+font-size:9px;
 vertical-align:top;
 word-break:break-word;
 }
@@ -1276,41 +1281,37 @@ text-align:center;
 }
 
 .details div{
-line-height:1.3;
+line-height:1.2;
 }
 
 .doc-line{
 border-top:1px dotted #999;
-margin-top:3px;
-padding-top:3px;
+margin-top:2px;
+padding-top:2px;
 }
 
 /* USER */
 
-.user{
-font-size:11px;
-}
-
 .user-block{
-margin-bottom:6px;
+margin-bottom:5px;
 }
 
 .user-sub{
 white-space:nowrap;
-font-size:10px;
+font-size:9px;
 color:#444;
 }
 
 /* IMAGE */
 
 .img{
-margin-top:4px;
+margin-top:3px;
 border:1px solid #aaa;
 }
 
 .img img{
 width:100%;
-height:80px;
+height:65px;
 object-fit:cover;
 }
 
@@ -1361,7 +1362,7 @@ margin-bottom:6px;
 <div class="header-right">
 
 SITE : ${siteData.name}<br>
-DATE : ${new Date().toLocaleDateString('th-TH')}<br>
+DATE : ${formatThaiDate(new Date())}<br>
 TIME : ${new Date().toLocaleTimeString('th-TH')}
 
 </div>
@@ -1400,7 +1401,6 @@ ${bodyHtml}
 w.document.close();
 
 };
-
 
 
 
