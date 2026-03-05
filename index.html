@@ -55,9 +55,15 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     width: min(1100px, 95vw); max-height: 95vh; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;
     padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); display: none; flex-direction: column;
 }
-#assetModal, #userModal {
+#assetModal {
     overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
     width: min(600px, 92vw); background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; display: none; flex-direction: column;
+}
+
+#userModal {
+    overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
+    width: min(1100px, 95vw); 
+    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; display: none; flex-direction: column;
 }
 .modal-split-layout { display: flex; gap: 24px; flex: 1; min-height: 0; }
 .modal-left { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-right: 10px; }
@@ -594,3 +600,4 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
+
