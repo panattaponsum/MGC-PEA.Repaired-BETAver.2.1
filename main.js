@@ -1043,19 +1043,15 @@ bodyHtml+=`
 <div class="device-header">
 
 <div class="device-title">
-
 ${deviceNo++}. ${dev}
-
 </div>
 
 <div class="device-spec">
-
 S/N : ${assetInfo.serial||'-'} |
 Model : ${assetInfo.model||'-'} |
 PEA No : ${assetInfo.peaNo||'-'} |
 Price : ${assetInfo.price||'-'} |
-Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'} 
-
+Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}
 </div>
 
 </div>
@@ -1063,21 +1059,18 @@ Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}
 <table class="device-table">
 
 <thead>
-
 <tr>
 <th style="width:5%">Occ</th>
 <th style="width:10%">Down</th>
 <th style="width:10%">Fixed</th>
-<th style="width:30%">Description</th>
-<th style="width:30%">Solution</th>
-<th style="width:8%">Cost</th>
+<th style="width:28%">Description</th>
+<th style="width:28%">Solution</th>
+<th style="width:12%">Details</th>
 <th style="width:7%">User</th>
 </tr>
-
 </thead>
 
 <tbody>
-
 `;
 
 filtered.forEach(item=>{
@@ -1110,14 +1103,25 @@ ${r.solution||'-'}
 ${imgFixed}
 </td>
 
-<td class="center">
-${r.repairCost?Number(r.repairCost).toLocaleString():'-'}
+<td class="details">
+
+<div><b>Cost:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div>
+<div><b>Ticket:</b> ${r.orderNumber||'-'}</div>
+
+<div class="doc-line">
+<b>มท.</b> ${r.docMinistry||'-'}
+</div>
+
+<div>
+<b>กฟภ.</b> ${r.docPEA||'-'}
+</div>
+
 </td>
 
-<td>
+<td class="user">
 
-<b>D</b>: ${(r.brokenUser||'-').split('@')[0]}<br>
-<b>F</b>: ${(r.fixedUser||'-').split('@')[0]}
+<b>D:</b> ${(r.brokenUser||'-').split('@')[0]}<br>
+<b>F:</b> ${(r.fixedUser||'-').split('@')[0]}
 
 </td>
 
@@ -1145,7 +1149,6 @@ const w=window.open('','','width=1200,height=900');
 w.document.write(`
 
 <html>
-
 <head>
 
 <title>PEA_REPORT_${siteData.name}</title>
@@ -1178,46 +1181,33 @@ padding-bottom:8px;
 }
 
 .logo{
-
-width:65px;
+width:70px;
 margin-right:10px;
-
 }
 
 .title{
-
 flex:1;
 text-align:center;
-
 }
 
 .title-main{
-
 font-size:16px;
 font-weight:700;
-
 }
 
 .title-sub{
-
 font-size:11px;
-
 }
 
 .header-right{
-
-font-size:10px;
+font-size:11px;
 text-align:right;
-
 }
 
 /* DEVICE SECTION */
 
 .device-section{
-
-margin-bottom:18px;
-page-break-inside:avoid;
-
+margin-bottom:20px;
 }
 
 .device-header{
@@ -1225,32 +1215,25 @@ page-break-inside:avoid;
 background:#f3f0ff;
 border-left:5px solid #6a1b9a;
 padding:6px 8px;
-margin-bottom:4px;
+margin-bottom:5px;
 
 }
 
 .device-title{
-
 font-weight:700;
 font-size:12px;
-
 }
 
 .device-spec{
-
-font-size:10px;
-color:#444;
-
+font-size:11px;
 }
 
 /* TABLE */
 
 .device-table{
-
 width:100%;
 border-collapse:collapse;
 table-layout:fixed;
-
 }
 
 .device-table th{
@@ -1258,15 +1241,16 @@ table-layout:fixed;
 background:#6a1b9a;
 color:#fff;
 border:1px solid #000;
-padding:4px;
-font-size:10px;
+padding:5px;
+font-size:11px;
 
 }
 
 .device-table td{
 
 border:1px solid #000;
-padding:4px;
+padding:5px;
+font-size:11px;
 vertical-align:top;
 word-break:break-word;
 
@@ -1276,49 +1260,58 @@ word-break:break-word;
 text-align:center;
 }
 
+.details div{
+line-height:1.3;
+}
+
+.doc-line{
+border-top:1px dotted #999;
+margin-top:3px;
+padding-top:3px;
+}
+
+.user{
+font-size:11px;
+}
+
 /* IMAGE */
 
 .img{
-
 margin-top:4px;
 border:1px solid #aaa;
-
 }
 
 .img img{
-
 width:100%;
-height:70px;
+height:75px;
 object-fit:cover;
-
 }
 
 .pending{
-
 color:red;
 font-weight:bold;
-
 }
 
-/* FOOTER */
+/* SIGNATURE */
 
-.footer{
+.signature{
 
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-font-size:9px;
+margin-top:40px;
 display:flex;
-justify-content:space-between;
-border-top:1px solid #aaa;
-padding-top:3px;
+justify-content:space-around;
 
 }
 
-.page:after{
+.sig-box{
+text-align:center;
+}
 
-content:"Page " counter(page);
+.sig-line{
+
+border-bottom:1px solid #000;
+width:220px;
+height:35px;
+margin-bottom:6px;
 
 }
 
@@ -1334,7 +1327,7 @@ content:"Page " counter(page);
 
 <div class="header">
 
-<img class="logo" src="main/provincial-electricity-authority.png">
+<img class="logo" src="provincial-electricity-authority.png">
 
 <div class="title">
 
@@ -1358,16 +1351,29 @@ TIME : ${new Date().toLocaleTimeString('th-TH')}
 
 ${bodyHtml}
 
-<div class="footer">
+<div class="signature">
 
-<div>PEA Asset Maintenance System</div>
+<div class="sig-box">
+<div class="sig-line"></div>
+<b>${currentUserFullName||''}</b><br>
+ผู้จัดทำรายงาน
+</div>
 
-<div class="page"></div>
+<div class="sig-box">
+<div class="sig-line"></div>
+........................................<br>
+ผู้ตรวจสอบ
+</div>
+
+<div class="sig-box">
+<div class="sig-line"></div>
+........................................<br>
+ผู้อนุมัติ
+</div>
 
 </div>
 
 </body>
-
 </html>
 
 `);
