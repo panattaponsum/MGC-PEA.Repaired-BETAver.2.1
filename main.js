@@ -419,7 +419,7 @@ statusEl.innerHTML = getWarrantyStatusHTML(getWarrantyStatus(assetInfo.warrantyE
 let infoParts = [];
 if (assetInfo.model) infoParts.push(`รุ่น: ${escapeHtml(assetInfo.model)}`); if (assetInfo.serial) infoParts.push(`S/N: ${escapeHtml(assetInfo.serial)}`); if (assetInfo.peaNo) infoParts.push(`PEA No. : ${escapeHtml(assetInfo.peaNo)}`);
 infoEl.innerHTML = infoParts.join(' | ') || 'ลงทะเบียนแล้ว';
-} else { statusEl.innerHTML = '<span class="tag tag-warranty-bad">🚫 ยังไม่ลงทะเบียน</span>'; infoEl.innerHTML = 'กรุณาคลิก "ดู/แก้ไขข้อมูลทรัพย์สิน"'; }
+} else { statusEl.innerHTML = '<span class="tag tag-warranty-bad">🚫 ยังไม่ลงทะเบียน</span>'; infoEl.innerHTML = '"ดู/แก้ไขข้อมูลทรัพย์สิน"'; }
 }
 
 window.loadHistory = async function() {
@@ -463,29 +463,45 @@ window.loadHistory = async function() {
         const div = document.createElement('div');
         div.className = 'p-4 mb-3 border border-gray-200 bg-white rounded-lg shadow-sm'; 
 
-        div.innerHTML = `
-            <div class="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
-                <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span>${subTag}<span class="ml-2 text-base text-gray-500">| ครั้งที่ ${recordSequence}</span></div>
-                <div class="text-sm text-gray-500 text-right">
-                    <div><span class="text-red-600">แจ้ง:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
-                    <div><span class="text-green-600">ซ่อม:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
+      div.innerHTML = `
+    <div class="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
+        <div class="flex flex-col">
+            <div class="text-lg font-bold text-slate-800">
+                <span class="tag ${statusClass}">${statusText}</span>${subTag}
+                <span class="ml-2 text-base text-gray-500">| ครั้งที่ ${recordSequence}</span>
+            </div>
+            
+            <div class="flex gap-4 text-sm mt-1">
+                <div>
+                    <span class="text-red-600">ผู้แจ้งเสีย:</span> 
+                    <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span>
+                </div>
+                <div>
+                    <span class="text-green-600">ผู้แจ้งซ่อมแซม:</span> 
+                    <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
-                <div>วันที่เกิดเหตุ: ${r.brokenDate || '-'}</div><div>วันที่ซ่อม: ${r.fixedDate || '-'}</div>
-                <div>เลขที่ใบสั่ง: <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
-                <div>ราคาซ่อมแซม: <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
-                <div>หนังสือ มท.: <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
-                <div>หนังสือ กฟภ.: <span class="font-semibold">${escapeHtml(r.docPEA || '-')}</span></div>
-                <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
+        </div>
+
+        <div class="text-sm text-gray-500 text-right">
             </div>
-            <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียด:</b> "${escapeHtml(r.description || '-')}"</div>
-            <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข:</b> ${escapeHtml(r.solution || '-')}</div>
-            ${filesHtml}
-            <div class="mt-3 flex justify-end space-x-2">
-                <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
-                <button class="btn btn-ghost text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
-            </div>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
+        <div>วันที่เกิดเหตุ : ${r.brokenDate || '-'}</div><div>วันที่ซ่อมแซม : ${r.fixedDate || '-'}</div>
+        <div>เลขที่ใบสั่ง : <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
+        <div>ราคาซ่อมแซม : <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
+        <div>หนังสือ มท. : <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
+        <div>หนังสือ กฟภ. : <span class="font-semibold">${escapeHtml(r.docPEA || '-')}</span></div>
+        <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
+    </div>
+    <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
+    <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข :</b> ${escapeHtml(r.solution || '-')}</div>
+    ${filesHtml}
+    <div class="mt-3 flex justify-end space-x-2">
+        <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
+        <button class="btn btn-ghost text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
+    </div>
         `;
         container.appendChild(div);
     });
@@ -929,7 +945,6 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
 
 
-// ======= Report Selection & Generation (Req 3, 5) =======
 
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
@@ -960,16 +975,32 @@ window.printReport = async function() {
                     </h4>
                     <div class="ml-6 flex flex-col gap-2" id="group-${safeDevId}">`;
 
-        // เรียงวันที่เก่า->ใหม่
-        records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
-            const statusText = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : '✅ ปกติ');
-            let subDeviceStr = r.subDevice ? ` <span class="text-blue-600 font-bold">[${r.subDevice}]</span>` : '';
-            html += `<label class="flex items-center gap-3 text-sm cursor-pointer hover:bg-white p-2 rounded transition-colors border border-transparent hover:border-slate-200">
-                        <input type="checkbox" class="record-checkbox w-4 h-4 text-blue-600" value="${dev.replace(/'/g,"\\'")}|${r.ts}" checked>
-                        <span class="flex-1 text-slate-700 font-medium">ครั้งที่ ${idx + 1}${subDeviceStr} - <span class="text-slate-500">วันที่เกิดเหตุ: ${r.brokenDate || '-'}</span></span>
-                        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${r.status !== 'ok' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">${statusText}</span>
-                     </label>`;
-        });
+        
+records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
+    const statusText = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : '✅ ปกติ');
+    let subDeviceStr = r.subDevice ? ` <span class="text-blue-600 font-bold">[${r.subDevice}]</span>` : '';
+    
+    const desc = r.description || '-';
+
+    html += `
+    <label class="flex items-center gap-3 text-sm cursor-pointer hover:bg-white p-2 rounded transition-colors border border-transparent hover:border-slate-200">
+        <input type="checkbox" class="record-checkbox w-4 h-4 text-blue-600 shrink-0" value="${dev.replace(/'/g,"\\'")}|${r.ts}" checked>
+        
+        <div class="flex flex-1 items-center gap-2 min-w-0">
+            <span class="text-slate-700 font-medium whitespace-nowrap">ครั้งที่ ${idx + 1}${subDeviceStr}</span>
+            <span class="text-slate-400">|</span>
+            <span class="text-slate-500 whitespace-nowrap">${r.brokenDate || '-'}</span>
+            <span class="text-slate-400">|</span>
+            <span class="text-slate-500 truncate italic flex-1" title="${escapeHtml(desc)}">
+                ${escapeHtml(desc)}
+            </span>
+        </div>
+
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${r.status !== 'ok' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">
+            ${statusText}
+        </span>
+    </label>`;
+});
         html += `</div></div>`;
     }
 
@@ -981,7 +1012,6 @@ window.printReport = async function() {
     document.getElementById('reportSelectionContainer').innerHTML = html;
     document.getElementById('reportModal').classList.remove('hidden');
     
-    // Store data for generation step
     window.tempReportDataMap = dataMap;
 };
 
@@ -1058,7 +1088,7 @@ ${deviceNo++}. ${dev}
 <div class="device-spec">
 S/N : ${assetInfo.serial||'-'} |
 Model : ${assetInfo.model||'-'} |
-PEA No : ${assetInfo.peaNo||'-'} |
+PEA No. : ${assetInfo.peaNo||'-'} |
 Price : ${assetInfo.price||'-'} |
 Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}
 </div>
@@ -1124,15 +1154,15 @@ ${imgFixed}
 
 <td class="details">
 
-<div><b>Cost:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div>
-<div><b>Ticket:</b> ${r.orderNumber||'-'}</div>
+<div><b>ราคาซ่อมแซม:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div>
+<div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber||'-'}</div>
 
 <div class="doc-line">
-<b>มท.</b> ${r.docMinistry||'-'}
+<b>หนังสือ มท.</b> ${r.docMinistry||'-'}
 </div>
 
 <div>
-<b>กฟภ.</b> ${r.docPEA||'-'}
+<b>หนังสือ กฟภ.</b> ${r.docPEA||'-'}
 </div>
 
 </td>
@@ -1401,6 +1431,7 @@ ${bodyHtml}
 w.document.close();
 
 };
+
 
 
 
