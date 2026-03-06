@@ -469,8 +469,8 @@ window.loadHistory = async function() {
         div.className = 'p-4 mb-3 border border-gray-200 bg-white rounded-lg shadow-sm'; 
 
       div.innerHTML = `
-    <div class="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
-     <div class="flex flex-col flex-1">
+   <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
+        <div class="flex flex-col flex-1">
             <div class="flex justify-between items-center w-full">
                 <div class="text-lg font-bold text-slate-800">
                     <span class="tag ${statusClass}">${statusText}</span>${subTag}
@@ -478,6 +478,7 @@ window.loadHistory = async function() {
                 <div class="text-base text-gray-500 font-medium">
                     ครั้งที่ ${recordSequence}
                 </div>
+            </div>
             
             <div class="flex gap-4 text-sm mt-1">
                 <div>
@@ -1441,6 +1442,7 @@ ${bodyHtml}
 w.document.close();
 
 };
+
 
 
 
