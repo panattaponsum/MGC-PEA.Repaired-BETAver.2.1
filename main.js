@@ -438,16 +438,21 @@ window.loadHistory = async function() {
     if (records.length === 0) { container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>'; return; }
 
     const canEdit = (currentUserRole === 'editor' || currentUserRole === 'admin') ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
-    let isCurrentBrokenFound = false; 
+    
 
     records.forEach((r, index) => {
-        const recordSequence = records.length - index; 
-        let duration = '-';
-        if (r.brokenDate) {
-            if (r.fixedDate) duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate));
-            else if (!r.fixedDate && !isCurrentBrokenFound) { duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' <span class="text-sm text-red-500 font-semibold">(ยังไม่ซ่อม)</span>'; isCurrentBrokenFound = true; } 
-            else duration = formatDuration(calculateDaysDifference(r.brokenDate, null));
+    const recordSequence = records.length - index; 
+    let duration = '-';
+    
+    if (r.brokenDate) {
+        if (r.fixedDate && r.fixedDate !== '-' && r.fixedDate !== '') {
+    
+            duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate));
+        } else {
+            duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + 
+                       ' <span class="text-sm text-red-500 font-semibold">(ยังไม่ได้ซ่อมแซม)</span>';
         }
+    }
 
         let statusClass = 'tag-ok', statusText = '✅ ใช้งานได้';
         if(r.status === 'down') { statusClass = 'tag-bad'; statusText = '❎ ชำรุด'; }
@@ -1167,14 +1172,16 @@ ${imgFixed}
 
 </td>
 
-<td class="user">
+<td class="center">
 
 <div class="user-block">
+<b>ชื่อผู้แจ้งเสีย</b><br>
 ${brokenName}
 <div class="user-sub">(${brokenPos} ${brokenDept})</div>
 </div>
 
 <div class="user-block">
+<b>ชื่อผู้แจ้งซ่อมแซม</b><br>
 ${fixedName}
 <div class="user-sub">(${fixedPos} ${fixedDept})</div>
 </div>
@@ -1431,6 +1438,7 @@ ${bodyHtml}
 w.document.close();
 
 };
+
 
 
 
