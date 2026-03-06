@@ -1375,7 +1375,7 @@ text-align:center;
 
 .sig-line{
 border-bottom:1px solid #000;
-width:220px;
+width:180px;
 height:35px;
 margin-bottom:6px;
 }
@@ -1442,6 +1442,7 @@ ${bodyHtml}
 w.document.close();
 
 };
+
 
 
 
