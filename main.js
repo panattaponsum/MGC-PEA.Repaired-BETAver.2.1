@@ -470,11 +470,14 @@ window.loadHistory = async function() {
 
       div.innerHTML = `
     <div class="flex justify-between items-start border-b border-gray-100 pb-2 mb-2">
-        <div class="flex flex-col">
-            <div class="text-lg font-bold text-slate-800">
-                <span class="tag ${statusClass}">${statusText}</span>${subTag}
-                <span class="ml-2 text-base text-gray-500">| ครั้งที่ ${recordSequence}</span>
-            </div>
+     <div class="flex flex-col flex-1">
+            <div class="flex justify-between items-center w-full">
+                <div class="text-lg font-bold text-slate-800">
+                    <span class="tag ${statusClass}">${statusText}</span>${subTag}
+                </div>
+                <div class="text-base text-gray-500 font-medium">
+                    ครั้งที่ ${recordSequence}
+                </div>
             
             <div class="flex gap-4 text-sm mt-1">
                 <div>
@@ -1438,6 +1441,7 @@ ${bodyHtml}
 w.document.close();
 
 };
+
 
 
 
