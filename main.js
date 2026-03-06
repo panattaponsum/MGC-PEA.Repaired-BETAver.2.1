@@ -626,25 +626,68 @@ window.loadUsers = async function() {
             div.className = 'user-item flex flex-row items-center gap-2 p-2 border-b border-gray-200 hover:bg-gray-50 transition-colors overflow-x-auto';
             const roleOptions = `<option value="viewer" ${role==='viewer'?'selected':''}>Viewer</option><option value="editor" ${role==='editor'?'selected':''}>Editor</option><option value="admin" ${role==='admin'?'selected':''}>Admin</option>`;
             let deleteBtn = ''; if (!isAdminMain && !isMe) deleteBtn = `<button onclick="deleteUser('${email}')" class="p-1.5 text-gray-400 hover:text-red-600 transition-colors shrink-0" title="ลบผู้ใช้"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
-            
-            div.innerHTML = `
-                <div class="w-48 shrink-0 truncate font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}" title="${escapeHtml(email)}">${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}</div>
-                <input type="text" id="name-${safeId}" value="${escapeHtml(fullName)}" placeholder="ชื่อ-นามสกุล..." class="flex-1 min-w-[120px] text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
-                <input type="text" id="pos-${safeId}" value="${escapeHtml(position)}" placeholder="ตำแหน่ง..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
-                <input type="text" id="dept-${safeId}" value="${escapeHtml(department)}" placeholder="สังกัด..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
-                <select id="role-${safeId}" class="w-24 shrink-0 bg-white border border-gray-300 text-gray-900 text-xs rounded focus:ring-blue-500 focus:border-blue-500 p-1.5 outline-none cursor-pointer">${roleOptions}</select>
-                <button onclick="updateUserFull('${email}', '${safeId}')" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors text-xs font-bold shadow-sm shrink-0" title="บันทึก">💾 บันทึก</button>
-                ${deleteBtn}
-            `;
+            const phone = userData.phone || ''; 
+
+div.innerHTML = `
+    <div class="w-48 shrink-0 truncate font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}" title="${escapeHtml(email)}">${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}</div>
+    <input type="text" id="name-${safeId}" value="${escapeHtml(fullName)}" placeholder="ชื่อ-นามสกุล..." class="flex-1 min-w-[120px] text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
+    <input type="text" id="pos-${safeId}" value="${escapeHtml(position)}" placeholder="ตำแหน่ง/แผนก..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
+    <input type="text" id="dept-${safeId}" value="${escapeHtml(department)}" placeholder="สังกัดกอง,กฟส..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
+    
+    <input type="text" id="phone-${safeId}" value="${escapeHtml(phone)}" placeholder="เบอร์โทร..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
+    
+    <select id="role-${safeId}" class="w-24 shrink-0 bg-white border border-gray-300 text-gray-900 text-xs rounded focus:ring-blue-500 focus:border-blue-500 p-1.5 outline-none cursor-pointer">${roleOptions}</select>
+    <button onclick="updateUserFull('${email}', '${safeId}')" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors text-xs font-bold shadow-sm shrink-0" title="บันทึก">💾 บันทึก</button>
+    ${deleteBtn}
+`;
             listContainer.appendChild(div);
         });
     } catch (error) { listContainer.innerHTML = `<div class="text-red-500 text-center py-4">โหลดไม่สำเร็จ: ${error.message}</div>`; }
 }
 window.updateUserFull = async function(email, safeId) {
-    if (currentUserRole !== 'admin') return; const newRole = document.getElementById(`role-${safeId}`).value; const newName = document.getElementById(`name-${safeId}`).value.trim();
-    const newPos = document.getElementById(`pos-${safeId}`).value.trim(); const newDept = document.getElementById(`dept-${safeId}`).value.trim();
-    if (email === ADMIN_EMAIL && newRole !== 'admin') { Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Admin หลักได้', 'error'); return; }
-    try { await db.collection('users').doc(email).set({ role: newRole, fullName: newName, position: newPos, department: newDept }, { merge: true }); Swal.fire({ icon: 'success', title: `อัปเดตข้อมูล ${email} แล้ว`, timer: 1500, showConfirmButton: false }); await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ ${email} (Role: ${newRole}, ชื่อ: ${newName||'-'})`, "SYSTEM"); if(email === currentUser.email) { currentUserFullName = newName; document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; } loadUsers(); } catch (error) { Swal.fire('ผิดพลาด', error.message, 'error'); }
+    if (currentUserRole !== 'admin') return;
+    
+    const newRole = document.getElementById(`role-${safeId}`).value;
+    const newName = document.getElementById(`name-${safeId}`).value.trim();
+    const newPos = document.getElementById(`pos-${safeId}`).value.trim();
+    const newDept = document.getElementById(`dept-${safeId}`).value.trim();
+  
+    const newPhone = document.getElementById(`phone-${safeId}`).value.trim(); 
+
+    if (email === ADMIN_EMAIL && newRole !== 'admin') { 
+        Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Admin หลักได้', 'error'); 
+        return; 
+    }
+
+    try { 
+        
+        await db.collection('users').doc(email).set({ 
+            role: newRole, 
+            fullName: newName, 
+            position: newPos, 
+            department: newDept,
+            phone: newPhone 
+        }, { merge: true }); 
+
+        Swal.fire({ 
+            icon: 'success', 
+            title: `อัปเดตข้อมูล ${email} แล้ว`, 
+            timer: 1500, 
+            showConfirmButton: false 
+        }); 
+
+        await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ ${email} (Role: ${newRole}, ชื่อ: ${newName||'-'}, โทร: ${newPhone})`, "SYSTEM"); 
+
+        if(email === currentUser.email) { 
+            currentUserFullName = newName; 
+            // สามารถอัปเดตตัวแปร Global เบอร์โทรตรงนี้ได้ถ้าคุณมี
+            document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; 
+        } 
+        
+        loadUsers(); 
+    } catch (error) { 
+        Swal.fire('ผิดพลาด', error.message, 'error'); 
+    }
 };
 window.deleteUser = async function(email) {
     if (currentUserRole !== 'admin') { Swal.fire('ปฏิเสธ', 'คุณไม่มีสิทธิ์ลบผู้ใช้งาน', 'error'); return; }
@@ -1442,6 +1485,7 @@ ${bodyHtml}
 w.document.close();
 
 };
+
 
 
 
