@@ -424,11 +424,11 @@ window.generateWordCoverLetter = async function(deviceName, ts) {
             userPhone: currentUserPhone || '-'
         };
 
-       const zip = new window.PizZip(arrayBuffer);
-        const doc = new window.docxtemplater(zip, {
-            paragraphLoop: true,
-            linebreaks: true,
-        });
+const zip = new PizZip(arrayBuffer); 
+const doc = new window.Docxtemplater(zip, {
+    paragraphLoop: true,
+    linebreaks: true,
+});
 
         doc.render(dataForWord);
         const out = doc.getZip().generate({
@@ -1067,4 +1067,5 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
