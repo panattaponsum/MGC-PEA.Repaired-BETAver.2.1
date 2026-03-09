@@ -10,7 +10,7 @@
 <title>แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-/* --- Light Theme CSS Variables --- */
+
 :root {
     --bg: #f8fafc;        
     --card-bg: #ffffff;   
@@ -123,7 +123,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
     <div id="userInfo" class="hidden flex items-center gap-4">
       <div id="logoutTimerDisplay" class="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 shadow-inner">
         <span class="flex h-2 w-2 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span></span>
-        <span class="text-xs font-mono font-bold text-red-600"><span id="timerMinutes">15</span>:<span id="timerSeconds">00</span></span>
+        <span class="text-xs font-mono font-bold text-red-600"><span id="timerMinutes">60</span>:<span id="timerSeconds">00</span></span>
       </div>
       <div class="flex items-center gap-3 pl-4 border-l border-slate-200">
         <div class="text-right hidden sm:block">
@@ -597,7 +597,11 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script> <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/image-map-resizer@1.0.10/js/imageMapResizer.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
 <script src="main.js"></script>
 </body>
 </html>
-
