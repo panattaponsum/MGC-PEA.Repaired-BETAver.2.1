@@ -425,7 +425,8 @@ window.generateWordCoverLetter = async function(deviceName, ts) {
         };
 
 const zip = new PizZip(arrayBuffer); 
-const doc = new window.Docxtemplater(zip, {
+const Docx = window.docxtemplater || window.Docxtemplater;
+const doc = new Docx(zip, {
     paragraphLoop: true,
     linebreaks: true,
 });
@@ -1067,5 +1068,6 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
 
