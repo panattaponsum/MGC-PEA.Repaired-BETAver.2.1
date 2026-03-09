@@ -1,4 +1,3 @@
-// Firebase config
 const firebaseConfig = {
 apiKey: "AIzaSyCe-qS_uKPYASKJHHL0JuV4eCCzajbpzRY",
 authDomain: "microgrid-th.firebaseapp.com",
@@ -8,15 +7,12 @@ messagingSenderId: "88058740399",
 appId: "1:88058740399:web:bbb38da765672dc4969e5a",
 measurementId: "G-L45B835SV4"
 };
-
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig); 
 const db = firebase.firestore(); 
 const auth = firebase.auth(); 
-const storage = firebase.storage(); // ประกาศใช้งาน Storage
+const storage = firebase.storage(); 
 const devicesCol = db.collection("devices"); 
 
-// Global Variables
 let currentSiteKey = "ko-phaluay";
 let currentDevice = null, editIndex = -1, chartInstance = null;
 let currentPage = 1;
@@ -26,61 +22,24 @@ let currentUserRole = 'viewer';
 let currentUserFullName = ''; 
 let currentUserPosition = ''; 
 let currentUserDept = '';
+let currentUserPhone = ''; 
 const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
 
 const sites = {
-"ko-phaluay": {
-name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี",
-devices: [
-"HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC",
-"Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "Switch 8",
-"COV 1", "COV 2", "BCP", "PCS",
-"Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5",
-"Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10",
-"DG 1", "DG 2", "DG Master",
-"Gateway 1", "Gateway 2",
-"Firewall 1", "Firewall 2", "Firewall 3",
-"others"
-]
-},
-"mae-sariang": {
-name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน",
-devices: [
-"FireWall 1", "PCS-9893(2nd)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "Cyber Security Manager", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892", "PCS-9893(1st)", "PCS-9799(1st)", "PCS-9799(2nd)", "MGC 1", "MGC 2", "ATS", "PCS-9794(1st)", "Diesel Local", "PCS-9794(2nd)", "PCS-9726", "PCS-9567C", "PCS 1", "PCS 2", "PCS 3", "PCS 4", "PCS 5", "PCS 6", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15",
-"others"
-]
-},
-"betong": {
-name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา",
-devices: [
-"Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 6", "ETH Switch 7",
-"others"
-]
-},
-"phrao": {
-name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่",
-devices: [
-"GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3", "RCS (Switch 1)", "Recloser", "BSC (BATT-1)", "BSC (BATT-2)",
-"others"
-]
-}
+"ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "Switch 8", "COV 1", "COV 2", "BCP", "PCS", "Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5", "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10", "DG 1", "DG 2", "DG Master", "Gateway 1", "Gateway 2", "Firewall 1", "Firewall 2", "Firewall 3", "others" ] },
+"mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: [ "FireWall 1", "PCS-9893(2nd)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "Cyber Security Manager", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892", "PCS-9893(1st)", "PCS-9799(1st)", "PCS-9799(2nd)", "MGC 1", "MGC 2", "ATS", "PCS-9794(1st)", "Diesel Local", "PCS-9794(2nd)", "PCS-9726", "PCS-9567C", "PCS 1", "PCS 2", "PCS 3", "PCS 4", "PCS 5", "PCS 6", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15", "others" ] },
+"betong": { name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา", devices: [ "Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 6", "ETH Switch 7", "others" ] },
+"phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3", "RCS (Switch 1)", "Recloser", "BSC (BATT-1)", "BSC (BATT-2)", "others" ] }
 };
 
-function escapeHtml(text) {
-return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>');
-}
-
-function getSiteCollection(siteKey) {
-return db.collection(`sites`).doc(siteKey).collection(`devices`);
-}
+function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>'); }
+function getSiteCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`devices`); }
 
 async function getDeviceRecords(siteKey, device) {
 const docRef = getSiteCollection(siteKey).doc(device); 
 const snap = await docRef.get();
 const recs = snap.exists ? (snap.data().records || []) : [];
-for (const r of recs) {
-if (typeof r.counted === 'undefined') r.counted = (r.status === 'down' || r.status === 'abnormal');
-}
+for (const r of recs) { if (typeof r.counted === 'undefined') r.counted = (r.status === 'down' || r.status === 'abnormal'); }
 return recs;
 }
 
@@ -215,22 +174,11 @@ window.showActivityLogs = async function() {
 };
 window.closeLogModal = function() { const modal = document.getElementById('logModal'); if (modal) modal.classList.add('hidden'); };
 
-// =========================================================================
-// UI and Form Functions
-// =========================================================================
-
 window.openForm = async function(deviceName) {
     currentDevice = deviceName; editIndex = -1;
     document.getElementById('formTitle').textContent = `บันทึกข้อมูล: ${deviceName}`;
-    
-    // จัดการการแสดงผล Others Dropdown สำหรับไซต์ phrao
     const othersContainer = document.getElementById('othersDeviceContainer');
-    if (deviceName === 'others' && currentSiteKey === 'phrao') {
-        othersContainer.classList.remove('hidden');
-    } else {
-        othersContainer.classList.add('hidden');
-    }
-    
+    if (deviceName === 'others' && currentSiteKey === 'phrao') { othersContainer.classList.remove('hidden'); } else { othersContainer.classList.add('hidden'); }
     document.getElementById('overlay').style.display = 'block'; document.getElementById('formModal').style.display = 'flex';
     document.getElementById('editHint').classList.add('hidden'); document.getElementById('warrantyStatusDisplay').innerHTML = 'กำลังโหลด...'; document.getElementById('assetInfoDisplay').innerHTML = '';
     clearForm(); await loadHistory(); 
@@ -252,23 +200,16 @@ function clearForm() {
     document.getElementById('brokenDate').value = ''; document.getElementById('description').value = ''; document.getElementById('solution').value = ''; 
     document.getElementById('orderNumber').value = ''; document.getElementById('repairCost').value = '';
     document.getElementById('docMinistry').value = ''; document.getElementById('docPEA').value = '';
-    
-    // Clear files
     document.getElementById('brokenFile').value = ''; document.getElementById('brokenFileLink').innerHTML = '';
     document.getElementById('fixedFile').value = ''; document.getElementById('fixedFileLink').innerHTML = '';
     
-    // Clear others dropdown if exist
     const othersSelect = document.getElementById('othersDeviceSelect');
     if(othersSelect) othersSelect.selectedIndex = 0;
-
     editIndex = -1; document.getElementById('editHint').classList.add('hidden');
 }
 
-function isValidDate(str) {
-if (!str) return false; const d = new Date(str); return d instanceof Date && !isNaN(d);
-}
+function isValidDate(str) { if (!str) return false; const d = new Date(str); return d instanceof Date && !isNaN(d); }
 
-// อัปโหลดไฟล์ไป Storage
 async function uploadFileToStorage(file, folderName) {
     if (!file) return null;
     const ref = storage.ref().child(`attachments/${currentSiteKey}/${currentDevice}/${folderName}/${Date.now()}_${file.name}`);
@@ -285,7 +226,6 @@ window.saveData = async function() {
     const fixedDate = document.getElementById('fixedDate').value;
     const isEditing = editIndex >= 0;
     const currentUserStr = document.getElementById('userName').value || "ไม่ระบุ";
-
     let statusTextTH = statusVal === 'down' ? 'ชำรุด' : (statusVal === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
 
     const confirmResult = await Swal.fire({ title: isEditing ? 'ยืนยันการแก้ไข?' : 'ยืนยันการเพิ่มข้อมูล?', text: `บันทึกสถานะ ${currentDevice} เป็น "${statusTextTH}" ใช่หรือไม่?`, icon: 'question', showCancelButton: true, confirmButtonColor: '#2563eb', cancelButtonColor: '#64748b', confirmButtonText: 'ยืนยันบันทึก', cancelButtonText: 'ยกเลิก' });
@@ -296,7 +236,6 @@ window.saveData = async function() {
     
     const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999); 
     if (brokenDate && isValidDate(brokenDate) && new Date(brokenDate) > todayEnd) { Swal.fire("วันที่ผิดพลาด", "วันที่เกิดเหตุเป็นอนาคตไม่ได้", "warning"); return false; }
-    // เงื่อนไข: วันที่ซ่อมแซม ต้องไม่เกินวันนี้
     if (fixedDate && isValidDate(fixedDate) && new Date(fixedDate) > todayEnd) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมเป็นล่วงหน้า (อนาคต) ไม่ได้", "warning"); return false; }
     
     if ((statusVal === 'down' || statusVal === 'abnormal') && !isValidDate(brokenDate)) { Swal.fire("ข้อมูลไม่ครบ", "กรุณาเลือกวันที่", "warning"); return false; }
@@ -305,7 +244,6 @@ window.saveData = async function() {
         if (new Date(brokenDate) > new Date(fixedDate)) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมต้องหลังวันที่เกิดเหตุ", "warning"); return false; }
     }
 
-    // ตรวจสอบไฟล์แนบ (ไม่เกิน 5MB)
     const brokenFile = document.getElementById('brokenFile').files[0];
     const fixedFile = document.getElementById('fixedFile').files[0];
     const MAX_SIZE = 5 * 1024 * 1024;
@@ -315,7 +253,6 @@ window.saveData = async function() {
     Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
     let records = await getDeviceRecords(currentSiteKey, currentDevice); 
-    
     let baseRec = {
         status: statusVal, brokenDate, fixedDate,
         description: document.getElementById('description').value,
@@ -327,9 +264,7 @@ window.saveData = async function() {
         ts: Date.now(), counted: true 
     };
 
-    if (currentDevice === 'others' && currentSiteKey === 'phrao') {
-        baseRec.subDevice = document.getElementById('othersDeviceSelect').value;
-    }
+    if (currentDevice === 'others' && currentSiteKey === 'phrao') { baseRec.subDevice = document.getElementById('othersDeviceSelect').value; }
 
    if (editIndex >= 0) {
         const originalRecord = records[editIndex];
@@ -338,46 +273,25 @@ window.saveData = async function() {
         baseRec.fixedFileUrl = originalRecord.fixedFileUrl || null;
         baseRec.fixedFileType = originalRecord.fixedFileType || null;
         baseRec.ts = originalRecord.ts;
-        
-        // Handle User Data
         baseRec.brokenUser = originalRecord.brokenUser || originalRecord.user || currentUserStr;
         baseRec.brokenUserPos = originalRecord.brokenUserPos || '';
         baseRec.brokenUserDept = originalRecord.brokenUserDept || '';
 
         if (statusVal === 'ok' && !originalRecord.fixedDate) {
-            baseRec.fixedUser = currentUserStr;
-            baseRec.fixedUserPos = currentUserPosition;
-            baseRec.fixedUserDept = currentUserDept;
+            baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept;
         } else {
             baseRec.fixedUser = originalRecord.fixedUser || (originalRecord.fixedDate ? originalRecord.user : null);
-            baseRec.fixedUserPos = originalRecord.fixedUserPos || '';
-            baseRec.fixedUserDept = originalRecord.fixedUserDept || '';
+            baseRec.fixedUserPos = originalRecord.fixedUserPos || ''; baseRec.fixedUserDept = originalRecord.fixedUserDept || '';
         }
-        baseRec.user = currentUserStr; // legacy
+        baseRec.user = currentUserStr; 
     } else {
-        baseRec.brokenUser = currentUserStr;
-        baseRec.brokenUserPos = currentUserPosition;
-        baseRec.brokenUserDept = currentUserDept;
-        baseRec.user = currentUserStr; // legacy
-        if (statusVal === 'ok') {
-            baseRec.fixedUser = currentUserStr;
-            baseRec.fixedUserPos = currentUserPosition;
-            baseRec.fixedUserDept = currentUserDept;
-        }
+        baseRec.brokenUser = currentUserStr; baseRec.brokenUserPos = currentUserPosition; baseRec.brokenUserDept = currentUserDept; baseRec.user = currentUserStr; 
+        if (statusVal === 'ok') { baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept; }
     }
-    // อัปโหลดไฟล์ใหม่ถ้ามีการเลือก
     try {
-        if (brokenFile) {
-            baseRec.brokenFileUrl = await uploadFileToStorage(brokenFile, 'broken');
-            baseRec.brokenFileType = brokenFile.type;
-        }
-        if (fixedFile) {
-            baseRec.fixedFileUrl = await uploadFileToStorage(fixedFile, 'fixed');
-            baseRec.fixedFileType = fixedFile.type;
-        }
-    } catch (err) {
-        Swal.fire("อัปโหลดไฟล์ล้มเหลว", err.message, "error"); return false;
-    }
+        if (brokenFile) { baseRec.brokenFileUrl = await uploadFileToStorage(brokenFile, 'broken'); baseRec.brokenFileType = brokenFile.type; }
+        if (fixedFile) { baseRec.fixedFileUrl = await uploadFileToStorage(fixedFile, 'fixed'); baseRec.fixedFileType = fixedFile.type; }
+    } catch (err) { Swal.fire("อัปโหลดไฟล์ล้มเหลว", err.message, "error"); return false; }
 
     if (editIndex >= 0) {
         records[editIndex] = { ...records[editIndex], ...baseRec };
@@ -389,28 +303,14 @@ window.saveData = async function() {
     }
 
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
-    
     clearForm(); await loadHistory(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); 
-   
     if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) sendEmailNotify('down', currentDevice, baseRec.description, baseRec.solution, baseRec.user, baseRec.brokenDate, records.filter(r => r.counted).length);
     if (statusVal === 'ok' && !isEditing) sendEmailNotify('fixed', currentDevice, baseRec.description, baseRec.solution, baseRec.user, baseRec.fixedDate, null);
-
     Swal.fire("บันทึกเรียบร้อย", "", "success");
     await createLog(isEditing ? "EDIT_RECORD" : "ADD_RECORD", isEditing ? `แก้ไขข้อมูลประวัติ ${currentDevice}` : `เพิ่มประวัติให้ ${currentDevice}`);
     await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มีสถานะเป็น: ${statusTextTH}`);
     return true;
 };
-
-window.clearCurrentDevice = async function() {
-if (currentUserRole !== 'editor' && currentUserRole !== 'admin') { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์ลบข้อมูล', 'error'); return; }
-if (!currentDevice) return;
-const result = await Swal.fire({ title: `ลบข้อมูล ${currentDevice}?`, text: "คุณต้องการลบข้อมูลทั้งหมดของอุปกรณ์นี้ใช่หรือไม่?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก' });
-if (result.isConfirmed) {
-await getSiteCollection(currentSiteKey).doc(currentDevice).set({ records: [], downCount: 0, currentStatus: 'ok' }, { merge: true });
-await loadHistory(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); 
-Swal.fire("ลบเรียบร้อย", "", "success");
-}
-}
 
 function updateAssetDisplays(assetInfo) {
 const statusEl = document.getElementById('warrantyStatusDisplay'); const infoEl = document.getElementById('assetInfoDisplay');
@@ -439,19 +339,12 @@ window.loadHistory = async function() {
 
     const canEdit = (currentUserRole === 'editor' || currentUserRole === 'admin') ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
     
-
     records.forEach((r, index) => {
     const recordSequence = records.length - index; 
     let duration = '-';
-    
     if (r.brokenDate) {
-        if (r.fixedDate && r.fixedDate !== '-' && r.fixedDate !== '') {
-    
-            duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate));
-        } else {
-            duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + 
-                       ' <span class="text-sm text-red-500 font-semibold">(ยังไม่ได้ซ่อมแซม)</span>';
-        }
+        if (r.fixedDate && r.fixedDate !== '-' && r.fixedDate !== '') { duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate)); } 
+        else { duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' <span class="text-sm text-red-500 font-semibold">(ยังไม่ได้ซ่อมแซม)</span>'; }
     }
 
         let statusClass = 'tag-ok', statusText = '✅ ใช้งานได้';
@@ -459,8 +352,6 @@ window.loadHistory = async function() {
         else if(r.status === 'abnormal') { statusClass = 'tag-warn'; statusText = '⚠️ ผิดปกติ'; }
 
         let subTag = r.subDevice ? `<span class="tag bg-blue-100 text-blue-800 ml-2 border border-blue-200">${r.subDevice}</span>` : '';
-
-        // ส่วนแสดงลิงก์ไฟล์แนบ
         let brokenLinkHtml = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="text-blue-500 hover:underline inline-flex items-center gap-1">📄 หลักฐานแจ้งปัญหา</a>` : '';
         let fixedLinkHtml = r.fixedFileUrl ? `<a href="${r.fixedFileUrl}" target="_blank" class="text-green-600 hover:underline inline-flex items-center gap-1">📄 หลักฐานซ่อมแซม</a>` : '';
         let filesHtml = (brokenLinkHtml || fixedLinkHtml) ? `<div class="mt-2 pt-2 border-t border-gray-100 flex gap-4 text-xs font-semibold">${brokenLinkHtml} ${fixedLinkHtml}</div>` : '';
@@ -472,30 +363,15 @@ window.loadHistory = async function() {
    <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
         <div class="flex flex-col flex-1">
             <div class="flex justify-between items-center w-full">
-                <div class="text-lg font-bold text-slate-800">
-                    <span class="tag ${statusClass}">${statusText}</span>${subTag}
-                </div>
-                <div class="text-base text-gray-500 font-medium">
-                    ครั้งที่ ${recordSequence}
-                </div>
+                <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span>${subTag}</div>
+                <div class="text-base text-gray-500 font-medium">ครั้งที่ ${recordSequence}</div>
             </div>
-            
             <div class="flex gap-4 text-sm mt-1">
-                <div>
-                    <span class="text-red-600">ผู้แจ้งเสีย:</span> 
-                    <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span>
-                </div>
-                <div>
-                    <span class="text-green-600">ผู้แจ้งซ่อมแซม:</span> 
-                    <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span>
-                </div>
+                <div><span class="text-red-600">ผู้แจ้งเสีย:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
+                <div><span class="text-green-600">ผู้แจ้งซ่อมแซม:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
             </div>
         </div>
-
-        <div class="text-sm text-gray-500 text-right">
-            </div>
     </div>
-    
     <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
         <div>วันที่เกิดเหตุ : ${r.brokenDate || '-'}</div><div>วันที่ซ่อมแซม : ${r.fixedDate || '-'}</div>
         <div>เลขที่ใบสั่ง : <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
@@ -507,13 +383,66 @@ window.loadHistory = async function() {
     <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
     <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข :</b> ${escapeHtml(r.solution || '-')}</div>
     ${filesHtml}
+    
     <div class="mt-3 flex justify-end space-x-2">
+        <button class="btn btn-ghost text-blue-600 hover:bg-blue-50 py-1" onclick="generateWordCoverLetter('${currentDevice}', '${r.ts}')">📝 สร้างใบแจ้งชำรุด (Word)</button>
         <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
         <button class="btn btn-ghost text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
     </div>
         `;
         container.appendChild(div);
     });
+}
+window.generateWordCoverLetter = async function(deviceName, ts) {
+    try {
+        Swal.fire({ title: 'กำลังสร้างเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        let records = await getDeviceRecords(currentSiteKey, deviceName);
+        const r = records.find(rec => String(rec.ts) === String(ts));
+        
+        if (!r) {
+            Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลประวัติรายการนี้', 'error');
+            return;
+        }
+        const templateUrl = "แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx"; 
+        const response = await fetch(templateUrl);
+        if (!response.ok) throw new Error("ไม่พบไฟล์แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx");
+        const arrayBuffer = await response.arrayBuffer();
+        function formatThaiDateLocal(dateStr) {
+            if(!dateStr || dateStr === '-') return '-';
+            const d = new Date(dateStr);
+            const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+        }
+        const dataForWord = {
+            userDept: currentUserDept || 'ไม่ระบุสังกัด',
+            deviceName: r.subDevice ? `${deviceName} (${r.subDevice})` : deviceName,
+            brokenDate: formatThaiDateLocal(r.brokenDate),
+            description: r.description || '-',
+            userName: currentUserFullName || currentUser.email || 'ไม่ระบุ',
+            userPosition: currentUserPosition || '-',
+            userPhone: currentUserPhone || '-'
+        };
+
+        const zip = new PizZip(arrayBuffer);
+        const doc = new window.docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+        });
+
+        doc.render(dataForWord);
+        const out = doc.getZip().generate({
+            type: "blob",
+            mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
+        
+        saveAs(out, `ใบปะหน้าแจ้งชำรุด_${deviceName.replace(/\s/g, '_')}_${r.brokenDate}.docx`);
+        Swal.fire('สำเร็จ', 'ดาวน์โหลดใบปะหน้าเรียบร้อยแล้ว', 'success');
+
+    } catch (error) {
+        console.error("Error generating Word doc:", error);
+        Swal.fire('ผิดพลาด', 'ไม่สามารถสร้างไฟล์ Word ได้ (กรุณาตรวจสอบว่านำไฟล์ แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx อัปโหลดไว้ที่เดียวกับเว็บแล้วหรือยัง)', 'error');
+    }
 }
 
 window.deleteRecord = async function(ts) {
@@ -557,7 +486,6 @@ window.editRecord = async function(ts) {
         document.getElementById('othersDeviceSelect').value = r.subDevice;
     }
 
-    // แสดงลิงก์ไฟล์เดิมเผื่อต้องการเขียนทับ
     document.getElementById('brokenFileLink').innerHTML = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="hover:underline">มีไฟล์แนบเดิม (คลิกดู) - อัปโหลดใหม่เพื่อเขียนทับ</a>` : '';
     document.getElementById('fixedFileLink').innerHTML = r.fixedFileUrl ? `<a href="${r.fixedFileUrl}" target="_blank" class="hover:underline">มีไฟล์แนบเดิม (คลิกดู) - อัปโหลดใหม่เพื่อเขียนทับ</a>` : '';
 
@@ -622,8 +550,7 @@ window.loadUsers = async function() {
             const isMe = (email === currentUser.email); const isAdminMain = (email === ADMIN_EMAIL); const safeId = email.replace(/[@.]/g, ''); 
             
             const div = document.createElement('div'); 
-            // แก้ไข Class ให้เป็นแนวนอนแถวเดียว (flex-row, items-center)
-            div.className = 'user-item flex flex-row items-center gap-2 p-2 border-b border-gray-200 hover:bg-gray-50 transition-colors overflow-x-auto';
+            div.className = 'user-item flex flex-row items-center gap-2 p-2 border-b border-gray-200 hover:bg-gray-50 transition-colors overflow-x-auto min-w-[1000px]';
             const roleOptions = `<option value="viewer" ${role==='viewer'?'selected':''}>Viewer</option><option value="editor" ${role==='editor'?'selected':''}>Editor</option><option value="admin" ${role==='admin'?'selected':''}>Admin</option>`;
             let deleteBtn = ''; if (!isAdminMain && !isMe) deleteBtn = `<button onclick="deleteUser('${email}')" class="p-1.5 text-gray-400 hover:text-red-600 transition-colors shrink-0" title="ลบผู้ใช้"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
             const phone = userData.phone || ''; 
@@ -669,18 +596,14 @@ window.updateUserFull = async function(email, safeId) {
             phone: newPhone 
         }, { merge: true }); 
 
-        Swal.fire({ 
-            icon: 'success', 
-            title: `อัปเดตข้อมูล ${email} แล้ว`, 
-            timer: 1500, 
-            showConfirmButton: false 
-        }); 
-
+        Swal.fire({ icon: 'success', title: `อัปเดตข้อมูล ${email} แล้ว`, timer: 1500, showConfirmButton: false }); 
         await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ ${email} (Role: ${newRole}, ชื่อ: ${newName||'-'}, โทร: ${newPhone})`, "SYSTEM"); 
 
         if(email === currentUser.email) { 
             currentUserFullName = newName; 
-            // สามารถอัปเดตตัวแปร Global เบอร์โทรตรงนี้ได้ถ้าคุณมี
+            currentUserPosition = newPos;
+            currentUserDept = newDept;
+            currentUserPhone = newPhone; 
             document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; 
         } 
         
@@ -689,6 +612,7 @@ window.updateUserFull = async function(email, safeId) {
         Swal.fire('ผิดพลาด', error.message, 'error'); 
     }
 };
+
 window.deleteUser = async function(email) {
     if (currentUserRole !== 'admin') { Swal.fire('ปฏิเสธ', 'คุณไม่มีสิทธิ์ลบผู้ใช้งาน', 'error'); return; }
     const result = await Swal.fire({ title: 'ยืนยันการลบ?', text: `คุณต้องการลบผู้ใช้ ${email} ออกจากระบบใช่หรือไม่?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบข้อมูล', cancelButtonText: 'ยกเลิก' });
@@ -888,7 +812,6 @@ window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData || siteData.devices.length === 0) return;
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
 
-    // เพิ่มคอลัมน์ใหม่ใน Excel
    const recordsData = [['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด']];
     const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
@@ -954,12 +877,13 @@ auth.onAuthStateChanged(async user => {
         currentUser = user; document.getElementById('userInfo').classList.remove('hidden'); document.getElementById('loginButton').classList.add('hidden');
         try {
             const userSnap = await db.collection('users').doc(user.email).get();
-            if (!userSnap.exists) { let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer'; await db.collection('users').doc(user.email).set({ email: user.email, role: initialRole, fullName: '', position: '', department: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); currentUserRole = initialRole; currentUserFullName = ''; } 
+            if (!userSnap.exists) { let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer'; await db.collection('users').doc(user.email).set({ email: user.email, role: initialRole, fullName: '', position: '', department: '', phone: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); currentUserRole = initialRole; currentUserFullName = ''; } 
             else { 
     currentUserRole = userSnap.data().role || 'viewer'; 
     currentUserFullName = userSnap.data().fullName || ''; 
     currentUserPosition = userSnap.data().position || ''; 
     currentUserDept = userSnap.data().department || '';
+    currentUserPhone = userSnap.data().phone || ''; // ดึงค่าเบอร์โทร
 }
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
             document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email; 
@@ -969,7 +893,7 @@ auth.onAuthStateChanged(async user => {
         toggleWriteAccess(true);
     } else {
         if (currentUser) sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
-        currentUser = null; currentUserRole = 'viewer'; currentUserFullName = ''; document.getElementById('userInfo').classList.add('hidden'); document.getElementById('loginButton').classList.remove('hidden'); toggleWriteAccess(false); stopAutoLogoutTimer();
+        currentUser = null; currentUserRole = 'viewer'; currentUserFullName = ''; currentUserPhone = ''; document.getElementById('userInfo').classList.add('hidden'); document.getElementById('loginButton').classList.remove('hidden'); toggleWriteAccess(false); stopAutoLogoutTimer();
     }
 });
 document.getElementById('loginButton').addEventListener('click', login); document.getElementById('logoutButton').addEventListener('click', logout); setupWarrantyCalculators();
@@ -996,17 +920,12 @@ window.sendEmailNotify = async function(type, deviceName, description,solution, 
 
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
 
-
-
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
-    
     Swal.fire({ title: 'กำลังโหลดข้อมูลประวัติ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
     const docsSnap = await getSiteCollection(currentSiteKey).get();
     const dataMap = {};
     docsSnap.forEach(d => dataMap[d.id] = d.data());
-    
     Swal.close();
 
     let html = '<div class="flex flex-col gap-4 text-left">';
@@ -1027,17 +946,14 @@ window.printReport = async function() {
                     </h4>
                     <div class="ml-6 flex flex-col gap-2" id="group-${safeDevId}">`;
 
-        
 records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     const statusText = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : '✅ ปกติ');
     let subDeviceStr = r.subDevice ? ` <span class="text-blue-600 font-bold">[${r.subDevice}]</span>` : '';
-    
     const desc = r.description || '-';
 
     html += `
     <label class="flex items-center gap-3 text-sm cursor-pointer hover:bg-white p-2 rounded transition-colors border border-transparent hover:border-slate-200">
         <input type="checkbox" class="record-checkbox w-4 h-4 text-blue-600 shrink-0" value="${dev.replace(/'/g,"\\'")}|${r.ts}" checked>
-        
         <div class="flex flex-1 items-center gap-2 min-w-0">
             <span class="text-slate-700 font-medium whitespace-nowrap">ครั้งที่ ${idx + 1}${subDeviceStr}</span>
             <span class="text-slate-400">|</span>
@@ -1047,7 +963,6 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
                 ${escapeHtml(desc)}
             </span>
         </div>
-
         <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${r.status !== 'ok' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">
             ${statusText}
         </span>
@@ -1056,441 +971,99 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
         html += `</div></div>`;
     }
 
-    if (!hasRecords) {
-        Swal.fire('ไม่มีข้อมูล', 'ไม่มีประวัติการชำรุดในสถานที่นี้เลย', 'info'); return;
-    }
-
+    if (!hasRecords) { Swal.fire('ไม่มีข้อมูล', 'ไม่มีประวัติการชำรุดในสถานที่นี้เลย', 'info'); return; }
     html += '</div>';
     document.getElementById('reportSelectionContainer').innerHTML = html;
     document.getElementById('reportModal').classList.remove('hidden');
-    
     window.tempReportDataMap = dataMap;
 };
 
 window.closeReportModal = function() { document.getElementById('reportModal').classList.add('hidden'); };
-window.selectAllReport = function(isChecked) {
-    document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked);
-};
-window.toggleDeviceGroup = function(cb, safeDevId) {
-    document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked);
-};
+window.selectAllReport = function(isChecked) { document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked); };
+window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
 
 window.generateSelectedReport = async function () {
-
 function formatThaiDate(dateStr){
-if(!dateStr) return '-';
-const d = new Date(dateStr);
-const day = String(d.getDate()).padStart(2,'0');
-const month = String(d.getMonth()+1).padStart(2,'0');
-const year = d.getFullYear()+543;
+if(!dateStr) return '-'; const d = new Date(dateStr); const day = String(d.getDate()).padStart(2,'0'); const month = String(d.getMonth()+1).padStart(2,'0'); const year = d.getFullYear()+543;
 return `${day}/${month}/${year}`;
 }
-
 const siteData = sites[currentSiteKey];
-
-const selectedCheckboxes =
-Array.from(document.querySelectorAll('.record-checkbox:checked'))
-.map(cb => cb.value);
-
-if(selectedCheckboxes.length===0){
-Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการ','warning');
-return;
-}
+const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+if(selectedCheckboxes.length===0){ Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการ','warning'); return; }
 
 const selectedMap={};
-
-selectedCheckboxes.forEach(v=>{
-const [dev,ts]=v.split('|');
-if(!selectedMap[dev]) selectedMap[dev]=[];
-selectedMap[dev].push(String(ts));
-});
-
+selectedCheckboxes.forEach(v=>{ const [dev,ts]=v.split('|'); if(!selectedMap[dev]) selectedMap[dev]=[]; selectedMap[dev].push(String(ts)); });
 const dataMap = window.tempReportDataMap;
 
-let bodyHtml='';
-let deviceNo=1;
-
+let bodyHtml=''; let deviceNo=1;
 for(const dev of siteData.devices){
-
 if(!selectedMap[dev]) continue;
-
-const docData=dataMap[dev]||{};
-let allRecords=docData.records||[];
-
-allRecords.sort((a,b)=>a.ts-b.ts);
-
-let filtered=allRecords
-.map((r,i)=>({r,occ:i+1}))
-.filter(o=>selectedMap[dev].includes(String(o.r.ts)));
-
+const docData=dataMap[dev]||{}; let allRecords=docData.records||[]; allRecords.sort((a,b)=>a.ts-b.ts);
+let filtered=allRecords.map((r,i)=>({r,occ:i+1})).filter(o=>selectedMap[dev].includes(String(o.r.ts)));
 if(filtered.length===0) continue;
 
 const assetInfo=docData.assetInfo||{};
-
 bodyHtml+=`
-
 <div class="device-section">
-
 <div class="device-header">
-
-<div class="device-title">
-${deviceNo++}. ${dev}
+<div class="device-title">${deviceNo++}. ${dev}</div>
+<div class="device-spec">S/N : ${assetInfo.serial||'-'} | Model : ${assetInfo.model||'-'} | PEA No. : ${assetInfo.peaNo||'-'} | Price : ${assetInfo.price||'-'} | Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}</div>
 </div>
-
-<div class="device-spec">
-S/N : ${assetInfo.serial||'-'} |
-Model : ${assetInfo.model||'-'} |
-PEA No. : ${assetInfo.peaNo||'-'} |
-Price : ${assetInfo.price||'-'} |
-Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}
-</div>
-
-</div>
-
 <table class="device-table">
-
-<thead>
-<tr>
-<th style="width:3%">No.</th>
-<th style="width:10%">Down Date</th>
-<th style="width:10%">Fixed Date</th>
-<th style="width:24%">Description</th>
-<th style="width:24%">Solution</th>
-<th style="width:15%">Details</th>
-<th style="width:14%">User</th>
-</tr>
-</thead>
-
-<tbody>
-`;
+<thead><tr><th style="width:3%">No.</th><th style="width:10%">Down Date</th><th style="width:10%">Fixed Date</th><th style="width:24%">Description</th><th style="width:24%">Solution</th><th style="width:15%">Details</th><th style="width:14%">User</th></tr></thead>
+<tbody>`;
 
 filtered.forEach(item=>{
-
 const r=item.r;
-
-let imgBroken=r.brokenFileUrl?
-`<div class="img"><img src="${r.brokenFileUrl}"></div>`:'';
-
-let imgFixed=r.fixedFileUrl?
-`<div class="img"><img src="${r.fixedFileUrl}"></div>`:'';
-
-let brokenName = r.brokenUser || '-';
-let brokenPos  = r.brokenUserPos || '';
-let brokenDept = r.brokenUserDept || '';
-
-let fixedName  = r.fixedUser || '-';
-let fixedPos   = r.fixedUserPos || '';
-let fixedDept  = r.fixedUserDept || '';
+let imgBroken=r.brokenFileUrl?`<div class="img"><img src="${r.brokenFileUrl}"></div>`:'';
+let imgFixed=r.fixedFileUrl?`<div class="img"><img src="${r.fixedFileUrl}"></div>`:'';
+let brokenName = r.brokenUser || '-'; let brokenPos  = r.brokenUserPos || ''; let brokenDept = r.brokenUserDept || '';
+let fixedName  = r.fixedUser || '-'; let fixedPos   = r.fixedUserPos || ''; let fixedDept  = r.fixedUserDept || '';
 
 bodyHtml+=`
-
-<tr>
-
-<td class="center">${item.occ}</td>
-
-<td class="center">${formatThaiDate(r.brokenDate)}</td>
-
-<td class="center">
-${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}
-</td>
-
-<td>
-${r.description||'-'}
-${imgBroken}
-</td>
-
-<td>
-${r.solution||'-'}
-${imgFixed}
-</td>
-
-<td class="details">
-
-<div><b>ราคาซ่อมแซม:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div>
-<div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber||'-'}</div>
-
-<div class="doc-line">
-<b>หนังสือ มท.</b> ${r.docMinistry||'-'}
-</div>
-
-<div>
-<b>หนังสือ กฟภ.</b> ${r.docPEA||'-'}
-</div>
-
-</td>
-
-<td class="center">
-
-<div class="user-block">
-<b>ชื่อผู้แจ้งเสีย</b><br>
-${brokenName}
-<div class="user-sub">(${brokenPos} ${brokenDept})</div>
-</div>
-
-<div class="user-block">
-<b>ชื่อผู้แจ้งซ่อมแซม</b><br>
-${fixedName}
-<div class="user-sub">(${fixedPos} ${fixedDept})</div>
-</div>
-
-</td>
-
-</tr>
-
-`;
-
+<tr><td class="center">${item.occ}</td><td class="center">${formatThaiDate(r.brokenDate)}</td>
+<td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
+<td>${r.description||'-'} ${imgBroken}</td><td>${r.solution||'-'} ${imgFixed}</td>
+<td class="details"><div><b>ราคาซ่อมแซม:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div><div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber||'-'}</div><div class="doc-line"><b>หนังสือ มท.</b> ${r.docMinistry||'-'}</div><div><b>หนังสือ กฟภ.</b> ${r.docPEA||'-'}</div></td>
+<td class="center"><div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${brokenName}<div class="user-sub">(${brokenPos} ${brokenDept})</div></div><div class="user-block"><b>ชื่อผู้แจ้งซ่อมแซม</b><br>${fixedName}<div class="user-sub">(${fixedPos} ${fixedDept})</div></div></td></tr>`;
 });
-
-bodyHtml+=`
-</tbody>
-</table>
-</div>
-`;
+bodyHtml+=`</tbody></table></div>`;
 }
 
 closeReportModal();
-
 const w=window.open('','','width=1200,height=900');
-
 w.document.write(`
-
-<html>
-<head>
-
-<title>PEA_REPORT_${siteData.name}</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-
+<html><head><title>PEA_REPORT_${siteData.name}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-
-@page{
-size:A4 portrait;
-margin:18mm;
-}
-
-body{
-font-family:'Sarabun',sans-serif;
-font-size:11px;
-margin:0;
-}
-
-/* HEADER */
-
-.header{
-display:flex;
-align-items:center;
-border-bottom:3px solid #6a1b9a;
-padding-bottom:8px;
-margin-bottom:15px;
-}
-
-.logo{
-width:70px;
-margin-right:10px;
-}
-
-.title{
-flex:1;
-text-align:center;
-}
-
-.title-main{
-font-size:16px;
-font-weight:700;
-}
-
-.title-sub{
-font-size:11px;
-}
-
-.header-right{
-font-size:11px;
-text-align:right;
-}
-
-/* repeat header every page */
-
-thead{
-display:table-header-group;
-}
-
-/* DEVICE */
-
-.device-section{
-margin-bottom:18px;
-}
-
-.device-header{
-background:#f3f0ff;
-border-left:5px solid #6a1b9a;
-padding:6px 8px;
-margin-bottom:5px;
-}
-
-.device-title{
-font-weight:700;
-font-size:12px;
-}
-
-.device-spec{
-font-size:11px;
-}
-
-/* TABLE */
-
-.device-table{
-width:100%;
-border-collapse:collapse;
-table-layout:fixed;
-}
-
-.device-table th{
-background:#6a1b9a;
-color:#fff;
-border:1px solid #000;
-padding:4px;
-font-size:9px;
-}
-
-.device-table td{
-border:1px solid #000;
-padding:4px;
-font-size:9px;
-vertical-align:top;
-word-break:break-word;
-}
-
-.center{
-text-align:center;
-}
-
-.details div{
-line-height:1.2;
-}
-
-.doc-line{
-border-top:1px dotted #999;
-margin-top:2px;
-padding-top:2px;
-}
-
-/* USER */
-
-.user-block{
-margin-bottom:5px;
-}
-
-.user-sub{
-white-space:nowrap;
-font-size:9px;
-color:#444;
-}
-
-/* IMAGE */
-
-.img{
-margin-top:3px;
-border:1px solid #aaa;
-}
-
-.img img{
-width:100%;
-height:65px;
-object-fit:cover;
-}
-
-.pending{
-color:red;
-font-weight:bold;
-}
-
-/* SIGNATURE */
-
-.signature{
-margin-top:40px;
-display:flex;
-justify-content:space-around;
-}
-
-.sig-box{
-text-align:center;
-}
-
-.sig-line{
-border-bottom:1px solid #000;
-width:180px;
-height:35px;
-margin-bottom:6px;
-}
-
-</style>
-
-</head>
-
+@page{size:A4 portrait; margin:18mm;}
+body{font-family:'Sarabun',sans-serif; font-size:11px; margin:0;}
+.header{display:flex; align-items:center; border-bottom:3px solid #6a1b9a; padding-bottom:8px; margin-bottom:15px;}
+.logo{width:70px; margin-right:10px;}
+.title{flex:1; text-align:center;} .title-main{font-size:16px; font-weight:700;} .title-sub{font-size:11px;}
+.header-right{font-size:11px; text-align:right;}
+thead{display:table-header-group;}
+.device-section{margin-bottom:18px;}
+.device-header{background:#f3f0ff; border-left:5px solid #6a1b9a; padding:6px 8px; margin-bottom:5px;}
+.device-title{font-weight:700; font-size:12px;} .device-spec{font-size:11px;}
+.device-table{width:100%; border-collapse:collapse; table-layout:fixed;}
+.device-table th{background:#6a1b9a; color:#fff; border:1px solid #000; padding:4px; font-size:9px;}
+.device-table td{border:1px solid #000; padding:4px; font-size:9px; vertical-align:top; word-break:break-word;}
+.center{text-align:center;} .details div{line-height:1.2;} .doc-line{border-top:1px dotted #999; margin-top:2px; padding-top:2px;}
+.user-block{margin-bottom:5px;} .user-sub{white-space:nowrap; font-size:9px; color:#444;}
+.img{margin-top:3px; border:1px solid #aaa;} .img img{width:100%; height:65px; object-fit:cover;}
+.pending{color:red; font-weight:bold;}
+.signature{margin-top:40px; display:flex; justify-content:space-around;}
+.sig-box{text-align:center;} .sig-line{border-bottom:1px solid #000; width:180px; height:35px; margin-bottom:6px;}
+</style></head>
 <body>
-
-<div class="header">
-
-<img class="logo" src="provincial-electricity-authority.png">
-
-<div class="title">
-
-<div class="title-main">ASSET MAINTENANCE REPORT</div>
-
-<div class="title-sub">
-การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)
-</div>
-
-</div>
-
-<div class="header-right">
-
-SITE : ${siteData.name}<br>
-DATE : ${formatThaiDate(new Date())}<br>
-TIME : ${new Date().toLocaleTimeString('th-TH')}
-
-</div>
-
-</div>
-
+<div class="header"><img class="logo" src="provincial-electricity-authority.png">
+<div class="title"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></div>
+<div class="header-right">SITE : ${siteData.name}<br>DATE : ${formatThaiDate(new Date())}<br>TIME : ${new Date().toLocaleTimeString('th-TH')}</div></div>
 ${bodyHtml}
-
 <div class="signature">
-
-<div class="sig-box">
-<div class="sig-line"></div>
-<b>${currentUserFullName||''}</b><br>
-ผู้จัดทำรายงาน
-</div>
-
-<div class="sig-box">
-<div class="sig-line"></div>
-........................................<br>
-ผู้ตรวจสอบ
-</div>
-
-<div class="sig-box">
-<div class="sig-line"></div>
-........................................<br>
-ผู้อนุมัติ
-</div>
-
-</div>
-
-</body>
-</html>
-
-`);
-
+<div class="sig-box"><div class="sig-line"></div><b>${currentUserFullName||''}</b><br>ผู้จัดทำรายงาน</div>
+<div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</div>
+<div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
+</div></body></html>`);
 w.document.close();
-
 };
-
-
-
-
-
-
-
-
-
