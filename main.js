@@ -404,7 +404,14 @@ window.generateWordCoverLetter = async function(deviceName, ts) {
             Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลประวัติรายการนี้', 'error');
             return;
         }
-        const templateUrl = "แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx"; 
+       let templateUrl = "";
+if (currentSiteKey === "phrao") {
+    templateUrl = "แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx";
+} else if (currentSiteKey === "ko-phaluay") {
+    templateUrl = "แบบฟอร์มแจ้งอุปกรณ์ชำรุด_เกาะพะลวย.docx";
+} else {
+    templateUrl = "แบบฟอร์มแจ้งอุปกรณ์ชำรุด_ทั่วไป.docx";
+}
         const response = await fetch(templateUrl);
         if (!response.ok) throw new Error("ไม่พบไฟล์แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx");
         const arrayBuffer = await response.arrayBuffer();
@@ -884,7 +891,7 @@ auth.onAuthStateChanged(async user => {
     currentUserFullName = userSnap.data().fullName || ''; 
     currentUserPosition = userSnap.data().position || ''; 
     currentUserDept = userSnap.data().department || '';
-    currentUserPhone = userSnap.data().phone || ''; // ดึงค่าเบอร์โทร
+    currentUserPhone = userSnap.data().phone || ''; 
 }
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
             document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email; 
@@ -1068,6 +1075,7 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
 
 
