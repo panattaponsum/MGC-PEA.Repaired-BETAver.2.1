@@ -1018,7 +1018,7 @@ bodyHtml+=`
 <div class="device-spec">S/N : ${assetInfo.serial||'-'} | Model : ${assetInfo.model||'-'} | PEA No. : ${assetInfo.peaNo||'-'} | Price : ${assetInfo.price||'-'} | Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}</div>
 </div>
 <table class="device-table">
-<thead><tr><th style="width:3%">No.</th><th style="width:10%">Down Date</th><th style="width:10%">Fixed Date</th><th style="width:24%">Description</th><th style="width:24%">Solution</th><th style="width:15%">Details</th><th style="width:14%">User</th></tr></thead>
+<thead><tr><th style="width:3%">No.</th><th style="width:8%">Down Date</th><th style="width:8%">Fixed Date</th><th style="width:24%">Description</th><th style="width:24%">Solution</th><th style="width:17%">Details</th><th style="width:16%">User</th></tr></thead>
 <tbody>`;
 
 filtered.forEach(item=>{
@@ -1046,7 +1046,7 @@ w.document.write(`
 @page{size:A4 portrait; margin:18mm;}
 body{font-family:'Sarabun',sans-serif; font-size:11px; margin:0;}
 .header{display:flex; align-items:center; border-bottom:3px solid #6a1b9a; padding-bottom:8px; margin-bottom:15px;}
-.logo{width:70px; margin-right:10px;}
+.logo{width:100px; margin-right:10px;}
 .title{flex:1; text-align:center;} .title-main{font-size:16px; font-weight:700;} .title-sub{font-size:11px;}
 .header-right{font-size:11px; text-align:right;}
 thead{display:table-header-group;}
@@ -1058,7 +1058,7 @@ thead{display:table-header-group;}
 .device-table td{border:1px solid #000; padding:4px; font-size:9px; vertical-align:top; word-break:break-word;}
 .center{text-align:center;} .details div{line-height:1.2;} .doc-line{border-top:1px dotted #999; margin-top:2px; padding-top:2px;}
 .user-block{margin-bottom:5px;} .user-sub{white-space:nowrap; font-size:9px; color:#444;}
-.img{margin-top:3px; border:1px solid #aaa;} .img img{width:100%; height:65px; object-fit:cover;}
+.img{margin-top:3px; border:1px solid #aaa;} .img img{width:100%; height:85px; object-fit:cover;}
 .pending{color:red; font-weight:bold;}
 .signature{margin-top:40px; display:flex; justify-content:space-around;}
 .sig-box{text-align:center;} .sig-line{border-bottom:1px solid #000; width:180px; height:35px; margin-bottom:6px;}
@@ -1075,6 +1075,7 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
 
 
