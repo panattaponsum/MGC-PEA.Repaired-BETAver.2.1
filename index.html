@@ -7,7 +7,7 @@
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า</title>
+<title>กองเทคโนโลยีโครงข่ายไฟฟ้า</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 
@@ -83,7 +83,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 .muted { color: #64748b; font-size: 12px; }
 .device-img { width: 100%; height: auto; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
 #historySection { max-height: 500px; overflow-y: auto; padding-right: 6px; }
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 #location-select { 
     border: 1px solid #cbd5e1 !important; background: #ffffff !important; color: #1e293b !important; 
@@ -298,33 +298,57 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
   </div>
 
  <div id="map-betong" class="map-container hidden" style="position:relative;">
+    
+    <div id="betong-main-view" class="view-wrapper">
        <img id="map-img-betong" class="device-img bg-white" src="betong.jpg" usemap="#map-areas-betong" width="1917" height="919" alt="Topology" />
         <map name="map-areas-betong" id="map-areas-betong">
           <area alt="Operator HMI 24" coords="202,76,364,197" shape="rect" href="" onclick="openForm('Operator HMI 24'); return false;">
-      <area alt="Operator HMI 27" coords="378,75,755,198" shape="rect" href="" onclick="openForm('Operator HMI 27'); return false;">
-      <area alt="ETH Switch 1" coords="835,608,1011,640" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
-    <area alt="ETH Switch 2" coords="1046,606,1222,638" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;"> 
-    <area alt="ETH Switch 3" coords="835,704,1011,738" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
-    <area alt="ETH Switch 4" coords="1048,708,1222,738" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
-    <area alt="ETH Switch 6" coords="464,374,510,451" shape="rect" href="" onclick="openForm('ETH Switch 6'); return false;">
-    <area alt="ETH Switch 7" coords="657,371,703,452" shape="rect" href="" onclick="openForm('ETH Switch 7'); return false;">
-    <area alt="eMC-N-Controller INC1" coords="216,396,326,457" shape="rect" href="" onclick="openForm('eMC-N-Controller INC1'); return false;">
-<area alt="eMC-N-Controller BAAN3" coords="216,520,322,581" shape="rect" href="" onclick="openForm('eMC-N-Controller BAAN3'); return false;">
-<area alt="eMC-N-Controller BAAN4" coords="209,654,320,721" shape="rect" href="" onclick="openForm('eMC-N-Controller BAAN4'); return false;">
-<area alt="RTU SVG" coords="435,474,542,544" shape="rect" href="" onclick="openForm('RTU SVG'); return false;">
-<area alt="RTU Substation" coords="435,583,540,647" shape="rect" href="" onclick="openForm('RTU Substation'); return false;">
-<area alt="eMC-G-Controller" coords="437,684,540,742" shape="rect" href="" onclick="openForm('eMC-G-Controller'); return false;">
-<area alt="ADMS-1" coords="777,254,933,295" shape="rect" href="" onclick="openForm('ADMS-1'); return false;">
-<area alt="ADMS-2" coords="945,254,1104,297" shape="rect" href="" onclick="openForm('ADMS-2'); return false;">
-<area alt="Firewall 1" coords="1307,231,1378,293" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
-<area alt="Firewall 2" coords="1434,231,1505,291" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
-<area alt="Firewall 3" coords="1532,231,1605,293" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
-<area alt="RTU Gateway -1" coords="1249,322,1437,393" shape="rect" href="" onclick="openForm('RTU Gateway -1'); return false;">
-<area alt="RTU Gateway -2" coords="1447,319,1627,393" shape="rect" href="" onclick="openForm('RTU Gateway -2'); return false;">
-<area alt="Security HMI" coords="1642,207,1830,390" shape="rect" href="" onclick="openForm('Security HMI'); return false;">
-<area alt="GPS" coords="1146,233,1209,324" shape="rect" href="" onclick="openForm('GPS'); return false;">
-      <area shape="default" alt="others" href="#" onclick="openForm('others'); return false;">
-    </map>
+          <area alt="Operator HMI 27" coords="378,75,755,198" shape="rect" href="" onclick="openForm('Operator HMI 27'); return false;">
+          <area alt="ETH Switch 1" coords="835,608,1011,640" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
+          <area alt="ETH Switch 2" coords="1046,606,1222,638" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;"> 
+          <area alt="ETH Switch 3" coords="835,704,1011,738" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
+          <area alt="ETH Switch 4" coords="1048,708,1222,738" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
+          <area alt="ETH Switch 6" coords="464,374,510,451" shape="rect" href="" onclick="openForm('ETH Switch 6'); return false;">
+          <area alt="ETH Switch 7" coords="657,371,703,452" shape="rect" href="" onclick="openForm('ETH Switch 7'); return false;">
+          <area alt="eMC-N-Controller INC1" coords="216,396,326,457" shape="rect" href="" onclick="openForm('eMC-N-Controller INC1'); return false;">
+          <area alt="eMC-N-Controller BAAN3" coords="216,520,322,581" shape="rect" href="" onclick="openForm('eMC-N-Controller BAAN3'); return false;">
+          <area alt="eMC-N-Controller BAAN4" coords="209,654,320,721" shape="rect" href="" onclick="openForm('eMC-N-Controller BAAN4'); return false;">
+          <area alt="RTU SVG" coords="435,474,542,544" shape="rect" href="" onclick="openForm('RTU SVG'); return false;">
+          <area alt="RTU Substation" coords="435,583,540,647" shape="rect" href="" onclick="openForm('RTU Substation'); return false;">
+          <area alt="eMC-G-Controller" coords="437,684,540,742" shape="rect" href="" onclick="openForm('eMC-G-Controller'); return false;">
+          <area alt="ADMS-1" coords="777,254,933,295" shape="rect" href="" onclick="openForm('ADMS-1'); return false;">
+          <area alt="ADMS-2" coords="945,254,1104,297" shape="rect" href="" onclick="openForm('ADMS-2'); return false;">
+          <area alt="Firewall 1" coords="1307,231,1378,293" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
+          <area alt="Firewall 2" coords="1434,231,1505,291" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
+          <area alt="Firewall 3" coords="1532,231,1605,293" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
+          <area alt="RTU Gateway -1" coords="1249,322,1437,393" shape="rect" href="" onclick="openForm('RTU Gateway -1'); return false;">
+          <area alt="RTU Gateway -2" coords="1447,319,1627,393" shape="rect" href="" onclick="openForm('RTU Gateway -2'); return false;">
+          <area alt="Security HMI" coords="1642,207,1830,390" shape="rect" href="" onclick="openForm('Security HMI'); return false;">
+          <area alt="GPS" coords="1146,233,1209,324" shape="rect" href="" onclick="openForm('GPS'); return false;">
+          
+          <area alt="To Powerstore" coords="1525,467,1657,539" shape="rect" href="#" onclick="toggleBetongView('sub'); return false;">
+          
+          <area shape="default" alt="others" href="#" onclick="openForm('others'); return false;">
+        </map>
+    </div>
+
+    <div id="betong-sub-view" class="view-wrapper hidden">
+        <img class="device-img bg-white" src="betong_powerstore_inverter.jpg" usemap="#map-areas-betong-sub" width="1917" height="919" alt="Powerstore Inverter" />
+        <map name="map-areas-betong-sub">
+            <area alt="Back to Main" coords="36,135,133,232" shape="rect" href="#" onclick="toggleBetongView('main'); return false;">
+            
+            <area alt="ETH Switch 5" coords="427,136,620,184" shape="rect" href="" onclick="openForm('ETH Switch 5'); return false;">
+            <area alt="emC-Scada" coords="177,219,311,266" shape="rect" href="" onclick="openForm('emC-Scada'); return false;">
+            <area alt="emC-E-Controller" coords="320,209,437,273" shape="rect" href="" onclick="openForm('emC-E-Controller'); return false;">
+            <area alt="emC-LUC-1-Controller" coords="661,207,777,273" shape="rect" href="" onclick="openForm('emC-LUC-1-Controller'); return false;">
+            <area alt="emC-LUC-2-Controller" coords="400,548,511,617" shape="rect" href="" onclick="openForm('emC-LUC-2-Controller'); return false;">
+            <area alt="emC-LUC-3-Controller" coords="590,548,703,614" shape="rect" href="" onclick="openForm('emC-LUC-3-Controller'); return false;">
+            <area alt="emC-LUC-4-Controller" coords="768,548,884,614" shape="rect" href="" onclick="openForm('emC-LUC-4-Controller'); return false;">
+            <area alt="Battery System" coords="1109,616,1608,881" shape="rect" href="" onclick="openForm('Battery System'); return false;">
+            <area alt="Inverter System" coords="286,646,1094,881" shape="rect" href="" onclick="openForm('Inverter System'); return false;">
+        </map>
+    </div>
+
     <div id="overlay-container-betong" style="position:absolute; inset:0; z-index:10; pointer-events: none;"></div>
   </div>
 
@@ -468,17 +492,7 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
               <div id="othersDeviceContainer" class="hidden sm:col-span-2 bg-blue-50 p-3 rounded-lg border border-blue-100 mb-2">
                   <label class="text-sm font-bold text-blue-800">ระบุอุปกรณ์ (Others)</label>
                   <select id="othersDeviceSelect" class="w-full mt-1 border-blue-300 rounded p-1.5">
-                      <option value="Office">Office</option>
-                      <option value="Current Transformer">Current Transformer</option>
-                      <option value="Voltage Transformer">Voltage Transformer</option>
-                      <option value="Step-up Transformer 5 MVA">Step-up Transformer 5 MVA</option>
-                      <option value="Service Transformer 160 KVA">Service Transformer 160 KVA</option>
-                      <option value="Disconnecting Switch">Disconnecting Switch</option>
-                      <option value="Fire Alarm">Fire Alarm System</option>
-                      <option value="PQ Meter">PQ Meter</option>
-                      <option value="Power Meter">Power Meter</option>
-                      <option value="The Other">The Other</option>
-                  </select>
+                      </select>
               </div>
 
               <div>
@@ -622,8 +636,3 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
-
-
-
-
-
