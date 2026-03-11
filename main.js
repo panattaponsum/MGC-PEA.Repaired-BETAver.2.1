@@ -30,7 +30,11 @@ const ADMIN_EMAIL = 'panattapon.sum@gmail.com';
 const sites = {
 "ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "Switch 8", "COV 1", "COV 2", "BCP", "PCS", "Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5", "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10", "DG 1", "DG 2", "DG Master", "Gateway 1", "Gateway 2", "Firewall 1", "Firewall 2", "Firewall 3", "others" ] },
 "mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: [ "FireWall 1", "PCS-9893(2nd)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "Cyber Security Manager", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892", "PCS-9893(1st)", "PCS-9799(1st)", "PCS-9799(2nd)", "MGC 1", "MGC 2", "ATS", "PCS-9794(1st)", "Diesel Local", "PCS-9794(2nd)", "PCS-9726", "PCS-9567C", "PCS 1", "PCS 2", "PCS 3", "PCS 4", "PCS 5", "PCS 6", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15", "others" ] },
-"betong": { name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา", devices: [ "Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 5", "ETH Switch 6", "ETH Switch 7", "eMC-N-Controller INC1", "eMC-N-Controller BAAN3", "eMC-N-Controller BAAN4", "RTU SVG", "RTU Substation", "eMC-G-Controller", "ADMS-1", "ADMS-2", "Firewall 1", "Firewall 2", "Firewall 3", "RTU Gateway -1", "RTU Gateway -2", "Security HMI", "GPS", "emC-Scada","emC-P-Controller","emC-E-Controller", "emC-LUC-1-Controller", "emC-LUC-2-Controller", "emC-LUC-3-Controller", "emC-LUC-4-Controller", "Battery System", "Inverter System", "others" ] },
+"betong": { name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา", devices: [ "Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 5", "ETH Switch 6", "ETH Switch 7", "eMC-N-Controller INC1", "eMC-N-Controller BAAN3", "eMC-N-Controller BAAN4", "RTU SVG", "RTU Substation", "eMC-G-Controller", "ADMS-1", "ADMS-2", "Firewall 1", "Firewall 2", "Firewall 3", "RTU Gateway -1", "RTU Gateway -2", "Security HMI", "GPS", "emC-Scada","emC-P-Controller","emC-E-Controller", "emC-LUC-1-Controller", "emC-LUC-2-Controller", "emC-LUC-3-Controller", "emC-LUC-4-Controller", "Battery System", "Inverter System","Diesel Generator System",
+    "Recloser-1", "Recloser-2", "Recloser-3", "Recloser-4", "Recloser-5", "Recloser-6", "Recloser-7", "Recloser-8", "Recloser-9", "Recloser-10",
+    "Recloser-11", "Recloser-12", "Recloser-13", "Recloser-14", "Recloser-15", "Recloser-16", "Recloser-17", "Recloser-18", "Recloser-19", "Recloser-20",
+    "Recloser-21", "Recloser-22", "Recloser-23", "Recloser-24", "Recloser-25", "Recloser-26", "Recloser-27", "Recloser-28", "Recloser-29", "Recloser-30",
+    "Recloser-31", "Recloser-32", "Recloser-33", "Recloser-34", "Recloser-35", "others" ] },
 "phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3","Sync. Relay (Switch 1)", "RCS (Switch 1)", "Recloser", "BATT-1", "BATT-2", "others" ] }
 };
 
@@ -178,13 +182,30 @@ window.closeLogModal = function() { const modal = document.getElementById('logMo
 
 // สลับหน้าจอรูปของเบตง
 window.toggleBetongView = function(viewType) {
-    if (viewType === 'sub') {
-        document.getElementById('betong-main-view').classList.add('hidden');
-        document.getElementById('betong-sub-view').classList.remove('hidden');
+    // ซ่อนทุกหน้าของเบตงก่อน
+    document.getElementById('betong-main-view').classList.add('hidden');
+    
+    // ใช้เช็คว่ามี element อยู่จริงไหมก่อนแอดคลาส เพื่อป้องกัน error
+    const sub1 = document.getElementById('betong-sub-view-1');
+    if (sub1) sub1.classList.add('hidden');
+    
+    const sub2 = document.getElementById('betong-sub-view-2');
+    if (sub2) sub2.classList.add('hidden');
+    
+    const sub3 = document.getElementById('betong-sub-view-3');
+    if (sub3) sub3.classList.add('hidden');
+
+    // โชว์หน้าที่ถูกเลือก
+    if (viewType === 'sub1' && sub1) {
+        sub1.classList.remove('hidden');
+    } else if (viewType === 'sub2' && sub2) {
+        sub2.classList.remove('hidden');
+    } else if (viewType === 'sub3' && sub3) {
+        sub3.classList.remove('hidden');
     } else {
-        document.getElementById('betong-sub-view').classList.add('hidden');
         document.getElementById('betong-main-view').classList.remove('hidden');
     }
+    
     if (typeof imageMapResize === 'function') { imageMapResize(); }
     window.updateDeviceStatusOverlays('betong');
 };
@@ -939,9 +960,15 @@ function switchSite(siteKey) {
     document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden')); 
     document.getElementById(`map-${siteKey}`).classList.remove('hidden'); 
     
-    // Reset view for Betong if switched back
-    if(siteKey === 'betong') {
-        document.getElementById('betong-sub-view').classList.add('hidden');
+  if(siteKey === 'betong') {
+        const sub1 = document.getElementById('betong-sub-view-1');
+        const sub2 = document.getElementById('betong-sub-view-2');
+        const sub3 = document.getElementById('betong-sub-view-3');
+        
+        if (sub1) sub1.classList.add('hidden');
+        if (sub2) sub2.classList.add('hidden');
+        if (sub3) sub3.classList.add('hidden');
+        
         document.getElementById('betong-main-view').classList.remove('hidden');
     }
     
@@ -1145,4 +1172,5 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
