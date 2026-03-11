@@ -232,7 +232,7 @@ window.openForm = async function(deviceName) {
                 <option value="Power Meter">Power Meter</option>
                 <option value="The Other">The Other</option>`;
         } else if (currentSiteKey === 'betong') {
-            optionsHtml = 
+            optionsHtml = `
                 <option value="Office">Office</option>
                 <option value="Fire Alarm System">Fire Alarm System</option>
                 <option value="The Other">The Other</option>`;
@@ -1171,6 +1171,7 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
 
 
