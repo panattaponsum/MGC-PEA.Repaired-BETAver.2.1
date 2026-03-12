@@ -1277,46 +1277,60 @@ window.generateSelectedReport = async function () {
         return;
     }
 
-    const selectedMap = {};
+    const dataMap = window.tempReportDataMap;
+    const groupedData = {}; // ใช้เก็บกลุ่มตาม Device + subDevice
+
+    // 1. จัดกลุ่มข้อมูลใหม่ตาม subDevice ของแต่ละรายการที่เลือก
     selectedCheckboxes.forEach(v => {
-        const [dev, ts] = v.split('|');
-        if (!selectedMap[dev]) selectedMap[dev] = [];
-        selectedMap[dev].push(String(ts));
+        const [devName, ts] = v.split('|');
+        const docData = dataMap[devName] || {};
+        const records = docData.records || [];
+        const targetRec = records.find(r => String(r.ts) === String(ts));
+
+        if (targetRec) {
+            const assetInfo = docData.assetInfo || {};
+            const subName = targetRec.subDevice || "";
+            
+            // สร้าง Unique Key สำหรับกลุ่ม: ถ้าชื่อคือ Others ให้เอา subDevice มาแยกหัวข้อ
+            let groupKey;
+            let displayTitle;
+            
+            if (devName === "Others") {
+                groupKey = `Others_${subName}`; // แยกกลุ่มตาม subDevice
+                displayTitle = subName ? `Others [${subName}]` : "Others";
+            } else {
+                groupKey = devName; // อุปกรณ์หลักอื่นๆ ใช้ชื่อเดิม
+                displayTitle = devName;
+            }
+
+            if (!groupedData[groupKey]) {
+                groupedData[groupKey] = {
+                    title: displayTitle,
+                    assetInfo: assetInfo,
+                    items: []
+                };
+            }
+            groupedData[groupKey].items.push(targetRec);
+        }
     });
 
-    const dataMap = window.tempReportDataMap;
     let bodyHtml = '';
     let deviceNo = 1;
 
-    for (const dev of siteData.devices) {
-        if (!selectedMap[dev]) continue;
-        
-        const docData = dataMap[dev] || {};
-        let allRecords = docData.records || [];
-        allRecords.sort((a, b) => a.ts - b.ts);
-        
-        let filtered = allRecords.map((r, i) => ({ r, occ: i + 1 })).filter(o => selectedMap[dev].includes(String(o.r.ts)));
-        if (filtered.length === 0) continue;
-
-        const assetInfo = docData.assetInfo || {};
-
-        // --- จุดที่แก้ไข: ดึง subDevice มาใส่ในวงเล็บของ Others ---
-        let displayTitle = dev; 
-        if (dev === "Others") {
-            // ดึง subDevice จาก assetInfo ถ้าไม่มีให้ใช้ชื่อ dev เดิม
-            const subName = assetInfo.subDevice || "";
-            displayTitle = subName ? `Others [${subName}]` : "Others";
-        }
-        // --------------------------------------------------
+    // 2. วนลูปสร้าง HTML ตามกลุ่มที่แยกไว้ (แยกตารางใครตารางมัน)
+    for (const key in groupedData) {
+        const group = groupedData[key];
+        const asset = group.assetInfo;
+        group.items.sort((a, b) => a.ts - b.ts);
 
         bodyHtml += `
         <div class="device-section">
             <div class="device-header">
-                <div class="device-title">${deviceNo++}. ${displayTitle}</div>
+                <div class="device-title">${deviceNo++}. ${group.title}</div>
                 <div class="device-spec">
-                    S/N : ${assetInfo.serial || '-'} | Model : ${assetInfo.model || '-'} | 
-                    PEA No. : ${assetInfo.peaNo || '-'} | Price : ${assetInfo.price || '-'} | 
-                    Warranty : ${formatThaiDate(assetInfo.warrantyStart)} → ${formatThaiDate(assetInfo.warrantyEnd)}
+                    S/N : ${asset.serial || '-'} | Model : ${asset.model || '-'} | 
+                    PEA No. : ${asset.peaNo || '-'} | Price : ${asset.price || '-'} | 
+                    Warranty : ${formatThaiDate(asset.warrantyStart)} → ${formatThaiDate(asset.warrantyEnd)}
                 </div>
             </div>
             <table class="device-table">
@@ -1333,14 +1347,13 @@ window.generateSelectedReport = async function () {
                 </thead>
                 <tbody>`;
 
-        filtered.forEach(item => {
-            const r = item.r;
+        group.items.forEach((r, idx) => {
             let imgBroken = r.brokenFileUrl ? `<div class="img"><img src="${r.brokenFileUrl}"></div>` : '';
             let imgFixed = r.fixedFileUrl ? `<div class="img"><img src="${r.fixedFileUrl}"></div>` : '';
             
             bodyHtml += `
             <tr>
-                <td class="center">${item.occ}</td>
+                <td class="center">${idx + 1}</td>
                 <td class="center">${formatThaiDate(r.brokenDate)}</td>
                 <td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
                 <td>${r.description || '-'} ${imgBroken}</td>
@@ -1368,8 +1381,9 @@ window.generateSelectedReport = async function () {
 <style>
     @page { size: A4 portrait; margin: 18mm; }
     @media print {
-        thead { display: table-header-group; } /* หัวตารางตามไปทุกหน้า */
+        thead { display: table-header-group; } 
         tr { page-break-inside: avoid; }
+        .device-section { page-break-inside: auto; }
     }
     body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; color: #333; }
     .header { display: flex; align-items: center; border-bottom: 3px solid #6a1b9a; padding-bottom: 8px; margin-bottom: 15px; }
@@ -1377,14 +1391,13 @@ window.generateSelectedReport = async function () {
     .title { flex: 1; text-align: center; } 
     .title-main { font-size: 16px; font-weight: 700; color: #6a1b9a; } 
     .header-right { font-size: 10px; text-align: right; }
-    .device-section { margin-bottom: 20px; }
-    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 8px; margin-bottom: 0px; border-top: 1px solid #ddd; border-right: 1px solid #ddd; }
+    .device-section { margin-bottom: 25px; }
+    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 8px; border-top: 1px solid #ddd; border-right: 1px solid #ddd; }
     .device-title { font-weight: 700; font-size: 12px; } 
     .device-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 5px; font-size: 9px; }
     .device-table td { border: 1px solid #000; padding: 5px; font-size: 9px; vertical-align: top; word-break: break-word; }
     .center { text-align: center; } 
-    .doc-line { border-top: 1px dotted #999; margin-top: 2px; padding-top: 2px; }
     .img img { width: 100%; height: 90px; object-fit: cover; margin-top: 3px; border: 1px solid #eee; }
     .pending { color: red; font-weight: bold; }
     .signature { margin-top: 50px; display: flex; justify-content: space-around; page-break-inside: avoid; }
@@ -1411,8 +1424,4 @@ window.generateSelectedReport = async function () {
 </html>`);
     w.document.close();
 };
-
-
-
-
 
