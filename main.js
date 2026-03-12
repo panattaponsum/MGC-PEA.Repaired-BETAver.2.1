@@ -1288,7 +1288,6 @@ window.generateSelectedReport = async function () {
     let bodyHtml = '';
     let deviceNo = 1;
 
-    // วนลูปตามอุปกรณ์ใน siteData
     for (const dev of siteData.devices) {
         if (!selectedMap[dev]) continue;
         
@@ -1300,18 +1299,15 @@ window.generateSelectedReport = async function () {
         if (filtered.length === 0) continue;
 
         const assetInfo = docData.assetInfo || {};
-        
-        // --- ส่วนที่แก้ไข: การตั้งชื่อหัวข้อ ---
-        // ถ้าชื่ออุปกรณ์คือ Others ให้เปลี่ยนเป็น Others [ชื่ออุปกรณ์ย่อย]
-        let displayTitle = dev;
+
+        // --- จุดที่แก้ไข: ดึง subDevice มาใส่ในวงเล็บของ Others ---
+        let displayTitle = dev; 
         if (dev === "Others") {
-            // ในกรณีที่มีข้อมูลชื่อเจาะจงใน assetInfo หรือใช้ชื่อจากระบบ
-            displayTitle = `Others [${dev}]`; 
-        } else if (dev.toLowerCase().includes("others")) {
-             // ถ้าชื่อมีคำว่า others อยู่แล้ว (เช่น Others CT) ให้จัดรูปแบบใหม่ตามต้องการ
-             displayTitle = dev.replace(/others/i, "Others [") + "]";
+            // ดึง subDevice จาก assetInfo ถ้าไม่มีให้ใช้ชื่อ dev เดิม
+            const subName = assetInfo.subDevice || "";
+            displayTitle = subName ? `Others [${subName}]` : "Others";
         }
-        // ----------------------------------
+        // --------------------------------------------------
 
         bodyHtml += `
         <div class="device-section">
@@ -1372,29 +1368,26 @@ window.generateSelectedReport = async function () {
 <style>
     @page { size: A4 portrait; margin: 18mm; }
     @media print {
-        thead { display: table-header-group; } /* แก้ไขจุดที่ 2: หัวตารางตามไปทุกหน้า */
+        thead { display: table-header-group; } /* หัวตารางตามไปทุกหน้า */
         tr { page-break-inside: avoid; }
-        .device-section { page-break-inside: auto; }
     }
-    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; }
+    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; color: #333; }
     .header { display: flex; align-items: center; border-bottom: 3px solid #6a1b9a; padding-bottom: 8px; margin-bottom: 15px; }
     .logo { width: 150px; margin-right: 15px; }
     .title { flex: 1; text-align: center; } 
-    .title-main { font-size: 16px; font-weight: 700; } 
-    .header-right { font-size: 11px; text-align: right; }
-    .device-section { margin-bottom: 18px; }
-    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 6px 8px; margin-bottom: 5px; }
+    .title-main { font-size: 16px; font-weight: 700; color: #6a1b9a; } 
+    .header-right { font-size: 10px; text-align: right; }
+    .device-section { margin-bottom: 20px; }
+    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 8px; margin-bottom: 0px; border-top: 1px solid #ddd; border-right: 1px solid #ddd; }
     .device-title { font-weight: 700; font-size: 12px; } 
     .device-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 4px; font-size: 9px; }
-    .device-table td { border: 1px solid #000; padding: 4px; font-size: 9px; vertical-align: top; word-break: break-word; }
+    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 5px; font-size: 9px; }
+    .device-table td { border: 1px solid #000; padding: 5px; font-size: 9px; vertical-align: top; word-break: break-word; }
     .center { text-align: center; } 
     .doc-line { border-top: 1px dotted #999; margin-top: 2px; padding-top: 2px; }
-    .user-sub { font-size: 9px; color: #444; }
-    .img { margin-top: 3px; border: 1px solid #aaa; } 
-    .img img { width: 100%; height: 100px; object-fit: cover; }
+    .img img { width: 100%; height: 90px; object-fit: cover; margin-top: 3px; border: 1px solid #eee; }
     .pending { color: red; font-weight: bold; }
-    .signature { margin-top: 40px; display: flex; justify-content: space-around; page-break-inside: avoid; }
+    .signature { margin-top: 50px; display: flex; justify-content: space-around; page-break-inside: avoid; }
     .sig-box { text-align: center; } 
     .sig-line { border-bottom: 1px solid #000; width: 180px; height: 35px; margin-bottom: 6px; }
 </style>
@@ -1418,6 +1411,7 @@ window.generateSelectedReport = async function () {
 </html>`);
     w.document.close();
 };
+
 
 
 
