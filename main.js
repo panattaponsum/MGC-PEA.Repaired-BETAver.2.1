@@ -1269,159 +1269,91 @@ window.selectAllReport = function(isChecked) { document.querySelectorAll('#repor
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
 
 window.generateSelectedReport = async function () {
-    const siteData = sites[currentSiteKey];
-    const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
-    
-    if (selectedCheckboxes.length === 0) {
-        Swal.fire('ระบุข้อมูล', 'กรุณาเลือกรายการอย่างน้อย 1 รายการ', 'warning');
-        return;
-    }
+function formatThaiDate(dateStr){
+if(!dateStr) return '-'; const d = new Date(dateStr); const day = String(d.getDate()).padStart(2,'0'); const month = String(d.getMonth()+1).padStart(2,'0'); const year = d.getFullYear()+543;
+return `${day}/${month}/${year}`;
+}
+const siteData = sites[currentSiteKey];
+const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+if(selectedCheckboxes.length===0){ Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการ','warning'); return; }
 
-    const dataMap = window.tempReportDataMap;
-    const groupedData = {}; // ใช้เก็บกลุ่มตาม Device + subDevice
+const selectedMap={};
+selectedCheckboxes.forEach(v=>{ const [dev,ts]=v.split('|'); if(!selectedMap[dev]) selectedMap[dev]=[]; selectedMap[dev].push(String(ts)); });
+const dataMap = window.tempReportDataMap;
 
-    // 1. จัดกลุ่มข้อมูลใหม่ตาม subDevice ของแต่ละรายการที่เลือก
-    selectedCheckboxes.forEach(v => {
-        const [devName, ts] = v.split('|');
-        const docData = dataMap[devName] || {};
-        const records = docData.records || [];
-        const targetRec = records.find(r => String(r.ts) === String(ts));
+let bodyHtml=''; let deviceNo=1;
+for(const dev of siteData.devices){
+if(!selectedMap[dev]) continue;
+const docData=dataMap[dev]||{}; let allRecords=docData.records||[]; allRecords.sort((a,b)=>a.ts-b.ts);
+let filtered=allRecords.map((r,i)=>({r,occ:i+1})).filter(o=>selectedMap[dev].includes(String(o.r.ts)));
+if(filtered.length===0) continue;
 
-        if (targetRec) {
-            const assetInfo = docData.assetInfo || {};
-            const subName = targetRec.subDevice || "";
-            
-            // สร้าง Unique Key สำหรับกลุ่ม: ถ้าชื่อคือ Others ให้เอา subDevice มาแยกหัวข้อ
-            let groupKey;
-            let displayTitle;
-            
-            if (devName === "Others") {
-                groupKey = `Others_${subName}`; // แยกกลุ่มตาม subDevice
-                displayTitle = subName ? `Others [${subName}]` : "Others";
-            } else {
-                groupKey = devName; // อุปกรณ์หลักอื่นๆ ใช้ชื่อเดิม
-                displayTitle = devName;
-            }
+const assetInfo=docData.assetInfo||{};
+bodyHtml+=`
+<div class="device-section">
+<div class="device-header">
+<div class="device-title">${deviceNo++}. ${dev}</div>
+<div class="device-spec">S/N : ${assetInfo.serial||'-'} | Model : ${assetInfo.model||'-'} | PEA No. : ${assetInfo.peaNo||'-'} | Price : ${assetInfo.price||'-'} | Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}</div>
+</div>
+<table class="device-table">
+<thead><tr><th style="width:3%">No.</th><th style="width:8%">Down Date</th><th style="width:8%">Fixed Date</th><th style="width:24%">Description</th><th style="width:24%">Solution</th><th style="width:17%">Details</th><th style="width:16%">User</th></tr></thead>
+<tbody>`;
 
-            if (!groupedData[groupKey]) {
-                groupedData[groupKey] = {
-                    title: displayTitle,
-                    assetInfo: assetInfo,
-                    items: []
-                };
-            }
-            groupedData[groupKey].items.push(targetRec);
-        }
-    });
+filtered.forEach(item=>{
+const r=item.r;
+let imgBroken=r.brokenFileUrl?`<div class="img"><img src="${r.brokenFileUrl}"></div>`:'';
+let imgFixed=r.fixedFileUrl?`<div class="img"><img src="${r.fixedFileUrl}"></div>`:'';
+let brokenName = r.brokenUser || '-'; let brokenPos  = r.brokenUserPos || ''; let brokenDept = r.brokenUserDept || '';
+let fixedName  = r.fixedUser || '-'; let fixedPos   = r.fixedUserPos || ''; let fixedDept  = r.fixedUserDept || '';
 
-    let bodyHtml = '';
-    let deviceNo = 1;
+bodyHtml+=`
+<tr><td class="center">${item.occ}</td><td class="center">${formatThaiDate(r.brokenDate)}</td>
+<td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
+<td>${r.description||'-'} ${imgBroken}</td><td>${r.solution||'-'} ${imgFixed}</td>
+<td class="details"><div><b>ราคาซ่อมแซม:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div><div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber||'-'}</div><div class="doc-line"><b>หนังสือ มท.</b> ${r.docMinistry||'-'}</div><div><b>หนังสือ กฟภ.</b> ${r.docPEA||'-'}</div></td>
+<td class="center"><div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${brokenName}<div class="user-sub">(${brokenPos} ${brokenDept})</div></div><div class="user-block"><b>ชื่อผู้แจ้งซ่อมแซม</b><br>${fixedName}<div class="user-sub">(${fixedPos} ${fixedDept})</div></div></td></tr>`;
+});
+bodyHtml+=`</tbody></table></div>`;
+}
 
-    // 2. วนลูปสร้าง HTML ตามกลุ่มที่แยกไว้ (แยกตารางใครตารางมัน)
-    for (const key in groupedData) {
-        const group = groupedData[key];
-        const asset = group.assetInfo;
-        group.items.sort((a, b) => a.ts - b.ts);
-
-        bodyHtml += `
-        <div class="device-section">
-            <div class="device-header">
-                <div class="device-title">${deviceNo++}. ${group.title}</div>
-                <div class="device-spec">
-                    S/N : ${asset.serial || '-'} | Model : ${asset.model || '-'} | 
-                    PEA No. : ${asset.peaNo || '-'} | Price : ${asset.price || '-'} | 
-                    Warranty : ${formatThaiDate(asset.warrantyStart)} → ${formatThaiDate(asset.warrantyEnd)}
-                </div>
-            </div>
-            <table class="device-table">
-                <thead>
-                    <tr>
-                        <th style="width:3%">No.</th>
-                        <th style="width:8%">Down Date</th>
-                        <th style="width:8%">Fixed Date</th>
-                        <th style="width:24%">Description</th>
-                        <th style="width:24%">Solution</th>
-                        <th style="width:17%">Details</th>
-                        <th style="width:16%">User</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-        group.items.forEach((r, idx) => {
-            let imgBroken = r.brokenFileUrl ? `<div class="img"><img src="${r.brokenFileUrl}"></div>` : '';
-            let imgFixed = r.fixedFileUrl ? `<div class="img"><img src="${r.fixedFileUrl}"></div>` : '';
-            
-            bodyHtml += `
-            <tr>
-                <td class="center">${idx + 1}</td>
-                <td class="center">${formatThaiDate(r.brokenDate)}</td>
-                <td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
-                <td>${r.description || '-'} ${imgBroken}</td>
-                <td>${r.solution || '-'} ${imgFixed}</td>
-                <td class="details">
-                    <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</div>
-                    <div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber || '-'}</div>
-                    <div class="doc-line"><b>หนังสือ มท.</b> ${r.docMinistry || '-'}</div>
-                    <div><b>หนังสือ กฟภ.</b> ${r.docPEA || '-'}</div>
-                </td>
-                <td class="center">
-                    <div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${r.brokenUser || '-'}<div class="user-sub">(${r.brokenUserPos || ''} ${r.brokenUserDept || ''})</div></div>
-                    <div class="user-block"><b>ชื่อผู้แจ้งซ่อมแซม</b><br>${r.fixedUser || '-'}<div class="user-sub">(${r.fixedUserPos || ''} ${r.fixedUserDept || ''})</div></div>
-                </td>
-            </tr>`;
-        });
-        bodyHtml += `</tbody></table></div>`;
-    }
-
-    closeReportModal();
-    const w = window.open('', '', 'width=1200,height=900');
-    w.document.write(`
-<html><head><title>PEA_REPORT_${siteData.name}</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+closeReportModal();
+const w=window.open('','','width=1200,height=900');
+w.document.write(`
+<html><head><title>PEA_REPORT_${siteData.name}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-    @page { size: A4 portrait; margin: 18mm; }
-    @media print {
-        thead { display: table-header-group; } 
-        tr { page-break-inside: avoid; }
-        .device-section { page-break-inside: auto; }
-    }
-    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; color: #333; }
-    .header { display: flex; align-items: center; border-bottom: 3px solid #6a1b9a; padding-bottom: 8px; margin-bottom: 15px; }
-    .logo { width: 150px; margin-right: 15px; }
-    .title { flex: 1; text-align: center; } 
-    .title-main { font-size: 16px; font-weight: 700; color: #6a1b9a; } 
-    .header-right { font-size: 10px; text-align: right; }
-    .device-section { margin-bottom: 25px; }
-    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 8px; border-top: 1px solid #ddd; border-right: 1px solid #ddd; }
-    .device-title { font-weight: 700; font-size: 12px; } 
-    .device-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 5px; font-size: 9px; }
-    .device-table td { border: 1px solid #000; padding: 5px; font-size: 9px; vertical-align: top; word-break: break-word; }
-    .center { text-align: center; } 
-    .img img { width: 100%; height: 90px; object-fit: cover; margin-top: 3px; border: 1px solid #eee; }
-    .pending { color: red; font-weight: bold; }
-    .signature { margin-top: 50px; display: flex; justify-content: space-around; page-break-inside: avoid; }
-    .sig-box { text-align: center; } 
-    .sig-line { border-bottom: 1px solid #000; width: 180px; height: 35px; margin-bottom: 6px; }
-</style>
-</head>
+@page{size:A4 portrait; margin:18mm;}
+body{font-family:'Sarabun',sans-serif; font-size:11px; margin:0;}
+.header{display:flex; align-items:center; border-bottom:3px solid #6a1b9a; padding-bottom:8px; margin-bottom:15px;}
+.logo{width:150px; margin-right:10px;}
+.title{flex:1; text-align:center;} .title-main{font-size:16px; font-weight:700;} .title-sub{font-size:11px;}
+.header-right{font-size:11px; text-align:right;}
+thead{display:table-header-group;}
+.device-section{margin-bottom:18px;}
+.device-header{background:#f3f0ff; border-left:5px solid #6a1b9a; padding:6px 8px; margin-bottom:5px;}
+.device-title{font-weight:700; font-size:12px;} .device-spec{font-size:11px;}
+.device-table{width:100%; border-collapse:collapse; table-layout:fixed;}
+.device-table th{background:#6a1b9a; color:#fff; border:1px solid #000; padding:4px; font-size:9px;}
+.device-table td{border:1px solid #000; padding:4px; font-size:9px; vertical-align:top; word-break:break-word;}
+.center{text-align:center;} .details div{line-height:1.2;} .doc-line{border-top:1px dotted #999; margin-top:2px; padding-top:2px;}
+.user-block{margin-bottom:5px;} .user-sub{white-space:nowrap; font-size:9px; color:#444;}
+.img{margin-top:3px; border:1px solid #aaa;} .img img{width:100%; height:100px; object-fit:cover;}
+.pending{color:red; font-weight:bold;}
+.signature{margin-top:40px; display:flex; justify-content:space-around;}
+.sig-box{text-align:center;} .sig-line{border-bottom:1px solid #000; width:180px; height:35px; margin-bottom:6px;}
+</style></head>
 <body>
-    <div class="header">
-        <img class="logo" src="provincial-electricity-authority.png">
-        <div class="title">
-            <div class="title-main">ASSET MAINTENANCE REPORT</div>
-            <div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
-        </div>
-        <div class="header-right">SITE : ${siteData.name}<br>DATE : ${formatThaiDate(new Date())}<br>TIME : ${new Date().toLocaleTimeString('th-TH')}</div>
-    </div>
-    ${bodyHtml}
-    <div class="signature">
-        <div class="sig-box"><div class="sig-line"></div><b>${currentUserFullName || ''}</b><br>ผู้จัดทำรายงาน</div>
-        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</div>
-        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
-    </div>
-</body>
-</html>`);
-    w.document.close();
+<div class="header"><img class="logo" src="provincial-electricity-authority.png">
+<div class="title"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></div>
+<div class="header-right">SITE : ${siteData.name}<br>DATE : ${formatThaiDate(new Date())}<br>TIME : ${new Date().toLocaleTimeString('th-TH')}</div></div>
+${bodyHtml}
+<div class="signature">
+<div class="sig-box"><div class="sig-line"></div><b>${currentUserFullName||''}</b><br>ผู้จัดทำรายงาน</div>
+<div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</div>
+<div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
+</div></body></html>`);
+w.document.close();
 };
+
+
+
 
