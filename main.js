@@ -133,7 +133,26 @@ const sites = {
     "Recloser-31", "Recloser-32", "Recloser-33", "Recloser-34", "Recloser-35", "others" ] },
 "phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3","Sync. Relay (Switch 1)", "RCS (Switch 1)", "Recloser", "BATT-1", "BATT-2", "others" ] }
 };
+const sitePrefixes = {
+    "ko-phaluay": "kpl",
+    "betong": "btg",
+    "mae-sariang": "msr",
+    "phrao": "pra"
+};
 
+function generateCustomId(siteKey, existingRecords) {
+    const prefix = sitePrefixes[siteKey] || "gen";
+    let maxNum = 0;
+    existingRecords.forEach(r => {
+        if (r.customId && r.customId.startsWith(prefix + '-')) {
+            const numPart = parseInt(r.customId.split('-')[1]);
+            if (numPart > maxNum) maxNum = numPart;
+        }
+    });
+
+    const nextNum = maxNum + 1;
+    return `${prefix}-${nextNum.toString().padStart(6, '0')}`;
+}
 function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>'); }
 function getSiteCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`devices`); }
 
@@ -439,6 +458,7 @@ window.saveData = async function() {
 
    if (editIndex >= 0) {
         const originalRecord = records[editIndex];
+        baseRec.customId = originalRecord.customId;
         baseRec.brokenFileUrl = originalRecord.brokenFileUrl || null;
         baseRec.brokenFileType = originalRecord.brokenFileType || null;
         baseRec.fixedFileUrl = originalRecord.fixedFileUrl || null;
@@ -456,7 +476,8 @@ window.saveData = async function() {
         }
         baseRec.user = currentUserStr; 
     } else {
-        baseRec.brokenUser = currentUserStr; baseRec.brokenUserPos = currentUserPosition; baseRec.brokenUserDept = currentUserDept; baseRec.user = currentUserStr; 
+       baseRec.customId = generateCustomId(currentSiteKey, records);
+       baseRec.brokenUser = currentUserStr; baseRec.brokenUserPos = currentUserPosition; baseRec.brokenUserDept = currentUserDept; baseRec.user = currentUserStr; 
         if (statusVal === 'ok') { baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept; }
     }
     try {
@@ -911,17 +932,50 @@ async function processAndSaveImport(assetsToImport, recordsToImport) {
             if (!sites[currentSiteKey].devices.includes(deviceName)) continue;
             const docRef = getSiteCollection(currentSiteKey).doc(deviceName); const existingData = existingDataMap.get(deviceName) || {};
             let finalAssetInfo = assetMap.has(deviceName) ? assetMap.get(deviceName) : (existingData.assetInfo || {});
+            
             const finalRecordsMap = new Map();
-            for (const r of (existingData.records || [])) finalRecordsMap.set(r.ts, r);
-            for (const r of (recordMap.get(deviceName) || [])) finalRecordsMap.set(r.ts, r);
-            const finalRecords = Array.from(finalRecordsMap.values()); finalRecords.sort((a, b) => a.ts - b.ts);
+            for (const r of (existingData.records || [])) {
+                const key = r.customId || `ts-${r.ts}`;
+                finalRecordsMap.set(key, r);
+            }
+
+         
+            for (const r of (recordMap.get(deviceName) || [])) {
+                const key = r.customId || `ts-${r.ts}`;
+        
+                if (!finalRecordsMap.has(key)) {
+                    finalRecordsMap.set(key, r);
+                }
+            }
+
+            const finalRecords = Array.from(finalRecordsMap.values()); 
+            finalRecords.sort((a, b) => a.ts - b.ts);
+
             const downCount = finalRecords.filter(r => r.counted).length; 
-            const unresolvedIssues = finalRecords.filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
-            let currentStatus = 'ok'; if (unresolvedIssues.some(r => r.status === 'down')) currentStatus = 'down'; else if (unresolvedIssues.some(r => r.status === 'abnormal')) currentStatus = 'abnormal';
-            batch.set(docRef, { assetInfo: finalAssetInfo, records: finalRecords, downCount: downCount, currentStatus: currentStatus });
+            const unresolvedIssues = finalRecords.filter(r => 
+                (r.status === 'down' || r.status === 'abnormal') && 
+                (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null')
+            );
+
+            let currentStatus = 'ok'; 
+            if (unresolvedIssues.some(r => r.status === 'down')) currentStatus = 'down'; 
+            else if (unresolvedIssues.some(r => r.status === 'abnormal')) currentStatus = 'abnormal';
+
+            batch.set(docRef, { 
+                assetInfo: finalAssetInfo, 
+                records: finalRecords, 
+                downCount: downCount, 
+                currentStatus: currentStatus 
+            });
         }
-        await batch.commit(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); Swal.fire({ title: 'นำเข้าสำเร็จ!', icon: 'success' });
-    } catch (error) { Swal.fire('ผิดพลาด', error.message, 'error'); }
+
+        await batch.commit(); 
+        window.updateDeviceSummary(); 
+        window.updateDeviceStatusOverlays(currentSiteKey); 
+        Swal.fire({ title: 'นำเข้าสำเร็จ!', text: 'ข้อมูลใหม่ถูกเพิ่มแล้ว (รายการที่มี ID ซ้ำถูกข้ามอัตโนมัติ)', icon: 'success' });
+    } catch (error) { 
+        Swal.fire('ผิดพลาด', error.message, 'error'); 
+    }
 }
 
 window.importData = function(event) {
@@ -952,9 +1006,9 @@ window.importData = function(event) {
                 if (recordRawData.length >= 2) { 
                     const headers = recordRawData[0];
         
-                    const headerMap = { 'Timestamp': headers.indexOf('Timestamp'), 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 
+                    const headerMap = { 'Timestamp': headers.indexOf('Timestamp'),'เลข ID อ้างอิง': headers.indexOf('เลข ID อ้างอิง'), 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 
                                         'วันที่เกิดเหตุ': headers.indexOf('วันที่เกิดเหตุ') !== -1 ? headers.indexOf('วันที่เกิดเหตุ') : headers.indexOf('วันที่ชำรุด'), 
-                                        'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'), 'สถานะ': headers.indexOf('สถานะ'), 'คำอธิบาย': headers.indexOf('คำอธิบาย'), 'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'), 
+                                        'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'), 'สถานะ': headers.indexOf('สถานะ'), 'คำอธิบาย': headers.indexOf('คำอธิบาย'),'ลิงก์รูปชำรุด': headers.indexOf('ลิงก์รูปชำรุด'), 'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'),'ลิงก์รูปแก้ไข': headers.indexOf('ลิงก์รูปแก้ไข'), 
                                         'เลขที่ใบสั่ง': headers.indexOf('เลขที่ใบสั่ง'), 'ราคาซ่อม': headers.indexOf('ราคาซ่อม'), 
                                         'หนังสือ มท.': headers.indexOf('หนังสือ มท.'), 'หนังสือ กฟภ.': headers.indexOf('หนังสือ กฟภ.'),
                                         'ผู้แจ้งชำรุด': headers.indexOf('ผู้แจ้งชำรุด') !== -1 ? headers.indexOf('ผู้แจ้งชำรุด') : headers.indexOf('ผู้บันทึก'),
@@ -973,18 +1027,22 @@ window.importData = function(event) {
                             const timestampToSave = parsedTs ? parsedTs : (Date.now() + i);
 
                            recordsToImport.push({ deviceName, record: {
-                                ts: timestampToSave, brokenDate: importedBrokenDate || '', fixedDate: importedFixedDate || null, 
-                                status: finalStatus, description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel', solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
-                                orderNumber: (headerMap['เลขที่ใบสั่ง'] !== -1) ? (row[headerMap['เลขที่ใบสั่ง']] || '').toString() : '', repairCost: (headerMap['ราคาซ่อม'] !== -1) ? (row[headerMap['ราคาซ่อม']] || '').toString() : '',
-                                docMinistry: (headerMap['หนังสือ มท.'] !== -1) ? (row[headerMap['หนังสือ มท.']] || '').toString() : '',
-                                docPEA: (headerMap['หนังสือ กฟภ.'] !== -1) ? (row[headerMap['หนังสือ กฟภ.']] || '').toString() : '',
-                                brokenUser: (headerMap['ผู้แจ้งชำรุด'] !== -1) ? (row[headerMap['ผู้แจ้งชำรุด']] || '').toString() : (currentUserFullName || currentUser.email), 
-                                brokenUserPos: (headerMap['ตำแหน่ง'] !== -1) ? (row[headerMap['ตำแหน่ง']]).toString() : '',
-                                brokenUserDept: (headerMap['สังกัด'] !== -1) ? (row[headerMap['สังกัด']]).toString() : '',
-                                fixedUser: (headerMap['ผู้แจ้งซ่อมเสร็จ'] !== -1) ? (row[headerMap['ผู้แจ้งซ่อมเสร็จ']] || '').toString() : '',
-                                fixedUserPos: (headerMap['ตำแหน่ง'] !== -1) ? (row[headerMap['ตำแหน่ง']]).toString() : '',
-                                fixedUserDept: (headerMap['สังกัด'] !== -1) ? (row[headerMap['สังกัด']]).toString() : '',
-                                user: (row[headerMap['ผู้บันทึก']] || '').toString() || (currentUserFullName || currentUser.email), counted: !!importedBrokenDate, 
+                                    ts: timestampToSave, customId: customId,brokenDate: importedBrokenDate || '', 
+                                    fixedDate: importedFixedDate || null,  status: finalStatus, 
+                                    description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel', 
+                                    brokenFileUrl: row[headerMap['ลิงก์รูปชำรุด']] || null,
+                                    solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
+                                    fixedFileUrl: row[headerMap['ลิงก์รูปแก้ไข']] || null, 
+                                    orderNumber: (headerMap['เลขที่ใบสั่ง'] !== -1) ? (row[headerMap['เลขที่ใบสั่ง']] || '').toString() : '', 
+                                    repairCost: (headerMap['ราคาซ่อม'] !== -1) ? (row[headerMap['ราคาซ่อม']] || '').toString() : '',
+                                    docMinistry: (headerMap['หนังสือ มท.'] !== -1) ? (row[headerMap['หนังสือ มท.']] || '').toString() : '',
+                                    docPEA: (headerMap['หนังสือ กฟภ.'] !== -1) ? (row[headerMap['หนังสือ กฟภ.']] || '').toString() : '',
+                                    brokenUser: (headerMap['ผู้แจ้งชำรุด'] !== -1) ? (row[headerMap['ผู้แจ้งชำรุด']] || '').toString() : (currentUserFullName || currentUser.email), 
+                                    brokenUserPos: (headerMap['ตำแหน่ง'] !== -1) ? (row[headerMap['ตำแหน่ง']] || '').toString() : '',
+                                    brokenUserDept: (headerMap['สังกัด'] !== -1) ? (row[headerMap['สังกัด']] || '').toString() : '',
+                                    fixedUser: (headerMap['ผู้แจ้งซ่อมเสร็จ'] !== -1) ? (row[headerMap['ผู้แจ้งซ่อมเสร็จ']] || '').toString() : '',
+                                    user: (row[headerMap['ผู้บันทึก']] || '').toString() || (currentUserFullName || currentUser.email), 
+                                    counted: !!importedBrokenDate
                             } });
                         }
                     } else { Swal.fire('ผิดพลาด', 'ไม่พบคอลัมน์ ชื่ออุปกรณ์ หรือ วันที่เกิดเหตุ ในไฟล์ Excel', 'error'); return; }
@@ -1000,7 +1058,12 @@ window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData || siteData.devices.length === 0) return;
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
 
-   const recordsData = [['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด']];
+  const recordsData = [[
+        'Timestamp', 'เลข ID อ้างอิง', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 
+        'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'ลิงก์รูปชำรุด', 
+        'วิธีแก้ไข', 'ลิงก์รูปแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 
+        'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด'
+    ]];
     const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
     for (const devName of siteData.devices) {
@@ -1016,9 +1079,9 @@ window.exportAllDataExcel = async function() {
             let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
             
             recordsData.push([ 
-                formatThaiDateTime(r.ts), devNameFinal, sequenceNumber, 
+                formatThaiDateTime(r.ts),r.customId || '-', devNameFinal, sequenceNumber, 
                 formatThaiDate(r.brokenDate), formatThaiDate(r.fixedDate), 
-                duration, statusTH, r.description || '-', r.solution || '-', 
+                duration, statusTH, r.description || '-',r.brokenFileUrl || '-', r.solution || '-',r.fixedFileUrl || '-', 
                 r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', 
                 r.brokenUser || r.user || '-', 
                 r.brokenUserPos || '-', 
@@ -1271,3 +1334,4 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
