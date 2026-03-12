@@ -489,7 +489,7 @@ window.saveData = async function() {
         }
         baseRec.user = currentUserStr; 
     } else {
-       baseRec.customId = generateAutoId(currentSiteKey, records);
+       baseRec.customId = await generateAutoId(currentSiteKey, records);
        baseRec.brokenUser = currentUserStr; baseRec.brokenUserPos = currentUserPosition; baseRec.brokenUserDept = currentUserDept; baseRec.user = currentUserStr; 
         if (statusVal === 'ok') { baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept; }
     }
@@ -1398,6 +1398,7 @@ window.generateSelectedReport = async function () {
 </body></html>`);
     w.document.close();
 };
+
 
 
 
