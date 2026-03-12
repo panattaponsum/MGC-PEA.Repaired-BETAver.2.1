@@ -1278,9 +1278,10 @@ window.generateSelectedReport = async function () {
     }
 
     const dataMap = window.tempReportDataMap;
-    const groupedData = {}; // สำหรับจัดกลุ่มตาม Category หรือ Others (Device Name)
+    // ใช้ Object เพื่อเก็บข้อมูลแยกตาม "หัวข้อ" ที่จะแสดงในรายงาน
+    const groupedData = {}; 
 
-    // 1. จัดกลุ่มข้อมูล (Grouping Logic)
+    // 1. จัดกลุ่มข้อมูล
     selectedCheckboxes.forEach(v => {
         const [devName, ts] = v.split('|');
         const docData = dataMap[devName] || {};
@@ -1289,37 +1290,46 @@ window.generateSelectedReport = async function () {
         const targetRec = records.find(r => String(r.ts) === String(ts));
 
         if (targetRec) {
-            // เช็คหมวดหมู่ ถ้าไม่มีให้ใช้ "Others (ชื่ออุปกรณ์)"
-            let cat = (assetInfo.category && assetInfo.category !== '-' && assetInfo.category !== '') 
-                      ? assetInfo.category 
-                      : `Others (${devName})`;
+            let displayHeader;
+            
+            // เช็คว่าเป็นกลุ่ม Others หรือไม่ (เช็คจาก category หรือชื่ออุปกรณ์)
+            const isOthers = (!assetInfo.category || assetInfo.category === '-' || assetInfo.category.toLowerCase() === 'others');
+            
+            if (isOthers) {
+                // ถ้าเป็น Others ให้เอาชื่ออุปกรณ์ (ย่อย) มาต่อท้าย
+                displayHeader = `Others (${devName})`;
+            } else {
+                // ถ้าไม่ใช่ Others (เป็นอุปกรณ์หลักบนรูป) ให้ใช้ชื่อหมวดหมู่ปกติ
+                displayHeader = assetInfo.category;
+            }
 
-            if (!groupedData[cat]) {
-                groupedData[cat] = {
-                    deviceName: devName,
+            if (!groupedData[displayHeader]) {
+                groupedData[displayHeader] = {
+                    title: displayHeader,
                     assetInfo: assetInfo,
+                    deviceName: devName, // เก็บชื่อไว้ใช้อ้างอิง
                     items: []
                 };
             }
-            groupedData[cat].items.push(targetRec);
+            groupedData[displayHeader].items.push(targetRec);
         }
     });
 
     let bodyHtml = '';
     let groupNo = 1;
 
-    // 2. สร้าง HTML แยกตามกลุ่ม
-    for (const catName in groupedData) {
-        const group = groupedData[catName];
+    // 2. วนลูปสร้าง HTML ตามกลุ่มที่แยกไว้
+    for (const key in groupedData) {
+        const group = groupedData[key];
         const asset = group.assetInfo;
         
-        // เรียงลำดับวันที่
+        // เรียงลำดับรายการตามเวลา (เก่าไปใหม่)
         group.items.sort((a, b) => a.ts - b.ts);
 
         bodyHtml += `
-        <div class="device-section" style="page-break-inside: auto;">
+        <div class="device-section">
             <div class="device-header">
-                <div class="device-title">${groupNo++}. ${catName}</div>
+                <div class="device-title">${groupNo++}. ${group.title}</div>
                 <div class="device-spec">
                     S/N : ${asset.serial || '-'} | Model : ${asset.model || '-'} | 
                     PEA No. : ${asset.peaNo || '-'} | Price : ${asset.price || '-'} | 
@@ -1344,13 +1354,6 @@ window.generateSelectedReport = async function () {
             let imgBroken = r.brokenFileUrl ? `<div class="img"><img src="${r.brokenFileUrl}"></div>` : '';
             let imgFixed = r.fixedFileUrl ? `<div class="img"><img src="${r.fixedFileUrl}"></div>` : '';
             
-            let brokenName = r.brokenUser || '-';
-            let brokenPos = r.brokenUserPos || '';
-            let brokenDept = r.brokenUserDept || '';
-            let fixedName = r.fixedUser || '-';
-            let fixedPos = r.fixedUserPos || '';
-            let fixedDept = r.fixedUserDept || '';
-
             bodyHtml += `
             <tr>
                 <td class="center">${idx + 1}</td>
@@ -1365,8 +1368,8 @@ window.generateSelectedReport = async function () {
                     <div><b>หนังสือ กฟภ.</b> ${r.docPEA || '-'}</div>
                 </td>
                 <td class="center">
-                    <div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${brokenName}<div class="user-sub">(${brokenPos} ${brokenDept})</div></div>
-                    <div class="user-block"><b>ชื่อผู้แจ้งซ่อมแซม</b><br>${fixedName}<div class="user-sub">(${fixedPos} ${fixedDept})</div></div>
+                    <div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${r.brokenUser || '-'}<div class="user-sub">(${r.brokenUserPos || ''} ${r.brokenUserDept || ''})</div></div>
+                    <div class="user-block"><b>ชื่อผู้แจ้งซ่อมแซม</b><br>${r.fixedUser || '-'}<div class="user-sub">(${r.fixedUserPos || ''} ${r.fixedUserDept || ''})</div></div>
                 </td>
             </tr>`;
         });
@@ -1382,34 +1385,32 @@ window.generateSelectedReport = async function () {
 <style>
     @page { size: A4 portrait; margin: 18mm; }
     @media print {
-        thead { display: table-header-group; } /* ทำให้หัวตารางแสดงทุกหน้า */
-        tr { page-break-inside: avoid; } /* ป้องกันแถวตารางขาดครึ่งหน้า */
+        thead { display: table-header-group; } /* บังคับหัวตารางแสดงทุกหน้า */
+        tr { page-break-inside: avoid; }
+        .device-section { page-break-inside: auto; }
     }
-    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; }
+    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; color: #333; }
     .header { display: flex; align-items: center; border-bottom: 3px solid #6a1b9a; padding-bottom: 8px; margin-bottom: 15px; }
     .logo { width: 150px; margin-right: 15px; }
     .title { flex: 1; text-align: center; } 
-    .title-main { font-size: 16px; font-weight: 700; } 
-    .title-sub { font-size: 11px; }
-    .header-right { font-size: 11px; text-align: right; }
-    .device-section { margin-bottom: 18px; }
-    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 6px 8px; margin-bottom: 5px; }
-    .device-title { font-weight: 700; font-size: 12px; } 
-    .device-spec { font-size: 11px; }
+    .title-main { font-size: 16px; font-weight: 700; color: #6a1b9a; } 
+    .header-right { font-size: 10px; text-align: right; }
+    .device-section { margin-bottom: 25px; }
+    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 8px; margin-bottom: 0px; border-top: 1px solid #ddd; border-right: 1px solid #ddd; }
+    .device-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; } 
+    .device-spec { font-size: 10px; color: #555; }
     .device-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 4px; font-size: 9px; }
-    .device-table td { border: 1px solid #000; padding: 4px; font-size: 9px; vertical-align: top; word-break: break-word; }
+    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 6px; font-size: 10px; }
+    .device-table td { border: 1px solid #000; padding: 6px; font-size: 10px; vertical-align: top; word-break: break-word; }
     .center { text-align: center; } 
-    .details div { line-height: 1.2; } 
-    .doc-line { border-top: 1px dotted #999; margin-top: 2px; padding-top: 2px; }
-    .user-block { margin-bottom: 5px; } 
-    .user-sub { white-space: nowrap; font-size: 9px; color: #444; }
-    .img { margin-top: 3px; border: 1px solid #aaa; } 
-    .img img { width: 100%; height: 100px; object-fit: cover; }
-    .pending { color: red; font-weight: bold; }
-    .signature { margin-top: 40px; display: flex; justify-content: space-around; page-break-inside: avoid; }
-    .sig-box { text-align: center; } 
-    .sig-line { border-bottom: 1px solid #000; width: 180px; height: 35px; margin-bottom: 6px; }
+    .doc-line { border-top: 1px dotted #999; margin-top: 3px; padding-top: 3px; }
+    .user-sub { font-size: 9px; color: #666; }
+    .img { margin-top: 5px; border: 1px solid #eee; text-align: center; } 
+    .img img { max-width: 100%; height: 90px; object-fit: contain; }
+    .pending { color: #d32f2f; font-weight: bold; }
+    .signature { margin-top: 50px; display: flex; justify-content: space-around; page-break-inside: avoid; }
+    .sig-box { text-align: center; font-size: 11px; } 
+    .sig-line { border-bottom: 1px solid #000; width: 200px; height: 40px; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -1431,5 +1432,6 @@ window.generateSelectedReport = async function () {
 </html>`);
     w.document.close();
 };
+
 
 
