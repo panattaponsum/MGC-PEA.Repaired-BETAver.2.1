@@ -140,7 +140,7 @@ const sitePrefixes = {
     "phrao": "pra"
 };
 
-async function generateAutoId(siteKey) {
+async function generateCustomId() {
     const prefixes = { "ko-phaluay": "kpl", "betong": "btg", "mae-sariang": "msr", "phrao": "pra" };
     const prefix = prefixes[siteKey] || "gen";
     
@@ -1353,6 +1353,7 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
 
 
