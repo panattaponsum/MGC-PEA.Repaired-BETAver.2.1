@@ -1277,63 +1277,50 @@ window.generateSelectedReport = async function () {
         return;
     }
 
-    const dataMap = window.tempReportDataMap;
-    // ใช้ Object เพื่อเก็บข้อมูลแยกตาม "หัวข้อ" ที่จะแสดงในรายงาน
-    const groupedData = {}; 
-
-    // 1. จัดกลุ่มข้อมูล
+    const selectedMap = {};
     selectedCheckboxes.forEach(v => {
-        const [devName, ts] = v.split('|');
-        const docData = dataMap[devName] || {};
-        const assetInfo = docData.assetInfo || {};
-        const records = docData.records || [];
-        const targetRec = records.find(r => String(r.ts) === String(ts));
-
-        if (targetRec) {
-            let displayHeader;
-            
-            // เช็คว่าเป็นกลุ่ม Others หรือไม่ (เช็คจาก category หรือชื่ออุปกรณ์)
-            const isOthers = (!assetInfo.category || assetInfo.category === '-' || assetInfo.category.toLowerCase() === 'others');
-            
-            if (isOthers) {
-                // ถ้าเป็น Others ให้เอาชื่ออุปกรณ์ (ย่อย) มาต่อท้าย
-                displayHeader = `Others (${devName})`;
-            } else {
-                // ถ้าไม่ใช่ Others (เป็นอุปกรณ์หลักบนรูป) ให้ใช้ชื่อหมวดหมู่ปกติ
-                displayHeader = assetInfo.category;
-            }
-
-            if (!groupedData[displayHeader]) {
-                groupedData[displayHeader] = {
-                    title: displayHeader,
-                    assetInfo: assetInfo,
-                    deviceName: devName, // เก็บชื่อไว้ใช้อ้างอิง
-                    items: []
-                };
-            }
-            groupedData[displayHeader].items.push(targetRec);
-        }
+        const [dev, ts] = v.split('|');
+        if (!selectedMap[dev]) selectedMap[dev] = [];
+        selectedMap[dev].push(String(ts));
     });
 
+    const dataMap = window.tempReportDataMap;
     let bodyHtml = '';
-    let groupNo = 1;
+    let deviceNo = 1;
 
-    // 2. วนลูปสร้าง HTML ตามกลุ่มที่แยกไว้
-    for (const key in groupedData) {
-        const group = groupedData[key];
-        const asset = group.assetInfo;
+    // วนลูปตามอุปกรณ์ใน siteData
+    for (const dev of siteData.devices) {
+        if (!selectedMap[dev]) continue;
         
-        // เรียงลำดับรายการตามเวลา (เก่าไปใหม่)
-        group.items.sort((a, b) => a.ts - b.ts);
+        const docData = dataMap[dev] || {};
+        let allRecords = docData.records || [];
+        allRecords.sort((a, b) => a.ts - b.ts);
+        
+        let filtered = allRecords.map((r, i) => ({ r, occ: i + 1 })).filter(o => selectedMap[dev].includes(String(o.r.ts)));
+        if (filtered.length === 0) continue;
+
+        const assetInfo = docData.assetInfo || {};
+        
+        // --- ส่วนที่แก้ไข: การตั้งชื่อหัวข้อ ---
+        // ถ้าชื่ออุปกรณ์คือ Others ให้เปลี่ยนเป็น Others [ชื่ออุปกรณ์ย่อย]
+        let displayTitle = dev;
+        if (dev === "Others") {
+            // ในกรณีที่มีข้อมูลชื่อเจาะจงใน assetInfo หรือใช้ชื่อจากระบบ
+            displayTitle = `Others [${dev}]`; 
+        } else if (dev.toLowerCase().includes("others")) {
+             // ถ้าชื่อมีคำว่า others อยู่แล้ว (เช่น Others CT) ให้จัดรูปแบบใหม่ตามต้องการ
+             displayTitle = dev.replace(/others/i, "Others [") + "]";
+        }
+        // ----------------------------------
 
         bodyHtml += `
         <div class="device-section">
             <div class="device-header">
-                <div class="device-title">${groupNo++}. ${group.title}</div>
+                <div class="device-title">${deviceNo++}. ${displayTitle}</div>
                 <div class="device-spec">
-                    S/N : ${asset.serial || '-'} | Model : ${asset.model || '-'} | 
-                    PEA No. : ${asset.peaNo || '-'} | Price : ${asset.price || '-'} | 
-                    Warranty : ${formatThaiDate(asset.warrantyStart)} → ${formatThaiDate(asset.warrantyEnd)}
+                    S/N : ${assetInfo.serial || '-'} | Model : ${assetInfo.model || '-'} | 
+                    PEA No. : ${assetInfo.peaNo || '-'} | Price : ${assetInfo.price || '-'} | 
+                    Warranty : ${formatThaiDate(assetInfo.warrantyStart)} → ${formatThaiDate(assetInfo.warrantyEnd)}
                 </div>
             </div>
             <table class="device-table">
@@ -1350,13 +1337,14 @@ window.generateSelectedReport = async function () {
                 </thead>
                 <tbody>`;
 
-        group.items.forEach((r, idx) => {
+        filtered.forEach(item => {
+            const r = item.r;
             let imgBroken = r.brokenFileUrl ? `<div class="img"><img src="${r.brokenFileUrl}"></div>` : '';
             let imgFixed = r.fixedFileUrl ? `<div class="img"><img src="${r.fixedFileUrl}"></div>` : '';
             
             bodyHtml += `
             <tr>
-                <td class="center">${idx + 1}</td>
+                <td class="center">${item.occ}</td>
                 <td class="center">${formatThaiDate(r.brokenDate)}</td>
                 <td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
                 <td>${r.description || '-'} ${imgBroken}</td>
@@ -1373,7 +1361,6 @@ window.generateSelectedReport = async function () {
                 </td>
             </tr>`;
         });
-
         bodyHtml += `</tbody></table></div>`;
     }
 
@@ -1385,32 +1372,31 @@ window.generateSelectedReport = async function () {
 <style>
     @page { size: A4 portrait; margin: 18mm; }
     @media print {
-        thead { display: table-header-group; } /* บังคับหัวตารางแสดงทุกหน้า */
+        thead { display: table-header-group; } /* แก้ไขจุดที่ 2: หัวตารางตามไปทุกหน้า */
         tr { page-break-inside: avoid; }
         .device-section { page-break-inside: auto; }
     }
-    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; color: #333; }
+    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; }
     .header { display: flex; align-items: center; border-bottom: 3px solid #6a1b9a; padding-bottom: 8px; margin-bottom: 15px; }
     .logo { width: 150px; margin-right: 15px; }
     .title { flex: 1; text-align: center; } 
-    .title-main { font-size: 16px; font-weight: 700; color: #6a1b9a; } 
-    .header-right { font-size: 10px; text-align: right; }
-    .device-section { margin-bottom: 25px; }
-    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 8px; margin-bottom: 0px; border-top: 1px solid #ddd; border-right: 1px solid #ddd; }
-    .device-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; } 
-    .device-spec { font-size: 10px; color: #555; }
+    .title-main { font-size: 16px; font-weight: 700; } 
+    .header-right { font-size: 11px; text-align: right; }
+    .device-section { margin-bottom: 18px; }
+    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 6px 8px; margin-bottom: 5px; }
+    .device-title { font-weight: 700; font-size: 12px; } 
     .device-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 6px; font-size: 10px; }
-    .device-table td { border: 1px solid #000; padding: 6px; font-size: 10px; vertical-align: top; word-break: break-word; }
+    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 4px; font-size: 9px; }
+    .device-table td { border: 1px solid #000; padding: 4px; font-size: 9px; vertical-align: top; word-break: break-word; }
     .center { text-align: center; } 
-    .doc-line { border-top: 1px dotted #999; margin-top: 3px; padding-top: 3px; }
-    .user-sub { font-size: 9px; color: #666; }
-    .img { margin-top: 5px; border: 1px solid #eee; text-align: center; } 
-    .img img { max-width: 100%; height: 90px; object-fit: contain; }
-    .pending { color: #d32f2f; font-weight: bold; }
-    .signature { margin-top: 50px; display: flex; justify-content: space-around; page-break-inside: avoid; }
-    .sig-box { text-align: center; font-size: 11px; } 
-    .sig-line { border-bottom: 1px solid #000; width: 200px; height: 40px; margin-bottom: 8px; }
+    .doc-line { border-top: 1px dotted #999; margin-top: 2px; padding-top: 2px; }
+    .user-sub { font-size: 9px; color: #444; }
+    .img { margin-top: 3px; border: 1px solid #aaa; } 
+    .img img { width: 100%; height: 100px; object-fit: cover; }
+    .pending { color: red; font-weight: bold; }
+    .signature { margin-top: 40px; display: flex; justify-content: space-around; page-break-inside: avoid; }
+    .sig-box { text-align: center; } 
+    .sig-line { border-bottom: 1px solid #000; width: 180px; height: 35px; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -1432,6 +1418,7 @@ window.generateSelectedReport = async function () {
 </html>`);
     w.document.close();
 };
+
 
 
 
