@@ -877,9 +877,20 @@ window.importData = function(event) {
                             const statusValue = (row[headerMap['สถานะ']] || '').toString(); const importedTs = row[headerMap['Timestamp']];
                             let finalStatus = 'ok'; if (statusValue.includes('ชำรุด')) finalStatus = 'down'; else if (statusValue.includes('ผิดปกติ')) finalStatus = 'abnormal';
                             if (importedBrokenDate && !importedFixedDate && finalStatus === 'ok') finalStatus = 'down'; 
-                            
+                            let timestampToSave;
+if (importedTs && !isNaN(importedTs) && String(importedTs).length >= 10) {
+   
+    timestampToSave = parseInt(importedTs);
+} else if (importedTs) {
+    
+    const parsedDate = new Date(importedTs);
+    timestampToSave = !isNaN(parsedDate.getTime()) ? parsedDate.getTime() : (Date.now() + i);
+} else {
+
+    timestampToSave = Date.now() + i;
+}
                            recordsToImport.push({ deviceName, record: {
-                                ts: importedTs ? parseInt(importedTs) : Date.now() + i, brokenDate: importedBrokenDate || '', fixedDate: importedFixedDate || null, 
+                                ts: timestampToSave, brokenDate: importedBrokenDate || '', fixedDate: importedFixedDate || null, 
                                 status: finalStatus, description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel', solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
                                 orderNumber: (headerMap['เลขที่ใบสั่ง'] !== -1) ? (row[headerMap['เลขที่ใบสั่ง']] || '').toString() : '', repairCost: (headerMap['ราคาซ่อม'] !== -1) ? (row[headerMap['ราคาซ่อม']] || '').toString() : '',
                                 docMinistry: (headerMap['หนังสือ มท.'] !== -1) ? (row[headerMap['หนังสือ มท.']] || '').toString() : '',
@@ -905,7 +916,11 @@ window.importData = function(event) {
 window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData || siteData.devices.length === 0) return;
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
-
+const formatTS = (ts) => {
+    if (!ts) return '-';
+    const d = new Date(ts);
+    return d.toLocaleString('th-TH'); // จะได้รูปแบบ "12/3/2569 10:30:00"
+};
    const recordsData = [['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด']];
     const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
@@ -922,7 +937,7 @@ window.exportAllDataExcel = async function() {
             let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
             
             recordsData.push([ 
-                r.ts || '-', devNameFinal, sequenceNumber, 
+                formatTS(r.ts), || '-', devNameFinal, sequenceNumber, 
                 (r.brokenDate || '-').replace(/-/g, '/'), (r.fixedDate || '-').replace(/-/g, '/'), 
                 duration, statusTH, r.description || '-', r.solution || '-', 
                 r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', 
@@ -1181,6 +1196,7 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
 
 
