@@ -140,13 +140,26 @@ const sitePrefixes = {
     "phrao": "pra"
 };
 
-function generateCustomId(siteKey, existingRecords) {
-    const prefix = sitePrefixes[siteKey] || "gen";
+async function generateAutoId(siteKey) {
+    const prefixes = { "ko-phaluay": "kpl", "betong": "btg", "mae-sariang": "msr", "phrao": "pra" };
+    const prefix = prefixes[siteKey] || "gen";
+    
+    
+    const docsSnap = await getAllDevicesDocs(siteKey);
     let maxNum = 0;
-    existingRecords.forEach(r => {
-        if (r.customId && r.customId.startsWith(prefix + '-')) {
-            const numPart = parseInt(r.customId.split('-')[1]);
-            if (numPart > maxNum) maxNum = numPart;
+    
+    docsSnap.forEach(doc => {
+        const data = doc.data();
+        if (data.records && Array.isArray(data.records)) {
+            data.records.forEach(r => {
+                if (r.customId && typeof r.customId === 'string' && r.customId.startsWith(prefix + '-')) {
+                    const parts = r.customId.split('-');
+                    if (parts.length > 1) {
+                        const numPart = parseInt(parts[1]);
+                        if (!isNaN(numPart) && numPart > maxNum) maxNum = numPart;
+                    }
+                }
+            });
         }
     });
 
@@ -1006,7 +1019,7 @@ window.importData = function(event) {
                 if (recordRawData.length >= 2) { 
                     const headers = recordRawData[0];
         
-                    const headerMap = { 'Timestamp': headers.indexOf('Timestamp'),'เลข ID อ้างอิง': headers.indexOf('เลข ID อ้างอิง'), 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 
+                    const headerMap = { 'Timestamp': headers.indexOf('Timestamp'),'เลข ID อ้างอิง': headers.indexOf('เลข ID อ้างอิง') !== -1 ? headers.indexOf('เลข ID อ้างอิง') : headers.indexOf('ID อ้างอิง'), 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 
                                         'วันที่เกิดเหตุ': headers.indexOf('วันที่เกิดเหตุ') !== -1 ? headers.indexOf('วันที่เกิดเหตุ') : headers.indexOf('วันที่ชำรุด'), 
                                         'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'), 'สถานะ': headers.indexOf('สถานะ'), 'คำอธิบาย': headers.indexOf('คำอธิบาย'),'ลิงก์รูปชำรุด': headers.indexOf('ลิงก์รูปชำรุด'), 'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'),'ลิงก์รูปแก้ไข': headers.indexOf('ลิงก์รูปแก้ไข'), 
                                         'เลขที่ใบสั่ง': headers.indexOf('เลขที่ใบสั่ง'), 'ราคาซ่อม': headers.indexOf('ราคาซ่อม'), 
@@ -1020,6 +1033,8 @@ window.importData = function(event) {
                             const row = recordRawData[i]; const deviceName = row[headerMap['ชื่ออุปกรณ์']]; if (!deviceName) continue;
                             const importedBrokenDate = cleanDate(row[headerMap['วันที่เกิดเหตุ']]); const importedFixedDate = cleanDate(row[headerMap['วันที่ซ่อมแซม']]);
                             const statusValue = (row[headerMap['สถานะ']] || '').toString(); const importedTs = row[headerMap['Timestamp']];
+                            const customIdIdx = headerMap['เลข ID อ้างอิง'];
+                            const customId = (customIdIdx !== -1 && row[customIdIdx]) ? row[customIdIdx].toString() : null;
                             let finalStatus = 'ok'; if (statusValue.includes('ชำรุด')) finalStatus = 'down'; else if (statusValue.includes('ผิดปกติ')) finalStatus = 'abnormal';
                             if (importedBrokenDate && !importedFixedDate && finalStatus === 'ok') finalStatus = 'down'; 
                             
@@ -1334,4 +1349,5 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
