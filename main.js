@@ -937,7 +937,7 @@ const formatTS = (ts) => {
             let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
             
             recordsData.push([ 
-                formatTS(r.ts), || '-', devNameFinal, sequenceNumber, 
+                formatTS(r.ts) , devNameFinal, sequenceNumber, 
                 (r.brokenDate || '-').replace(/-/g, '/'), (r.fixedDate || '-').replace(/-/g, '/'), 
                 duration, statusTH, r.description || '-', r.solution || '-', 
                 r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', 
@@ -1196,6 +1196,7 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
+
 
 
 
