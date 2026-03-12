@@ -15,6 +15,102 @@ const auth = firebase.auth();
 const storage = firebase.storage(); 
 const devicesCol = db.collection("devices"); 
 
+// --- เริ่ม: ชุดฟังก์ชันจัดการวันที่แบบ dd/mm/yyyy พ.ศ. แบบครบวงจร ---
+function formatThaiDate(dateVal) {
+    if (!dateVal || dateVal === '-' || dateVal.toString().trim() === '') return '-';
+    let d;
+    if (typeof dateVal === 'number' || (typeof dateVal === 'string' && !isNaN(dateVal) && dateVal.length >= 10)) {
+        d = new Date(Number(dateVal));
+    } else {
+        const str = dateVal.toString().trim();
+        if (str.includes('/')) {
+            const parts = str.split('/');
+            if (parts.length === 3) {
+                let year = parseInt(parts[2]);
+                if (year > 2500) year -= 543; 
+                d = new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+        } else {
+            d = new Date(str);
+        }
+    }
+    if (!d || isNaN(d.getTime())) return dateVal;
+    
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear() + 543;
+    return `${day}/${month}/${year}`;
+}
+
+function formatThaiDateTime(ts) {
+    if (!ts) return '-';
+    const d = new Date(Number(ts));
+    if (isNaN(d.getTime())) return '-';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear() + 543;
+    const time = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    return `${day}/${month}/${year} ${time}`;
+}
+
+function parseThaiDateToStandard(val) {
+    if (!val || val === '-' || val.toString().trim() === '') return '';
+    if (typeof val === 'number' && val < 100000) {
+        const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+        return d.toISOString().split('T')[0];
+    }
+    const str = val.toString().trim();
+    if (str.includes('-') && str.split('-')[0].length === 4) return str.slice(0, 10);
+    
+    if (str.includes('/')) {
+        const parts = str.split('/');
+        if (parts.length === 3) {
+            let day = parts[0].padStart(2, '0');
+            let month = parts[1].padStart(2, '0');
+            let year = parseInt(parts[2]);
+            if (year > 2500) year -= 543; 
+            return `${year}-${month}-${day}`;
+        }
+    }
+    
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        let year = d.getFullYear();
+        if (year > 2500) year -= 543;
+        return `${year}-${month}-${day}`;
+    }
+    return '';
+}
+
+function parseThaiDateTimeToTS(val) {
+    if (!val) return null;
+    const str = val.toString().trim();
+    if (!isNaN(str) && str.length >= 10) return Number(str);
+    
+    let datePart = str, timePart = '00:00';
+    if (str.includes(' ')) {
+        const parts = str.split(' ');
+        datePart = parts[0]; timePart = parts[1];
+    }
+    
+    if (datePart.includes('/')) {
+        const parts = datePart.split('/');
+        if (parts.length === 3) {
+            let year = parseInt(parts[2]);
+            if (year > 2500) year -= 543;
+            const dStr = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T${timePart}:00`;
+            const d = new Date(dStr);
+            if (!isNaN(d.getTime())) return d.getTime();
+        }
+    }
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d.getTime();
+    return null;
+}
+// --- จบชุดฟังก์ชันวันที่ ---
+
 let currentSiteKey = "ko-phaluay";
 let currentDevice = null, editIndex = -1, chartInstance = null;
 let currentPage = 1;
@@ -169,7 +265,7 @@ window.showActivityLogs = async function() {
 
         let html = '';
         snapshot.forEach(doc => {
-            const d = doc.data(); const time = d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-';
+            const d = doc.data(); const time = d.timestamp ? formatThaiDateTime(d.timestamp.toMillis()) : '-';
             let siteDisplay = d.siteKey === "SYSTEM" ? `<span class="text-slate-400 font-medium italic">SYSTEM</span>` : `<span class="font-mono text-blue-600 font-bold">${(d.siteKey||'').toUpperCase()}</span>`;
             let badgeClass = 'bg-slate-100 text-slate-600';
             if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700'; else if (d.action.includes("UPDATE")) badgeClass = 'bg-blue-100 text-blue-700'; else if (d.action.includes("DELETE")) badgeClass = 'bg-red-100 text-red-700'; else if (d.action.includes("ADD") || d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
@@ -379,8 +475,8 @@ window.saveData = async function() {
 
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
     clearForm(); await loadHistory(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); 
-    if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) sendEmailNotify('down', currentDevice, baseRec.description, baseRec.solution, baseRec.user, baseRec.brokenDate, records.filter(r => r.counted).length);
-    if (statusVal === 'ok' && !isEditing) sendEmailNotify('fixed', currentDevice, baseRec.description, baseRec.solution, baseRec.user, baseRec.fixedDate, null);
+    if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) sendEmailNotify('down', currentDevice, baseRec.description, baseRec.solution, baseRec.user, formatThaiDate(baseRec.brokenDate), records.filter(r => r.counted).length);
+    if (statusVal === 'ok' && !isEditing) sendEmailNotify('fixed', currentDevice, baseRec.description, baseRec.solution, baseRec.user, formatThaiDate(baseRec.fixedDate), null);
     Swal.fire("บันทึกเรียบร้อย", "", "success");
     await createLog(isEditing ? "EDIT_RECORD" : "ADD_RECORD", isEditing ? `แก้ไขข้อมูลประวัติ ${currentDevice}` : `เพิ่มประวัติให้ ${currentDevice}`);
     await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มีสถานะเป็น: ${statusTextTH}`);
@@ -448,7 +544,7 @@ window.loadHistory = async function() {
         </div>
     </div>
     <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
-        <div>วันที่เกิดเหตุ : ${r.brokenDate || '-'}</div><div>วันที่ซ่อมแซม : ${r.fixedDate || '-'}</div>
+        <div>วันที่เกิดเหตุ : ${formatThaiDate(r.brokenDate)}</div><div>วันที่ซ่อมแซม : ${formatThaiDate(r.fixedDate)}</div>
         <div>เลขที่ใบสั่ง : <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
         <div>ราคาซ่อมแซม : <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
         <div>หนังสือ มท. : <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
@@ -490,16 +586,11 @@ if (currentSiteKey === "phrao") {
         const response = await fetch(templateUrl);
         if (!response.ok) throw new Error("ไม่พบไฟล์แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx");
         const arrayBuffer = await response.arrayBuffer();
-        function formatThaiDateLocal(dateStr) {
-            if(!dateStr || dateStr === '-') return '-';
-            const d = new Date(dateStr);
-            const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-            return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
-        }
+        
         const dataForWord = {
             userDept: currentUserDept || 'ไม่ระบุสังกัด',
             deviceName: r.subDevice ? `${deviceName} (${r.subDevice})` : deviceName,
-            brokenDate: formatThaiDateLocal(r.brokenDate),
+            brokenDate: formatThaiDate(r.brokenDate),
             description: r.description || '-',
             userName: currentUserFullName || currentUser.email || 'ไม่ระบุ',
             userPosition: currentUserPosition || '-',
@@ -537,7 +628,7 @@ window.deleteRecord = async function(ts) {
     let records = await getDeviceRecords(currentSiteKey, currentDevice);
     const idx = records.findIndex(r => String(r.ts) === String(ts));
     if (idx < 0) return;
-    const dateRef = records[idx].brokenDate || records[idx].fixedDate || "ไม่ระบุวันที่";
+    const dateRef = formatThaiDate(records[idx].brokenDate) || formatThaiDate(records[idx].fixedDate) || "ไม่ระบุวันที่";
     records.splice(idx, 1);
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
     await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${dateRef})`);
@@ -750,7 +841,7 @@ window.updateDeviceSummary = async function() {
             else statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-100"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>ปกติ</span>`;
 
             const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer'; 
-            tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${escapeHtml(s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500 font-mono">${s.brokenDate}</td><td class="p-4 text-center text-xs text-slate-500 font-mono">${s.fixedDate}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
+            tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${escapeHtml(s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
             tr.onclick = () => window.openForm(s.device); tbody.appendChild(tr);
         });
     }
@@ -841,7 +932,7 @@ window.importData = function(event) {
             const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, { type: 'array' });
             const wsAssets = wb.Sheets["ข้อมูลทรัพย์สิน"]; const wsRecords = wb.Sheets["ประวัติการชำรุด"];
             const assetsToImport = []; const recordsToImport = [];
-            const cleanDate = (val) => { if (!val) return null; const str = val.toString().trim(); if (str === '-' || str === '' || str.toLowerCase() === 'null') return null; return str.slice(0, 10).replace(/\//g, '-'); };
+            const cleanDate = (val) => parseThaiDateToStandard(val);
             
             if (wsAssets) {
                 const assetRawData = XLSX.utils.sheet_to_json(wsAssets, { header: 1 });
@@ -877,18 +968,10 @@ window.importData = function(event) {
                             const statusValue = (row[headerMap['สถานะ']] || '').toString(); const importedTs = row[headerMap['Timestamp']];
                             let finalStatus = 'ok'; if (statusValue.includes('ชำรุด')) finalStatus = 'down'; else if (statusValue.includes('ผิดปกติ')) finalStatus = 'abnormal';
                             if (importedBrokenDate && !importedFixedDate && finalStatus === 'ok') finalStatus = 'down'; 
-                            let timestampToSave;
-if (importedTs && !isNaN(importedTs) && String(importedTs).length >= 10) {
-   
-    timestampToSave = parseInt(importedTs);
-} else if (importedTs) {
-    
-    const parsedDate = new Date(importedTs);
-    timestampToSave = !isNaN(parsedDate.getTime()) ? parsedDate.getTime() : (Date.now() + i);
-} else {
+                            
+                            const parsedTs = parseThaiDateTimeToTS(importedTs);
+                            const timestampToSave = parsedTs ? parsedTs : (Date.now() + i);
 
-    timestampToSave = Date.now() + i;
-}
                            recordsToImport.push({ deviceName, record: {
                                 ts: timestampToSave, brokenDate: importedBrokenDate || '', fixedDate: importedFixedDate || null, 
                                 status: finalStatus, description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel', solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
@@ -916,18 +999,14 @@ if (importedTs && !isNaN(importedTs) && String(importedTs).length >= 10) {
 window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData || siteData.devices.length === 0) return;
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
-const formatTS = (ts) => {
-    if (!ts) return '-';
-    const d = new Date(ts);
-    return d.toLocaleString('th-TH'); // จะได้รูปแบบ "12/3/2569 10:30:00"
-};
+
    const recordsData = [['Timestamp', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'วิธีแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด']];
     const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
     for (const devName of siteData.devices) {
         const docData = dataMap[devName]; const assetInfo = docData?.assetInfo || {}; const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
         let warrantyStatusText = 'N/A'; switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
-        assetData.push([ devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', (assetInfo.warrantyStart || '-').replace(/-/g, '/'), (assetInfo.warrantyEnd || '-').replace(/-/g, '/'), warrantyStatusText ]);
+        assetData.push([ devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
 
         if (!docData) continue; const records = docData.records || []; records.sort((a, b) => a.ts - b.ts); let downCount = 0; 
         records.forEach(r => {
@@ -937,8 +1016,8 @@ const formatTS = (ts) => {
             let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
             
             recordsData.push([ 
-                formatTS(r.ts) , devNameFinal, sequenceNumber, 
-                (r.brokenDate || '-').replace(/-/g, '/'), (r.fixedDate || '-').replace(/-/g, '/'), 
+                formatThaiDateTime(r.ts), devNameFinal, sequenceNumber, 
+                formatThaiDate(r.brokenDate), formatThaiDate(r.fixedDate), 
                 duration, statusTH, r.description || '-', r.solution || '-', 
                 r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', 
                 r.brokenUser || r.user || '-', 
@@ -954,7 +1033,7 @@ const formatTS = (ts) => {
     const logData = [['วัน-เวลา', 'ผู้ใช้งาน', 'การกระทำ', 'รายละเอียด', 'ไซต์']];
     try {
         const logSnap = await db.collection("activity_logs").where("siteKey", "==", currentSiteKey).orderBy("timestamp", "desc").limit(1000).get();
-        logSnap.forEach(doc => { const d = doc.data(); logData.push([ d.timestamp ? d.timestamp.toDate().toLocaleString('th-TH') : '-', d.userEmail || '-', d.action || '-', d.details || '-', d.siteKey || '-' ]); });
+        logSnap.forEach(doc => { const d = doc.data(); logData.push([ d.timestamp ? formatThaiDateTime(d.timestamp.toMillis()) : '-', d.userEmail || '-', d.action || '-', d.details || '-', d.siteKey || '-' ]); });
     } catch (error) {}
 
     const wb = XLSX.utils.book_new();
@@ -1086,7 +1165,7 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
         <div class="flex flex-1 items-center gap-2 min-w-0">
             <span class="text-slate-700 font-medium whitespace-nowrap">ครั้งที่ ${idx + 1}${subDeviceStr}</span>
             <span class="text-slate-400">|</span>
-            <span class="text-slate-500 whitespace-nowrap">${r.brokenDate || '-'}</span>
+            <span class="text-slate-500 whitespace-nowrap">${formatThaiDate(r.brokenDate)}</span>
             <span class="text-slate-400">|</span>
             <span class="text-slate-500 truncate italic flex-1" title="${escapeHtml(desc)}">
                 ${escapeHtml(desc)}
@@ -1112,10 +1191,6 @@ window.selectAllReport = function(isChecked) { document.querySelectorAll('#repor
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
 
 window.generateSelectedReport = async function () {
-function formatThaiDate(dateStr){
-if(!dateStr) return '-'; const d = new Date(dateStr); const day = String(d.getDate()).padStart(2,'0'); const month = String(d.getMonth()+1).padStart(2,'0'); const year = d.getFullYear()+543;
-return `${day}/${month}/${year}`;
-}
 const siteData = sites[currentSiteKey];
 const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
 if(selectedCheckboxes.length===0){ Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการ','warning'); return; }
@@ -1136,7 +1211,7 @@ bodyHtml+=`
 <div class="device-section">
 <div class="device-header">
 <div class="device-title">${deviceNo++}. ${dev}</div>
-<div class="device-spec">S/N : ${assetInfo.serial||'-'} | Model : ${assetInfo.model||'-'} | PEA No. : ${assetInfo.peaNo||'-'} | Price : ${assetInfo.price||'-'} | Warranty : ${assetInfo.warrantyStart||'-'} → ${assetInfo.warrantyEnd||'-'}</div>
+<div class="device-spec">S/N : ${assetInfo.serial||'-'} | Model : ${assetInfo.model||'-'} | PEA No. : ${assetInfo.peaNo||'-'} | Price : ${assetInfo.price||'-'} | Warranty : ${formatThaiDate(assetInfo.warrantyStart)} → ${formatThaiDate(assetInfo.warrantyEnd)}</div>
 </div>
 <table class="device-table">
 <thead><tr><th style="width:3%">No.</th><th style="width:8%">Down Date</th><th style="width:8%">Fixed Date</th><th style="width:24%">Description</th><th style="width:24%">Solution</th><th style="width:17%">Details</th><th style="width:16%">User</th></tr></thead>
@@ -1167,7 +1242,7 @@ w.document.write(`
 @page{size:A4 portrait; margin:18mm;}
 body{font-family:'Sarabun',sans-serif; font-size:11px; margin:0;}
 .header{display:flex; align-items:center; border-bottom:3px solid #6a1b9a; padding-bottom:8px; margin-bottom:15px;}
-.logo{width:100px; margin-right:10px;}
+.logo{width:150px; margin-right:15px;}
 .title{flex:1; text-align:center;} .title-main{font-size:16px; font-weight:700;} .title-sub{font-size:11px;}
 .header-right{font-size:11px; text-align:right;}
 thead{display:table-header-group;}
@@ -1179,7 +1254,7 @@ thead{display:table-header-group;}
 .device-table td{border:1px solid #000; padding:4px; font-size:9px; vertical-align:top; word-break:break-word;}
 .center{text-align:center;} .details div{line-height:1.2;} .doc-line{border-top:1px dotted #999; margin-top:2px; padding-top:2px;}
 .user-block{margin-bottom:5px;} .user-sub{white-space:nowrap; font-size:9px; color:#444;}
-.img{margin-top:3px; border:1px solid #aaa;} .img img{width:100%; height:85px; object-fit:cover;}
+.img{margin-top:3px; border:1px solid #aaa;} .img img{width:100%; height:100px; object-fit:cover;}
 .pending{color:red; font-weight:bold;}
 .signature{margin-top:40px; display:flex; justify-content:space-around;}
 .sig-box{text-align:center;} .sig-line{border-bottom:1px solid #000; width:180px; height:35px; margin-bottom:6px;}
@@ -1196,11 +1271,3 @@ ${bodyHtml}
 </div></body></html>`);
 w.document.close();
 };
-
-
-
-
-
-
-
-
