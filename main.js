@@ -15,7 +15,7 @@ const auth = firebase.auth();
 const storage = firebase.storage(); 
 const devicesCol = db.collection("devices"); 
 
-// --- เริ่ม: ชุดฟังก์ชันจัดการวันที่แบบ dd/mm/yyyy พ.ศ. แบบครบวงจร ---
+
 function formatThaiDate(dateVal) {
     if (!dateVal || dateVal === '-' || dateVal.toString().trim() === '') return '-';
     let d;
@@ -1269,85 +1269,167 @@ window.selectAllReport = function(isChecked) { document.querySelectorAll('#repor
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
 
 window.generateSelectedReport = async function () {
-const siteData = sites[currentSiteKey];
-const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
-if(selectedCheckboxes.length===0){ Swal.fire('ระบุข้อมูล','กรุณาเลือกรายการอย่างน้อย 1 รายการ','warning'); return; }
+    const siteData = sites[currentSiteKey];
+    const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+    
+    if (selectedCheckboxes.length === 0) {
+        Swal.fire('ระบุข้อมูล', 'กรุณาเลือกรายการอย่างน้อย 1 รายการ', 'warning');
+        return;
+    }
 
-const selectedMap={};
-selectedCheckboxes.forEach(v=>{ const [dev,ts]=v.split('|'); if(!selectedMap[dev]) selectedMap[dev]=[]; selectedMap[dev].push(String(ts)); });
-const dataMap = window.tempReportDataMap;
+    const dataMap = window.tempReportDataMap;
+    const groupedData = {}; // สำหรับจัดกลุ่มตาม Category หรือ Others (Device Name)
 
-let bodyHtml=''; let deviceNo=1;
-for(const dev of siteData.devices){
-if(!selectedMap[dev]) continue;
-const docData=dataMap[dev]||{}; let allRecords=docData.records||[]; allRecords.sort((a,b)=>a.ts-b.ts);
-let filtered=allRecords.map((r,i)=>({r,occ:i+1})).filter(o=>selectedMap[dev].includes(String(o.r.ts)));
-if(filtered.length===0) continue;
+    // 1. จัดกลุ่มข้อมูล (Grouping Logic)
+    selectedCheckboxes.forEach(v => {
+        const [devName, ts] = v.split('|');
+        const docData = dataMap[devName] || {};
+        const assetInfo = docData.assetInfo || {};
+        const records = docData.records || [];
+        const targetRec = records.find(r => String(r.ts) === String(ts));
 
-const assetInfo=docData.assetInfo||{};
-bodyHtml+=`
-<div class="device-section">
-<div class="device-header">
-<div class="device-title">${deviceNo++}. ${dev}</div>
-<div class="device-spec">S/N : ${assetInfo.serial||'-'} | Model : ${assetInfo.model||'-'} | PEA No. : ${assetInfo.peaNo||'-'} | Price : ${assetInfo.price||'-'} | Warranty : ${formatThaiDate(assetInfo.warrantyStart)} → ${formatThaiDate(assetInfo.warrantyEnd)}</div>
-</div>
-<table class="device-table">
-<thead><tr><th style="width:3%">No.</th><th style="width:8%">Down Date</th><th style="width:8%">Fixed Date</th><th style="width:24%">Description</th><th style="width:24%">Solution</th><th style="width:17%">Details</th><th style="width:16%">User</th></tr></thead>
-<tbody>`;
+        if (targetRec) {
+            // เช็คหมวดหมู่ ถ้าไม่มีให้ใช้ "Others (ชื่ออุปกรณ์)"
+            let cat = (assetInfo.category && assetInfo.category !== '-' && assetInfo.category !== '') 
+                      ? assetInfo.category 
+                      : `Others (${devName})`;
 
-filtered.forEach(item=>{
-const r=item.r;
-let imgBroken=r.brokenFileUrl?`<div class="img"><img src="${r.brokenFileUrl}"></div>`:'';
-let imgFixed=r.fixedFileUrl?`<div class="img"><img src="${r.fixedFileUrl}"></div>`:'';
-let brokenName = r.brokenUser || '-'; let brokenPos  = r.brokenUserPos || ''; let brokenDept = r.brokenUserDept || '';
-let fixedName  = r.fixedUser || '-'; let fixedPos   = r.fixedUserPos || ''; let fixedDept  = r.fixedUserDept || '';
+            if (!groupedData[cat]) {
+                groupedData[cat] = {
+                    deviceName: devName,
+                    assetInfo: assetInfo,
+                    items: []
+                };
+            }
+            groupedData[cat].items.push(targetRec);
+        }
+    });
 
-bodyHtml+=`
-<tr><td class="center">${item.occ}</td><td class="center">${formatThaiDate(r.brokenDate)}</td>
-<td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
-<td>${r.description||'-'} ${imgBroken}</td><td>${r.solution||'-'} ${imgFixed}</td>
-<td class="details"><div><b>ราคาซ่อมแซม:</b> ${r.repairCost?Number(r.repairCost).toLocaleString():'-'}</div><div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber||'-'}</div><div class="doc-line"><b>หนังสือ มท.</b> ${r.docMinistry||'-'}</div><div><b>หนังสือ กฟภ.</b> ${r.docPEA||'-'}</div></td>
-<td class="center"><div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${brokenName}<div class="user-sub">(${brokenPos} ${brokenDept})</div></div><div class="user-block"><b>ชื่อผู้แจ้งซ่อมแซม</b><br>${fixedName}<div class="user-sub">(${fixedPos} ${fixedDept})</div></div></td></tr>`;
-});
-bodyHtml+=`</tbody></table></div>`;
-}
+    let bodyHtml = '';
+    let groupNo = 1;
 
-closeReportModal();
-const w=window.open('','','width=1200,height=900');
-w.document.write(`
-<html><head><title>PEA_REPORT_${siteData.name}</title><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+    // 2. สร้าง HTML แยกตามกลุ่ม
+    for (const catName in groupedData) {
+        const group = groupedData[catName];
+        const asset = group.assetInfo;
+        
+        // เรียงลำดับวันที่
+        group.items.sort((a, b) => a.ts - b.ts);
+
+        bodyHtml += `
+        <div class="device-section" style="page-break-inside: auto;">
+            <div class="device-header">
+                <div class="device-title">${groupNo++}. ${catName}</div>
+                <div class="device-spec">
+                    S/N : ${asset.serial || '-'} | Model : ${asset.model || '-'} | 
+                    PEA No. : ${asset.peaNo || '-'} | Price : ${asset.price || '-'} | 
+                    Warranty : ${formatThaiDate(asset.warrantyStart)} → ${formatThaiDate(asset.warrantyEnd)}
+                </div>
+            </div>
+            <table class="device-table">
+                <thead>
+                    <tr>
+                        <th style="width:3%">No.</th>
+                        <th style="width:8%">Down Date</th>
+                        <th style="width:8%">Fixed Date</th>
+                        <th style="width:24%">Description</th>
+                        <th style="width:24%">Solution</th>
+                        <th style="width:17%">Details</th>
+                        <th style="width:16%">User</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        group.items.forEach((r, idx) => {
+            let imgBroken = r.brokenFileUrl ? `<div class="img"><img src="${r.brokenFileUrl}"></div>` : '';
+            let imgFixed = r.fixedFileUrl ? `<div class="img"><img src="${r.fixedFileUrl}"></div>` : '';
+            
+            let brokenName = r.brokenUser || '-';
+            let brokenPos = r.brokenUserPos || '';
+            let brokenDept = r.brokenUserDept || '';
+            let fixedName = r.fixedUser || '-';
+            let fixedPos = r.fixedUserPos || '';
+            let fixedDept = r.fixedUserDept || '';
+
+            bodyHtml += `
+            <tr>
+                <td class="center">${idx + 1}</td>
+                <td class="center">${formatThaiDate(r.brokenDate)}</td>
+                <td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
+                <td>${r.description || '-'} ${imgBroken}</td>
+                <td>${r.solution || '-'} ${imgFixed}</td>
+                <td class="details">
+                    <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</div>
+                    <div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber || '-'}</div>
+                    <div class="doc-line"><b>หนังสือ มท.</b> ${r.docMinistry || '-'}</div>
+                    <div><b>หนังสือ กฟภ.</b> ${r.docPEA || '-'}</div>
+                </td>
+                <td class="center">
+                    <div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${brokenName}<div class="user-sub">(${brokenPos} ${brokenDept})</div></div>
+                    <div class="user-block"><b>ชื่อผู้แจ้งซ่อมแซม</b><br>${fixedName}<div class="user-sub">(${fixedPos} ${fixedDept})</div></div>
+                </td>
+            </tr>`;
+        });
+
+        bodyHtml += `</tbody></table></div>`;
+    }
+
+    closeReportModal();
+    const w = window.open('', '', 'width=1200,height=900');
+    w.document.write(`
+<html><head><title>PEA_REPORT_${siteData.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-@page{size:A4 portrait; margin:18mm;}
-body{font-family:'Sarabun',sans-serif; font-size:11px; margin:0;}
-.header{display:flex; align-items:center; border-bottom:3px solid #6a1b9a; padding-bottom:8px; margin-bottom:15px;}
-.logo{width:150px; margin-right:15px;}
-.title{flex:1; text-align:center;} .title-main{font-size:16px; font-weight:700;} .title-sub{font-size:11px;}
-.header-right{font-size:11px; text-align:right;}
-thead{display:table-header-group;}
-.device-section{margin-bottom:18px;}
-.device-header{background:#f3f0ff; border-left:5px solid #6a1b9a; padding:6px 8px; margin-bottom:5px;}
-.device-title{font-weight:700; font-size:12px;} .device-spec{font-size:11px;}
-.device-table{width:100%; border-collapse:collapse; table-layout:fixed;}
-.device-table th{background:#6a1b9a; color:#fff; border:1px solid #000; padding:4px; font-size:9px;}
-.device-table td{border:1px solid #000; padding:4px; font-size:9px; vertical-align:top; word-break:break-word;}
-.center{text-align:center;} .details div{line-height:1.2;} .doc-line{border-top:1px dotted #999; margin-top:2px; padding-top:2px;}
-.user-block{margin-bottom:5px;} .user-sub{white-space:nowrap; font-size:9px; color:#444;}
-.img{margin-top:3px; border:1px solid #aaa;} .img img{width:100%; height:100px; object-fit:cover;}
-.pending{color:red; font-weight:bold;}
-.signature{margin-top:40px; display:flex; justify-content:space-around;}
-.sig-box{text-align:center;} .sig-line{border-bottom:1px solid #000; width:180px; height:35px; margin-bottom:6px;}
-</style></head>
+    @page { size: A4 portrait; margin: 18mm; }
+    @media print {
+        thead { display: table-header-group; } /* ทำให้หัวตารางแสดงทุกหน้า */
+        tr { page-break-inside: avoid; } /* ป้องกันแถวตารางขาดครึ่งหน้า */
+    }
+    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; }
+    .header { display: flex; align-items: center; border-bottom: 3px solid #6a1b9a; padding-bottom: 8px; margin-bottom: 15px; }
+    .logo { width: 150px; margin-right: 15px; }
+    .title { flex: 1; text-align: center; } 
+    .title-main { font-size: 16px; font-weight: 700; } 
+    .title-sub { font-size: 11px; }
+    .header-right { font-size: 11px; text-align: right; }
+    .device-section { margin-bottom: 18px; }
+    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 6px 8px; margin-bottom: 5px; }
+    .device-title { font-weight: 700; font-size: 12px; } 
+    .device-spec { font-size: 11px; }
+    .device-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 4px; font-size: 9px; }
+    .device-table td { border: 1px solid #000; padding: 4px; font-size: 9px; vertical-align: top; word-break: break-word; }
+    .center { text-align: center; } 
+    .details div { line-height: 1.2; } 
+    .doc-line { border-top: 1px dotted #999; margin-top: 2px; padding-top: 2px; }
+    .user-block { margin-bottom: 5px; } 
+    .user-sub { white-space: nowrap; font-size: 9px; color: #444; }
+    .img { margin-top: 3px; border: 1px solid #aaa; } 
+    .img img { width: 100%; height: 100px; object-fit: cover; }
+    .pending { color: red; font-weight: bold; }
+    .signature { margin-top: 40px; display: flex; justify-content: space-around; page-break-inside: avoid; }
+    .sig-box { text-align: center; } 
+    .sig-line { border-bottom: 1px solid #000; width: 180px; height: 35px; margin-bottom: 6px; }
+</style>
+</head>
 <body>
-<div class="header"><img class="logo" src="provincial-electricity-authority.png">
-<div class="title"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></div>
-<div class="header-right">SITE : ${siteData.name}<br>DATE : ${formatThaiDate(new Date())}<br>TIME : ${new Date().toLocaleTimeString('th-TH')}</div></div>
-${bodyHtml}
-<div class="signature">
-<div class="sig-box"><div class="sig-line"></div><b>${currentUserFullName||''}</b><br>ผู้จัดทำรายงาน</div>
-<div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</div>
-<div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
-</div></body></html>`);
-w.document.close();
+    <div class="header">
+        <img class="logo" src="provincial-electricity-authority.png">
+        <div class="title">
+            <div class="title-main">ASSET MAINTENANCE REPORT</div>
+            <div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
+        </div>
+        <div class="header-right">SITE : ${siteData.name}<br>DATE : ${formatThaiDate(new Date())}<br>TIME : ${new Date().toLocaleTimeString('th-TH')}</div>
+    </div>
+    ${bodyHtml}
+    <div class="signature">
+        <div class="sig-box"><div class="sig-line"></div><b>${currentUserFullName || ''}</b><br>ผู้จัดทำรายงาน</div>
+        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</div>
+        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
+    </div>
+</body>
+</html>`);
+    w.document.close();
 };
 
 
