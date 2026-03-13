@@ -1397,7 +1397,7 @@ window.generateSelectedReport = async function () {
     .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 5px; font-size: 9px; }
     .device-table td { border: 1px solid #000; padding: 5px; font-size: 9px; vertical-align: top; word-break: break-word; }
     .center { text-align: center; } 
-    .img img { width: 100%; height: 90px; object-fit: cover; margin-top: 3px; border: 1px solid #eee; }
+    .img img { width: 100%; height: 120px; object-fit: cover; margin-top: 3px; border: 1px solid #eee; }
     .pending { color: red; font-weight: bold; }
     .signature { margin-top: 50px; display: flex; justify-content: space-around; page-break-inside: avoid; }
     .sig-box { text-align: center; } 
@@ -1423,6 +1423,7 @@ window.generateSelectedReport = async function () {
 </html>`);
     w.document.close();
 };
+
 
 
 
