@@ -1355,7 +1355,7 @@ window.generateSelectedReport = async function () {
                 <td class="center">${idx + 1}</td>
                 <td class="center">${formatThaiDate(r.brokenDate)}</td>
                 <td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
-                <td>${r.description || '-'} ${imgBroken}</td>
+                <td>${r.description || (${r.subDevice},"-")} ${imgBroken}</td>
                 <td>${r.solution || '-'} ${imgFixed}</td>
                 <td class="details">
                     <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</div>
@@ -1423,6 +1423,7 @@ window.generateSelectedReport = async function () {
 </html>`);
     w.document.close();
 };
+
 
 
 
