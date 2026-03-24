@@ -124,14 +124,14 @@ let currentUserPhone = '';
 const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
 
 const sites = {
-"ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "REC No.1 Panal", "REC No.2 Panal", "RCS No.1 Panal", "RCS No.2 Panal", "COV 1", "COV 2", "BCP", "PCS", "Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5", "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10", "Diesel Generator 1", "Diesel Generator 2", "Diesel Generator Master", "Gateway 1", "Gateway 2", "Firewall 1", "Firewall 2", "Firewall 3","GPS", "others" ] },
-"mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: [ "FireWall 1", "PCS-9893(2nd)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "Cyber Security Manager", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892", "PCS-9893(1st)", "PCS-9799(1st)", "PCS-9799(2nd)", "MGC 1", "MGC 2", "ATS", "PCS-9794(1st)", "Diesel Local", "PCS-9794(2nd)", "PCS-9726", "PCS-9567C", "PCS 1", "PCS 2", "PCS 3", "PCS 4", "PCS 5", "PCS 6", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15", "others" ] },
+"ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "REC No.1 Panal", "REC No.2 Panal", "RCS No.1 Panal", "RCS No.2 Panal", "COV 1", "COV 2", "BCP", "PCS", "Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5", "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10", "Diesel Generator 1", "Diesel Generator 2", "Diesel Generator Master", "Gateway 1", "Gateway 2", "Firewall 1", "Firewall 2", "Firewall 3","GPS", "other" ] },
+"mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: [ "FireWall 1", "PCS-9893(2nd)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "Cyber Security Manager", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892", "PCS-9893(1st)", "PCS-9799(1st)", "PCS-9799(2nd)", "MGC 1", "MGC 2", "ATS", "PCS-9794(1st)", "Diesel Local", "PCS-9794(2nd)", "PCS-9726", "PCS-9567C", "PCS 1", "PCS 2", "PCS 3", "PCS 4", "PCS 5", "PCS 6", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15", "other" ] },
 "betong": { name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา", devices: [ "Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 5", "ETH Switch 6", "ETH Switch 7", "eMC-N-Controller INC1", "eMC-N-Controller BAAN3", "eMC-N-Controller BAAN4", "RTU SVG", "RTU Substation", "eMC-G-Controller", "ADMS-1", "ADMS-2", "Firewall 1", "Firewall 2", "Firewall 3", "RTU Gateway -1", "RTU Gateway -2", "Security HMI", "GPS", "emC-Scada","emC-P-Controller","emC-E-Controller", "emC-LUC-1-Controller", "emC-LUC-2-Controller", "emC-LUC-3-Controller", "emC-LUC-4-Controller", "Battery System", "Diesel Generator System","Inverter System",
     "Recloser-1", "Recloser-2", "Recloser-3", "Recloser-4", "Recloser-5", "Recloser-6", "Recloser-7", "Recloser-8", "Recloser-9", "Recloser-10",
     "Recloser-11", "Recloser-12", "Recloser-13", "Recloser-14", "Recloser-15", "Recloser-16", "Recloser-17", "Recloser-18", "Recloser-19", "Recloser-20",
     "Recloser-21", "Recloser-22", "Recloser-23", "Recloser-24", "Recloser-25", "Recloser-26", "Recloser-27", "Recloser-28", "Recloser-29", "Recloser-30",
-    "Recloser-31", "Recloser-32", "Recloser-33", "Recloser-34", "Recloser-35", "others" ] },
-"phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3","Sync. Relay (Switch 1)", "RCS (Switch 1)", "Recloser", "BATT-1", "BATT-2", "others" ] }
+    "Recloser-31", "Recloser-32", "Recloser-33", "Recloser-34", "Recloser-35", "other" ] },
+"phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3","Sync. Relay (Switch 1)", "RCS (Switch 1)", "Recloser", "BATT-1", "BATT-2", "other" ] }
 };
 const sitePrefixes = {
     "ko-phaluay": "kpl",
@@ -345,7 +345,7 @@ window.openForm = async function(deviceName) {
     const othersSelect = document.getElementById('othersDeviceSelect');
     
    // ส่วนที่แก้ไขใหม่เพื่อรองรับ ko-phaluay
-    if (deviceName === 'others' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
+    if (deviceName === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
         othersContainer.classList.remove('hidden'); 
         let optionsHtml = '';
         
@@ -373,7 +373,7 @@ window.openForm = async function(deviceName) {
                 <option value="Weather">Weather Station</option>
                 <option value="CCTV">CCTV</option>
                 <option value="PQM">PQM</option>
-                <option value="The Other">The Others</option>`;
+                <option value="The Other">The Other</option>`;
         }
         othersSelect.innerHTML = optionsHtml;
     } else { 
@@ -465,7 +465,7 @@ window.saveData = async function() {
         ts: Date.now(), counted: true 
     };
 
-    if (currentDevice === 'others' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong')) { 
+    if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong')) { 
         baseRec.subDevice = document.getElementById('othersDeviceSelect').value; 
     }
 
@@ -690,7 +690,7 @@ window.editRecord = async function(ts) {
     document.getElementById('orderNumber').value = r.orderNumber || ''; document.getElementById('repairCost').value = r.repairCost || ''; 
     document.getElementById('docMinistry').value = r.docMinistry || ''; document.getElementById('docPEA').value = r.docPEA || ''; 
 
-    if (currentDevice === 'others' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong') && r.subDevice) {
+    if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong') && r.subDevice) {
         document.getElementById('othersDeviceSelect').value = r.subDevice;
     }
 
@@ -914,7 +914,7 @@ window.updateDeviceStatusOverlays = async function(siteKey) {
     mapElements.forEach(mapElement => {
         mapElement.querySelectorAll('area').forEach(area => {
             const deviceName = area.getAttribute('alt'); 
-            if(!deviceName || deviceName === 'The others' || deviceName === 'To Powerstore' || deviceName === 'Back to Main') return; 
+            if(!deviceName || deviceName === 'The other' || deviceName === 'To Powerstore' || deviceName === 'Back to Main') return; 
             const status = devicesStatus[deviceName] || 'ok'; const coordsAttr = area.getAttribute('coords'); if(!coordsAttr) return;
             const coords = coordsAttr.split(',').map(c => parseInt(c.trim())); const shape = area.getAttribute('shape');
             let x, y, width, height;
@@ -1290,13 +1290,13 @@ window.generateSelectedReport = async function () {
             const assetInfo = docData.assetInfo || {};
             const subName = targetRec.subDevice || "";
             
-            // สร้าง Unique Key สำหรับกลุ่ม: ถ้าชื่อคือ Others ให้เอา subDevice มาแยกหัวข้อ
+            // สร้าง Unique Key สำหรับกลุ่ม: ถ้าชื่อคือ Other ให้เอา subDevice มาแยกหัวข้อ
             let groupKey;
             let displayTitle;
             
-            if (devName === "Others") {
-                groupKey = `Others_${subName}`; // แยกกลุ่มตาม subDevice
-                displayTitle = subName ? `Others [${subName}]` : "Others";
+            if (devName === "Other") {
+                groupKey = `Other_${subName}`; // แยกกลุ่มตาม subDevice
+                displayTitle = subName ? `Other [${subName}]` : "Other";
             } else {
                 groupKey = devName; // อุปกรณ์หลักอื่นๆ ใช้ชื่อเดิม
                 displayTitle = devName;
