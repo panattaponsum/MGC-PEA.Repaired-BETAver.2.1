@@ -308,12 +308,12 @@ window.showActivityLogs = async function() {
 };
 window.closeLogModal = function() { const modal = document.getElementById('logModal'); if (modal) modal.classList.add('hidden'); };
 
-// สลับหน้าจอรูปของเบตง
+
 window.toggleBetongView = function(viewType) {
-    // ซ่อนทุกหน้าของเบตงก่อน
+   
     document.getElementById('betong-main-view').classList.add('hidden');
     
-    // ใช้เช็คว่ามี element อยู่จริงไหมก่อนแอดคลาส เพื่อป้องกัน error
+    
     const sub1 = document.getElementById('betong-sub-view-1');
     if (sub1) sub1.classList.add('hidden');
     
@@ -323,7 +323,7 @@ window.toggleBetongView = function(viewType) {
     const sub3 = document.getElementById('betong-sub-view-3');
     if (sub3) sub3.classList.add('hidden');
 
-    // โชว์หน้าที่ถูกเลือก
+ 
     if (viewType === 'sub1' && sub1) {
         sub1.classList.remove('hidden');
     } else if (viewType === 'sub2' && sub2) {
@@ -344,7 +344,7 @@ window.openForm = async function(deviceName) {
     const othersContainer = document.getElementById('othersDeviceContainer');
     const othersSelect = document.getElementById('othersDeviceSelect');
     
-   // ส่วนที่แก้ไขใหม่เพื่อรองรับ ko-phaluay
+  
     if (deviceName === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
         othersContainer.classList.remove('hidden'); 
         let optionsHtml = '';
@@ -364,6 +364,7 @@ window.openForm = async function(deviceName) {
         } else if (currentSiteKey === 'betong') {
             optionsHtml = `
                 <option value="Office">Office</option>
+                 <option value="SVG">SVG</option>
                 <option value="Fire Alarm System">Fire Alarm System</option>
                 <option value="The Other">The Other</option>`;
         } else if (currentSiteKey === 'ko-phaluay') {
