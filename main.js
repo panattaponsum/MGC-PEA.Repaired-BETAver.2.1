@@ -131,7 +131,7 @@ const sites = {
     "Recloser-11", "Recloser-12", "Recloser-13", "Recloser-14", "Recloser-15", "Recloser-16", "Recloser-17", "Recloser-18", "Recloser-19", "Recloser-20",
     "Recloser-21", "Recloser-22", "Recloser-23", "Recloser-24", "Recloser-25", "Recloser-26", "Recloser-27", "Recloser-28", "Recloser-29", "Recloser-30",
     "Recloser-31", "Recloser-32", "Recloser-33", "Recloser-34", "Recloser-35", "other" ] },
-"phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1", "ETH Switch 2", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 3", "ETH Switch 4", "PCS-1", "PCS-2", "PCS-3","Sync. Relay (Switch 1)", "RCS (Switch 1)", "Recloser", "BATT-1", "BATT-2", "other" ] }
+"phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1 (LC1000-1) ", "ETH Switch 2 (LC1000-1) ", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 1 (LC1000-2) ", "ETH Switch 2 (LC1000-2) ", "PCS-1", "PCS-2", "PCS-3","Sync. Relay (RCS)", "RCS","ETH Switch (RCS) ", "Recloser","ETH Switch (Recloser)", "BATT-1", "BATT-2", "other" ] }
 };
 const sitePrefixes = {
     "ko-phaluay": "kpl",
