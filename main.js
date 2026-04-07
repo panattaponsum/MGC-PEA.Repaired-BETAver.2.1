@@ -109,7 +109,7 @@ function parseThaiDateTimeToTS(val) {
     if (!isNaN(d.getTime())) return d.getTime();
     return null;
 }
-// --- จบชุดฟังก์ชันวันที่ ---
+
 
 let currentSiteKey = "ko-phaluay";
 let currentDevice = null, editIndex = -1, chartInstance = null;
@@ -369,6 +369,8 @@ window.openForm = async function(deviceName) {
                 <option value="The Other">The Other</option>`;
         } else if (currentSiteKey === 'ko-phaluay') {
             optionsHtml = `
+                <option value="Office">Office</option>
+                <option value="Cellular">Cellular</option>
                 <option value="33 SwitchGear Panel">33 SwitchGear Panel</option>
                 <option value="Meter">Meter</option>
                 <option value="Weather">Weather Station</option>
