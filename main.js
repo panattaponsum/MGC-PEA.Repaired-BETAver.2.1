@@ -1228,13 +1228,32 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
 
     let subDeviceText = baseRec.subDevice ? ` (${baseRec.subDevice})` : '';
     let assetText = assetInfo ? `\n📦 ข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'}` : '';
-    let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | เลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'} | เลขที่หนังสือ มท.: ${baseRec.docMinistry}`;
+    
+    // แก้ไข: ตรวจสอบ docMinistry ว่ามีค่าไหม
+    let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | เลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'} | เลขที่หนังสือ มท.: ${baseRec.docMinistry || '-'}`;
     let costText = type === 'fixed' ? `\n💰 งบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
     
-  
+
     let userDetail = `(${currentUserPosition || '-'} ${currentUserDept || '-'})`;
-    let brokenDateStr = formatThaiDate(brokenDate);
+    
+   
+    let brokenDateStr = formatThaiDate(baseRec.brokenDate); 
     let fixedDateStr = formatThaiDate(baseRec.fixedDate);
+
+   
+    let brokenUserDisplay = "";
+    let fixedUserDisplay = "";
+
+    if (type === 'down') {
+     
+        brokenUserDisplay = `${baseRec.user} ${userDetail}`;
+        fixedUserDisplay = "-";
+    } else {
+       
+        brokenUserDisplay = baseRec.user || "-"; 
+       
+        fixedUserDisplay = `${baseRec.user} ${userDetail}`;
+    }
 
     let message = ` ${title}
 
@@ -1243,11 +1262,11 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
 🛠️ อุปกรณ์: ${deviceName}${subDeviceText}${assetText}
 📝 รายละเอียดปัญหา: ${baseRec.description || '-'}
 📅 วันที่เกิดเหตุ: ${brokenDateStr}
-👤 ผู้แจ้งเสีย: ${type === 'down' ? baseRec.user + ' ' + userDetail : (baseRec.user || '-')}
+👤 ผู้แจ้งเสีย: ${brokenUserDisplay}
 
 💡 วิธีแก้ไข: ${baseRec.solution || '-'}${docText}${costText}
 📅 วันที่ซ่อมแซม: ${fixedDateStr}
-👤 ผู้แจ้งซ่อมแซม: ${type === 'fixed' ? baseRec.user + ' ' + userDetail : (baseRec.fixedUser || '-')}
+👤 ผู้แจ้งซ่อมแซม: ${fixedUserDisplay}
 ------------------------------------------`;
 
     try { 
