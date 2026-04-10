@@ -509,6 +509,17 @@ window.saveData = async function() {
         if (statusVal === 'ok' && brokenDate && fixedDate) baseRec.counted = true;
         records.push(baseRec);
     }
+const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
+const snap = await docRef.get();
+const assetInfo = snap.exists ? (snap.data().assetInfo || null) : null;
+
+if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) {
+    sendEmailNotify('down', currentDevice, baseRec, assetInfo, records.filter(r => r.counted).length);
+}
+
+if (statusVal === 'ok' && !isEditing) {
+    sendEmailNotify('fixed', currentDevice, baseRec, assetInfo, null);
+}
 
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
     clearForm(); await loadHistory(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); 
@@ -1201,12 +1212,50 @@ window.startAutoLogoutTimer = function() {
 };
 window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
 
-window.sendEmailNotify = async function(type, deviceName, description,solution, user, dateVal, count) {
+window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, count) {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzLRfWeTwhZN_kU_8RD_eXiy30Mtt1duleN1Vxmw4RV7wB_mmTFhDPXObWCVoaUzF0GgQ/exec"; 
+    
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
-    try { await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: `หัวข้อ: ${title}\n------------------------------------------\n📍 สถานที่: ${sites[currentSiteKey].name}\n🛠️ อุปกรณ์: ${deviceName}\n📝 รายละเอียด: ${description || '-'}\nวิธีแก้ไข: ${solution || '-'}\n📅 วันที่ทำรายการ: ${dateVal}\n👤 ผู้บันทึก: ${user}\n------------------------------------------` }) }); } catch (err) {}
-};
+    const siteName = sites[currentSiteKey].name;
 
+    // --- ส่วนที่เพิ่ม: ดึง URL รูปภาพจาก Firebase ใน baseRec ---
+    // ถ้าเป็นแจ้งเสีย (down) ใช้ brokenFileUrl, ถ้าซ่อมเสร็จ (fixed) ใช้ fixedFileUrl
+    const firebaseImageUrl = (type === 'down') ? (baseRec.brokenFileUrl || "") : (baseRec.fixedFileUrl || "");
+
+    let subDeviceText = baseRec.subDevice ? ` (${baseRec.subDevice})` : '';
+    let assetText = assetInfo ? `\n📦 ข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'}` : '';
+    let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | หนังสือ PEA: ${baseRec.docPEA || '-'}`;
+    let costText = type === 'fixed' ? `\n💰 งบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
+    let userDetail = `(${currentUserPosition || '-'} ${currentUserDept || '-'})`;
+    let dateVal = formatThaiDate(type === 'down' ? baseRec.brokenDate : baseRec.fixedDate);
+
+    let message = `หัวข้อ: ${title}
+------------------------------------------
+🆔 เลขที่รายการ: ${baseRec.customId || '-'}
+📍 สถานที่: ${siteName}
+🛠️ อุปกรณ์: ${deviceName}${subDeviceText}${assetText}
+📝 รายละเอียด: ${baseRec.description || '-'}
+💡 วิธีแก้ไข: ${baseRec.solution || '-'}${docText}${costText}
+📅 วันที่ทำรายการ: ${dateVal}
+👤 ผู้บันทึก: ${baseRec.user} ${userDetail}
+------------------------------------------`;
+
+    try { 
+        await fetch(GAS_URL, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            cache: 'no-cache', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                site: siteName, 
+                message: message,
+                firebaseImageUrl: firebaseImageUrl // ส่ง URL รูปภาพจาก Firebase ไปด้วย
+            }) 
+        }); 
+    } catch (err) {
+        console.error("ส่งแจ้งเตือนล้มเหลว:", err);
+    }
+};
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
 
 window.printReport = async function() {
