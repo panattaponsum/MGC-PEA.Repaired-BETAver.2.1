@@ -520,7 +520,7 @@ if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) {
     await sendEmailNotify('down', currentDevice, baseRec, assetInfo, count);
 }
 
-if (statusVal === 'ok' && !isEditing) {
+if (statusVal === 'ok') {
     await sendEmailNotify('fixed', currentDevice, baseRec, assetInfo, null);
 }
 
@@ -1224,25 +1224,30 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
     
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
     const siteName = sites[currentSiteKey].name;
-
     const firebaseImageUrl = (type === 'down') ? (baseRec.brokenFileUrl || "") : (baseRec.fixedFileUrl || "");
 
     let subDeviceText = baseRec.subDevice ? ` (${baseRec.subDevice})` : '';
     let assetText = assetInfo ? `\n📦 ข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'}` : '';
     let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | หนังสือ PEA: ${baseRec.docPEA || '-'}`;
     let costText = type === 'fixed' ? `\n💰 งบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
+    
+    // ข้อมูลผู้บันทึกและวันที่ (แยกตามสถานะ)
     let userDetail = `(${currentUserPosition || '-'} ${currentUserDept || '-'})`;
-    let dateVal = formatThaiDate(type === 'down' ? baseRec.brokenDate : baseRec.fixedDate);
+    let brokenDateStr = formatThaiDate(baseRec.brokenDate);
+    let fixedDateStr = formatThaiDate(baseRec.fixedDate);
 
     let message = `หัวข้อ: ${title}
-
+------------------------------------------
 🆔 เลขที่รายการ: ${baseRec.customId || '-'}
 📍 สถานที่: ${siteName}
 🛠️ อุปกรณ์: ${deviceName}${subDeviceText}${assetText}
-📝 รายละเอียด: ${baseRec.description || '-'}
+📝 รายละเอียดปัญหา: ${baseRec.description || '-'}
+📅 วันที่เกิดเหตุ: ${brokenDateStr}
+👤 ผู้แจ้งเสีย: ${type === 'down' ? baseRec.user + ' ' + userDetail : (baseRec.user || '-')}
+
 💡 วิธีแก้ไข: ${baseRec.solution || '-'}${docText}${costText}
-📅 วันที่ทำรายการ: ${dateVal}
-👤 ผู้บันทึก: ${baseRec.user} ${userDetail}
+📅 วันที่ซ่อมแซม: ${fixedDateStr}
+👤 ผู้แจ้งซ่อมแซม: ${type === 'fixed' ? baseRec.user + ' ' + userDetail : (baseRec.fixedUser || '-')}
 ------------------------------------------`;
 
     try { 
