@@ -105,6 +105,69 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 @keyframes blink-orange { from { opacity: 0.8; box-shadow: 0 0 5px var(--warn); } to { opacity: 0.4; box-shadow: 0 0 15px var(--warn); } }
 
 .tag-warranty-ok { background:#d1fae5; border:1px solid #a7f3d0; color:#065f46; } .tag-warranty-warn { background:#fef3c7; border:1px solid #fde68a; color:#92400e; } .tag-warranty-bad { background:#fee2e2; border:1px solid #fecaca; color:#991b1b; }
+/* =========================================================
+   📱 Mobile Responsive Patch (แก้ไขการแสดงผลเฉพาะในมือถือ) 
+   ========================================================= */
+@media (max-width: 768px) {
+    /* 1. จัดระเบียบ Header ใหม่ ไม่ให้เบียดกัน */
+    header .max-w-\[1400px\] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+    #userInfo {
+        width: 100% !important;
+        justify-content: space-between !important;
+        padding-top: 12px !important;
+        margin-top: 4px !important;
+        border-top: 1px solid #e2e8f0 !important;
+    }
+    
+    /* 2. แก้ปัญหาแผนที่ (Map) บีบอัดจนไอคอนเละ 
+       - บังคับขนาดขั้นต่ำให้คงที่ แล้วให้ใช้นิ้วเลื่อนซ้าย-ขวา (Scroll) แทน */
+    .col-span-1.lg\:col-span-3 {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .col-span-1.lg\:col-span-3 img, .map-container img {
+        min-width: 800px !important; /* ป้องกันภาพหดตัวจนเล็กเกินไป */
+        max-width: none !important;
+    }
+
+    /* 3. ปรับขนาดตัวอักษรและระยะห่างของ Card ให้กะทัดรัดขึ้น */
+    .card {
+        padding: 1rem !important;
+    }
+    h1 { font-size: 1.15rem !important; }
+    
+    /* 4. ปรับหน้าต่าง Modal (เช่น หน้ารายงาน) ให้ไม่ล้นจอ */
+    .fixed.inset-0 > div.bg-white {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 90vh !important;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* 5. ตารางรายงาน ป้องกันการบีบอัดให้เลื่อนซ้ายขวาได้ */
+    #reportSelectionContainer {
+        overflow-x: auto !important;
+        padding: 0.75rem !important;
+    }
+    
+    /* 6. จัดการปุ่มด้านล่างของหน้ารายงาน ให้เรียงแนวตั้งและใหญ่เต็มจอ กดง่าย */
+    .rounded-b-xl.flex.justify-end {
+        flex-direction: column-reverse !important; /* เอาปุ่มสร้างรายงานไว้บนสุด */
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+    .rounded-b-xl.flex.justify-end button {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 10px !important;
+    }
+}
 </style>
 <header class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 z-[100] shadow-sm">
   <div class="max-w-[1400px] mx-auto flex flex-wrap items-center justify-between gap-4">
