@@ -1213,7 +1213,7 @@ window.startAutoLogoutTimer = function() {
 window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
 
 window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, count) {
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzLRfWeTwhZN_kU_8RD_eXiy30Mtt1duleN1Vxmw4RV7wB_mmTFhDPXObWCVoaUzF0GgQ/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxfBgNYo0w9Yd1mCtW4UJV9kyFjZpmyA_HxbgV3obb-knVnj9_FEvQgO4UG6NITt82o0Q/exec"; 
     
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
     const siteName = sites[currentSiteKey].name;
