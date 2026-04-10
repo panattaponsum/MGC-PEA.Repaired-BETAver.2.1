@@ -10,7 +10,6 @@
 <title>กองเทคโนโลยีโครงข่ายไฟฟ้า</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-
 :root {
     --bg: #f8fafc;        
     --card-bg: #ffffff;   
@@ -24,92 +23,88 @@
 }
 
 body { margin: 0; font-family: 'Inter', 'Prompt', sans-serif; background: var(--bg); color: var(--text); }
-#map-mae-sariang, #map-betong, #map-phrao { margin-top: 20px !important; padding-top: 0 !important; }
-input, select, textarea, button, table { font-family: 'Inter', 'Prompt', sans-serif; font-weight: 400; }
-h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 
-.card {
-    background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .spacer { flex: 1; }
-
-.btn {
-    border: 1px solid #cbd5e1; background: #ffffff; color: #334155; padding: 8px 16px;
-    border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all .2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-.btn:hover { background: #f1f5f9; border-color: #94a3b8; transform: translateY(-1px); }
-.btn-brand { border-color: transparent; background: linear-gradient(180deg, #3b82f6, #2563eb); color: #ffffff; }
-.btn-brand:hover { background: linear-gradient(180deg, #2563eb, #1d4ed8); }
-.btn-ghost { background: transparent; border-color: transparent; color: var(--sub); box-shadow: none; }
-.btn-ghost:hover { background: #f1f5f9; color: var(--text); }
-
-.tag { padding: 2px 10px; font-size: 13px; border-radius: 999px; border: 1px solid transparent; font-weight: 500; }
-.tag-ok { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
-.tag-warn { background: #fff7ed; color: #c2410c; border-color: #ffedd5; } 
-.tag-bad { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-
-#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); z-index: 1000; }
-#formModal {
-    overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
-    width: min(1100px, 95vw); max-height: 95vh; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;
-    padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); display: none; flex-direction: column;
-}
-#assetModal {
-    overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
-    width: min(600px, 92vw); background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; display: none; flex-direction: column;
+/* 1. Header (ล็อกให้อยู่บนสุดเสมอ) */
+header.sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1000 !important; 
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
 }
 
-#userModal {
-    overflow-y: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1001;
-    width: min(1100px, 95vw); 
-    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; display: none; flex-direction: column;
-}
-.modal-split-layout { display: flex; gap: 24px; flex: 1; min-height: 0; }
-.modal-left { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-right: 10px; }
-.modal-right { flex: 1; display: flex; flex-direction: column; border-left: 1px solid #e2e8f0; padding-left: 24px; min-width: 320px; }
-
-@media (max-width: 1024px) {
-    #formModal { width: min(600px, 95vw); max-height: 90vh; } .modal-split-layout { flex-direction: column; }
-    .modal-right { border-left: none; border-top: 1px solid #e2e8f0; padding-left: 0; padding-top: 20px; margin-top: 20px; min-width: 0; }
-    #historySection { max-height: 300px; }
+/* 2. กรอบสีกระพริบบนแผนที่ (Layer ต่ำกว่า Header) */
+.device-overlay {
+    z-index: 10; 
+    pointer-events: none;
 }
 
-#formModal input:not([type="file"]), #formModal select, #formModal textarea, #assetModal input, #assetModal select, #assetModal textarea {
-    background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; font-size: 14px; outline: none; transition: border-color 0.15s;
+/* 3. โครงสร้าง Modal หลัก (แบ่งซ้าย-ขวา ในจอคอม) */
+#formModal > div.bg-white, #assetModal > div.bg-white {
+    display: flex;
+    flex-direction: column;
+    max-height: 95vh !important;
+    width: min(1200px, 98vw) !important;
 }
-#formModal input:focus, #assetModal input:focus { border-color: #3b82f6; }
 
-.muted { color: #64748b; font-size: 12px; }
-.device-img { width: 100%; height: auto; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-#historySection { max-height: 500px; overflow-y: auto; padding-right: 6px; }
-.hidden { display: none !important; }
+.modal-header {
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
 
-#location-select { 
-    border: 1px solid #cbd5e1 !important; background: #ffffff !important; color: #1e293b !important; 
-    padding: 8px 12px !important; border-radius: 8px !important; cursor: pointer; font-weight: 600; font-size: 14px; 
+.modal-body-split {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    height: 70vh; 
 }
-.device-overlay { position: absolute; border-radius: 4px; pointer-events: none; z-index: 50; transition: all 0.3s ease-in-out; box-sizing: border-box; }
-.map-container:hover .device-overlay.normal { opacity: 0.6; }
-.device-overlay.down {
-    border: 3px solid var(--bad); background-color: rgba(239, 68, 68, 0.3);
-    background-image: linear-gradient(to top right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px)), linear-gradient(to bottom right, transparent calc(50% - 3px), var(--bad) calc(50% - 3px), var(--bad) calc(50% + 3px), transparent calc(50% + 3px));
-    animation: blink-red 1s infinite alternate; z-index: 60;
-}
-.device-overlay.abnormal {
-    border: 3px solid var(--warn); background-color: rgba(245, 158, 11, 0.3);
-    animation: blink-orange 1s infinite alternate; z-index: 55;
-}
-.device-overlay.normal { border: 2px solid var(--ok); background-color: rgba(16, 185, 129, 0.1); }
-@keyframes blink-red { from { opacity: 0.8; box-shadow: 0 0 5px var(--bad); } to { opacity: 0.4; box-shadow: 0 0 15px var(--bad); } }
-@keyframes blink-orange { from { opacity: 0.8; box-shadow: 0 0 5px var(--warn); } to { opacity: 0.4; box-shadow: 0 0 15px var(--warn); } }
 
-.tag-warranty-ok { background:#d1fae5; border:1px solid #a7f3d0; color:#065f46; } .tag-warranty-warn { background:#fef3c7; border:1px solid #fde68a; color:#92400e; } .tag-warranty-bad { background:#fee2e2; border:1px solid #fecaca; color:#991b1b; }
+.form-section {
+    width: 45%;
+    overflow-y: auto;
+    padding: 1.5rem;
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.history-section {
+    width: 55%;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
 /* =========================================================
-   📱 Mobile Responsive Patch (แก้ไขการแสดงผลเฉพาะในมือถือ) 
+   📱 ส่วนเสริมความสะดวกในการใช้งาน (UI/UX Improvements)
    ========================================================= */
-@media (max-width: 768px) {
-    /* 1. จัดระเบียบ Header ใหม่ ไม่ให้เบียดกัน */
+
+/* 4. Tab Bar (ปุ่มเลือกหมวดหมู่) ให้เลื่อนแนวนอนได้ */
+.form-section .flex.flex-wrap.gap-2,
+.tab-container, #categoryButtons {
+    flex-wrap: nowrap !important; /* ห้ามตกบรรทัด */
+    overflow-x: auto !important;  /* ให้เลื่อนซ้ายขวาได้ */
+    -webkit-overflow-scrolling: touch; /* เลื่อนลื่นๆ บน iOS */
+    padding-bottom: 8px; /* เว้นที่ให้ Scrollbar */
+    margin-bottom: 12px;
+}
+
+/* ตกแต่ง Scrollbar ของ Tab แนวนอนให้ดูสะอาดตา */
+.form-section .flex.flex-wrap.gap-2::-webkit-scrollbar { height: 4px; }
+.form-section .flex.flex-wrap.gap-2::-webkit-scrollbar-track { background: transparent; }
+.form-section .flex.flex-wrap.gap-2::-webkit-scrollbar-thumb { 
+    background-color: #cbd5e1; 
+    border-radius: 4px; 
+}
+
+/* บังคับไม่ให้ปุ่มใน Tab หดตัว */
+.form-section .flex.flex-wrap.gap-2 button {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+/* 5. Mobile Responsive (สำหรับหน้าจอมือถือและแท็บเล็ต) */
+@media (max-width: 900px) {
+    /* ปรับ Header ไม่ให้เบียด */
     header .max-w-\[1400px\] {
         flex-direction: column !important;
         align-items: flex-start !important;
@@ -120,53 +115,80 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
         justify-content: space-between !important;
         padding-top: 12px !important;
         margin-top: 4px !important;
-        border-top: 1px solid #e2e8f0 !important;
+        border-top: 1px solid var(--border) !important;
     }
-    
-    /* 2. แก้ปัญหาแผนที่ (Map) บีบอัดจนไอคอนเละ 
-       - บังคับขนาดขั้นต่ำให้คงที่ แล้วให้ใช้นิ้วเลื่อนซ้าย-ขวา (Scroll) แทน */
+
+    /* แผนที่เลื่อนได้ ไม่บีบอัด */
     .col-span-1.lg\:col-span-3 {
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch;
     }
     .col-span-1.lg\:col-span-3 img, .map-container img {
-        min-width: 800px !important; /* ป้องกันภาพหดตัวจนเล็กเกินไป */
+        min-width: 800px !important;
         max-width: none !important;
     }
 
-    /* 3. ปรับขนาดตัวอักษรและระยะห่างของ Card ให้กะทัดรัดขึ้น */
-    .card {
-        padding: 1rem !important;
+    /* จัดระเบียบ Modal ให้ฟอร์มอยู่บน ประวัติอยู่ล่าง */
+    .modal-body-split {
+        flex-direction: column !important;
+        height: auto;
+        overflow-y: auto;
     }
-    h1 { font-size: 1.15rem !important; }
+    .form-section, .history-section {
+        width: 100% !important;
+        border-right: none !important;
+        overflow-y: visible;
+    }
     
-    /* 4. ปรับหน้าต่าง Modal (เช่น หน้ารายงาน) ให้ไม่ล้นจอ */
-    .fixed.inset-0 > div.bg-white {
-        width: 95vw !important;
-        max-width: 95vw !important;
-        max-height: 90vh !important;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
+    /* ล็อคฟอร์มให้อยู่ครึ่งบนของหน้าจอเสมอ เพื่อให้เห็นช่องกรอก */
+    .form-section {
+        border-bottom: 4px solid #3b82f6 !important; 
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        max-height: 55vh; /* ฟอร์มกินพื้นที่ไม่เกิน 55% ของจอ */
+        overflow-y: auto; 
+        padding: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
+    .history-section { padding: 1rem; }
 
-    /* 5. ตารางรายงาน ป้องกันการบีบอัดให้เลื่อนซ้ายขวาได้ */
-    #reportSelectionContainer {
-        overflow-x: auto !important;
-        padding: 0.75rem !important;
-    }
+    /* ป้องกัน iOS ซูมหน้าจอเวลาพิมพ์ และขยายปุ่มให้กดง่าย */
+    input, select, textarea { font-size: 16px !important; }
+    .btn { min-height: 44px; } /* ขนาดปุ่มมาตรฐานมือถือ */
     
-    /* 6. จัดการปุ่มด้านล่างของหน้ารายงาน ให้เรียงแนวตั้งและใหญ่เต็มจอ กดง่าย */
+    /* หน้าสร้างรายงาน PDF ปุ่มใหญ่เต็มจอ */
+    #reportSelectionContainer { overflow-x: auto !important; }
     .rounded-b-xl.flex.justify-end {
-        flex-direction: column-reverse !important; /* เอาปุ่มสร้างรายงานไว้บนสุด */
+        flex-direction: column-reverse !important;
         gap: 10px !important;
         align-items: stretch !important;
     }
     .rounded-b-xl.flex.justify-end button {
         width: 100% !important;
         justify-content: center !important;
-        padding: 10px !important;
+        padding: 12px !important;
     }
+}
+
+/* 6. แนวนอนในมือถือ (Landscape View) */
+@media (max-height: 500px) and (orientation: landscape) {
+    #formModal > div.bg-white {
+        height: 100vh !important;
+        width: 100vw !important;
+        max-height: 100vh !important;
+    }
+    .modal-body-split {
+        flex-direction: row !important;
+        height: 100%;
+    }
+    .form-section {
+        max-height: none !important;
+        width: 50% !important;
+        border-right: 1px solid var(--border) !important;
+        border-bottom: none !important;
+    }
+    .history-section { width: 50% !important; }
 }
 </style>
 <header class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 z-[100] shadow-sm">
