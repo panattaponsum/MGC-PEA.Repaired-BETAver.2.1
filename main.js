@@ -15,6 +15,8 @@ const auth = firebase.auth();
 const storage = firebase.storage(); 
 const devicesCol = db.collection("devices"); 
 
+// เพิ่มตัวแปรสำหรับเก็บ Cache ให้รองรับการ Resize บนมือถือลื่นไหล
+let cachedDeviceStatus = {};
 
 function formatThaiDate(dateVal) {
     if (!dateVal || dateVal === '-' || dateVal.toString().trim() === '') return '-';
@@ -677,6 +679,7 @@ const doc = new Docx(zip, {
     }
 }
 
+// แก้ไขฟังก์ชัน deleteRecord เพิ่มการลบไฟล์จาก Storage 
 window.deleteRecord = async function(ts) {
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') return;
     if (!currentDevice) return;
@@ -686,7 +689,18 @@ window.deleteRecord = async function(ts) {
     let records = await getDeviceRecords(currentSiteKey, currentDevice);
     const idx = records.findIndex(r => String(r.ts) === String(ts));
     if (idx < 0) return;
-    const dateRef = formatThaiDate(records[idx].brokenDate) || formatThaiDate(records[idx].fixedDate) || "ไม่ระบุวันที่";
+    
+    const recordToDelete = records[idx];
+    const dateRef = formatThaiDate(recordToDelete.brokenDate) || formatThaiDate(recordToDelete.fixedDate) || "ไม่ระบุวันที่";
+    
+    // ตรวจสอบและลบรูปภาพแจ้งเสียและซ่อมแซมใน Firebase Storage ถ้ารูปภาพนั้นมีอยู่
+    if (recordToDelete.brokenFileUrl) {
+        try { await firebase.storage().refFromURL(recordToDelete.brokenFileUrl).delete(); } catch(e) { console.warn("Failed to delete brokenFile:", e); }
+    }
+    if (recordToDelete.fixedFileUrl) {
+        try { await firebase.storage().refFromURL(recordToDelete.fixedFileUrl).delete(); } catch(e) { console.warn("Failed to delete fixedFile:", e); }
+    }
+
     records.splice(idx, 1);
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
     await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${dateRef})`);
@@ -920,12 +934,17 @@ chartInstance = new Chart(document.getElementById('chart').getContext('2d'), { t
 
 window.changePage = function(step) { currentPage += step; if (currentPage < 1) currentPage = 1; window.updateDeviceSummary(); }
 
-window.updateDeviceStatusOverlays = async function(siteKey) {
+// แก้ไขฟังก์ชัน updateDeviceStatusOverlays เพื่อรองรับระบบ Cache เมื่อหน้าจอ Resize
+window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
     const mapContainer = document.getElementById(`map-${siteKey}`); if (!mapContainer) return;
     mapContainer.querySelectorAll('.device-overlay').forEach(el => el.remove());
     
-    const docsSnap = await getAllDevicesDocs(siteKey); const devicesStatus = {};
-    docsSnap.forEach(d => { if (d.data() && d.data().currentStatus) devicesStatus[d.id] = d.data().currentStatus; });
+    if (!useCache) {
+        const docsSnap = await getAllDevicesDocs(siteKey); 
+        cachedDeviceStatus[siteKey] = {};
+        docsSnap.forEach(d => { if (d.data() && d.data().currentStatus) cachedDeviceStatus[siteKey][d.id] = d.data().currentStatus; });
+    }
+    const devicesStatus = cachedDeviceStatus[siteKey] || {};
 
     let mapElements = [];
     if (siteKey === 'betong') {
@@ -1232,7 +1251,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
     let subDeviceText = baseRec.subDevice ? ` (${baseRec.subDevice})` : '';
     let assetText = assetInfo ? `\n📦 ข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'}` : '';
     
-    // แก้ไข: ตรวจสอบ docMinistry ว่ามีค่าไหม
+    
     let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | เลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'} | เลขที่หนังสือ มท.: ${baseRec.docMinistry || '-'}`;
     let costText = type === 'fixed' ? `\n💰 งบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
     
@@ -1288,7 +1307,17 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
         console.error("ส่งแจ้งเตือนล้มเหลว:", err);
     }
 };
+
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
+
+
+window.addEventListener('resize', function() {
+    clearTimeout(window.overlayResizeTimer);
+    window.overlayResizeTimer = setTimeout(function() {
+        if (typeof imageMapResize === 'function') imageMapResize();
+        if (currentSiteKey) window.updateDeviceStatusOverlays(currentSiteKey, true);
+    }, 300);
+});
 
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
@@ -1400,7 +1429,7 @@ window.generateSelectedReport = async function () {
     let bodyHtml = '';
     let deviceNo = 1;
 
-    // 2. วนลูปสร้าง HTML ตามกลุ่มที่แยกไว้ (แยกตารางใครตารางมัน)
+    
     for (const key in groupedData) {
         const group = groupedData[key];
         const asset = group.assetInfo;
@@ -1507,13 +1536,3 @@ window.generateSelectedReport = async function () {
 </html>`);
     w.document.close();
 };
-
-
-
-
-
-
-
-
-
-
