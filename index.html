@@ -106,8 +106,8 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 
 .tag-warranty-ok { background:#d1fae5; border:1px solid #a7f3d0; color:#065f46; } .tag-warranty-warn { background:#fef3c7; border:1px solid #fde68a; color:#92400e; } .tag-warranty-bad { background:#fee2e2; border:1px solid #fecaca; color:#991b1b; }
 </style>
-<header class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 z-40 shadow-sm">
-  <div class="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+<header class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 z-[100] shadow-sm">
+  <div class="max-w-[1400px] mx-auto flex flex-wrap items-center justify-between gap-4">
     <div class="flex items-center gap-4">
       <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-200">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
@@ -115,12 +115,12 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
       <div>
         <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-slate-800 leading-tight"><span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Microgrid</span> Asset Management</h1>
         <div class="flex items-center gap-2 mt-0.5">
-          <span class="text-[11px] font-medium text-slate-400 uppercase tracking-widest">แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า กองเทคโนโลยีโครงข่ายไฟฟ้า<</span>
+          <span class="text-[11px] font-medium text-slate-400 uppercase tracking-widest">แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า กองเทคโนโลยีโครงข่ายไฟฟ้า</span>
           <span class="h-1 w-1 rounded-full bg-slate-300"></span><h2 id="locationTitle" class="text-sm font-bold text-blue-600 italic"></h2>
         </div>
       </div>
     </div>
-    <div id="userInfo" class="hidden flex items-center gap-4">
+    <div id="userInfo" class="hidden flex flex-wrap items-center gap-4">
       <div id="logoutTimerDisplay" class="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-full border border-red-100 shadow-inner">
         <span class="flex h-2 w-2 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span></span>
         <span class="text-xs font-mono font-bold text-red-600"><span id="timerMinutes">60</span>:<span id="timerSeconds">00</span></span>
@@ -697,8 +697,3 @@ h1,h2,h3,th { font-weight: 600; color: #0f172a; }
 <script src="main.js"></script>
 </body>
 </html>
-
-
-
-
-
