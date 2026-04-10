@@ -1222,7 +1222,7 @@ window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(c
 window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, count) {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxfBgNYo0w9Yd1mCtW4UJV9kyFjZpmyA_HxbgV3obb-knVnj9_FEvQgO4UG6NITt82o0Q/exec"; 
     
-    let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น (ครั้งที่ ${count})`;
+    let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น `;
     const siteName = sites[currentSiteKey].name;
     const firebaseImageUrl = (type === 'down') ? (baseRec.brokenFileUrl || "") : (baseRec.fixedFileUrl || "");
 
@@ -1231,7 +1231,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
     let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | เลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'} | เลขที่หนังสือ มท.: ${baseRec.docMinistry}`;
     let costText = type === 'fixed' ? `\n💰 งบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
     
-    // ข้อมูลผู้บันทึกและวันที่ (แยกตามสถานะ)
+  
     let userDetail = `(${currentUserPosition || '-'} ${currentUserDept || '-'})`;
     let brokenDateStr = formatThaiDate(brokenDate);
     let fixedDateStr = formatThaiDate(baseRec.fixedDate);
