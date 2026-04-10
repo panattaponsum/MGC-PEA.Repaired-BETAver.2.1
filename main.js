@@ -515,8 +515,6 @@ const snap = await docRef.get();
 const assetInfo = snap.exists ? (snap.data().assetInfo || null) : null;
 
 if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) {
-    // เพิ่ม +1 เข้าไปเพื่อให้เลขครั้งที่ถูกต้อง (เพราะ records เดิมยังไม่ได้รวมรายการใหม่ที่กำลังเซฟ)
-    const count = records.filter(r => r.counted);
     await sendEmailNotify('down', currentDevice, baseRec, assetInfo, count);
 }
 
