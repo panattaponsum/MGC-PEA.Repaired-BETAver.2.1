@@ -1225,8 +1225,6 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น`;
     const siteName = sites[currentSiteKey].name;
 
-    // --- ส่วนที่เพิ่ม: ดึง URL รูปภาพจาก Firebase ใน baseRec ---
-    // ถ้าเป็นแจ้งเสีย (down) ใช้ brokenFileUrl, ถ้าซ่อมเสร็จ (fixed) ใช้ fixedFileUrl
     const firebaseImageUrl = (type === 'down') ? (baseRec.brokenFileUrl || "") : (baseRec.fixedFileUrl || "");
 
     let subDeviceText = baseRec.subDevice ? ` (${baseRec.subDevice})` : '';
@@ -1237,7 +1235,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
     let dateVal = formatThaiDate(type === 'down' ? baseRec.brokenDate : baseRec.fixedDate);
 
     let message = `หัวข้อ: ${title}
-------------------------------------------
+
 🆔 เลขที่รายการ: ${baseRec.customId || '-'}
 📍 สถานที่: ${siteName}
 🛠️ อุปกรณ์: ${deviceName}${subDeviceText}${assetText}
@@ -1256,7 +1254,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
             body: JSON.stringify({ 
                 site: siteName, 
                 message: message,
-                firebaseImageUrl: firebaseImageUrl // ส่ง URL รูปภาพจาก Firebase ไปด้วย
+                firebaseImageUrl: firebaseImageUrl 
             }) 
         }); 
     } catch (err) {
