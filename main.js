@@ -509,26 +509,33 @@ window.saveData = async function() {
         if (statusVal === 'ok' && brokenDate && fixedDate) baseRec.counted = true;
         records.push(baseRec);
     }
+
 const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
 const snap = await docRef.get();
 const assetInfo = snap.exists ? (snap.data().assetInfo || null) : null;
 
 if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) {
-    sendEmailNotify('down', currentDevice, baseRec, assetInfo, records.filter(r => r.counted).length);
+    // เพิ่ม +1 เข้าไปเพื่อให้เลขครั้งที่ถูกต้อง (เพราะ records เดิมยังไม่ได้รวมรายการใหม่ที่กำลังเซฟ)
+    const count = records.filter(r => r.counted).length + 1;
+    await sendEmailNotify('down', currentDevice, baseRec, assetInfo, count);
 }
 
 if (statusVal === 'ok' && !isEditing) {
-    sendEmailNotify('fixed', currentDevice, baseRec, assetInfo, null);
+    await sendEmailNotify('fixed', currentDevice, baseRec, assetInfo, null);
 }
 
-    await saveDeviceRecords(currentSiteKey, currentDevice, records);
-    clearForm(); await loadHistory(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); 
-    if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) sendEmailNotify('down', currentDevice, baseRec.description, baseRec.solution, baseRec.user, formatThaiDate(baseRec.brokenDate), records.filter(r => r.counted).length);
-    if (statusVal === 'ok' && !isEditing) sendEmailNotify('fixed', currentDevice, baseRec.description, baseRec.solution, baseRec.user, formatThaiDate(baseRec.fixedDate), null);
-    Swal.fire("บันทึกเรียบร้อย", "", "success");
-    await createLog(isEditing ? "EDIT_RECORD" : "ADD_RECORD", isEditing ? `แก้ไขข้อมูลประวัติ ${currentDevice}` : `เพิ่มประวัติให้ ${currentDevice}`);
-    await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มีสถานะเป็น: ${statusTextTH}`);
-    return true;
+
+await saveDeviceRecords(currentSiteKey, currentDevice, records);
+clearForm(); 
+await loadHistory(); 
+window.updateDeviceSummary();
+window.updateDeviceStatusOverlays(currentSiteKey); 
+
+
+Swal.fire("บันทึกเรียบร้อย", "", "success");
+await createLog(isEditing ? "EDIT_RECORD" : "ADD_RECORD", isEditing ? `แก้ไขข้อมูลประวัติ ${currentDevice}` : `เพิ่มประวัติให้ ${currentDevice}`);
+await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มีสถานะเป็น: ${statusTextTH}`);
+return true;
 };
 
 function updateAssetDisplays(assetInfo) {
