@@ -513,17 +513,22 @@ window.saveData = async function() {
 const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
 const snap = await docRef.get();
 const assetInfo = snap.exists ? (snap.data().assetInfo || null) : null;
+await saveDeviceRecords(currentSiteKey, currentDevice, records);
+
+
+const count = records.filter(r => r.status === 'down' || r.status === 'abnormal').length;
+
 
 if ((statusVal === 'down' || statusVal === 'abnormal') && !isEditing) {
     await sendEmailNotify('down', currentDevice, baseRec, assetInfo, count);
 }
 
 if (statusVal === 'ok') {
-    await sendEmailNotify('fixed', currentDevice, baseRec, assetInfo, null);
+
+    if (baseRec.solution && baseRec.fixedDate) {
+        await sendEmailNotify('fixed', currentDevice, baseRec, assetInfo, null);
+    }
 }
-
-
-await saveDeviceRecords(currentSiteKey, currentDevice, records);
 clearForm(); 
 await loadHistory(); 
 window.updateDeviceSummary();
