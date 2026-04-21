@@ -360,8 +360,21 @@ window.showActivityLogs = async function(direction = 'first') {
 window.changeLogPage = function(direction) {
     showActivityLogs(direction);
 };
-window.closeLogModal = function() { const modal = document.getElementById('logModal'); if (modal) modal.classList.add('hidden'); };
-
+window.closeLogModal = function() {
+    const modal = document.getElementById('logModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        
+        const siteFilter = document.getElementById('logSiteFilter');
+        const actionFilter = document.getElementById('logActionFilter');
+        
+        if (siteFilter) siteFilter.value = 'all';
+        if (actionFilter) actionFilter.value = 'all';
+        
+        const tableBody = document.getElementById('logTableBody');
+        if (tableBody) tableBody.innerHTML = '';
+    }
+};
 
 window.toggleBetongView = function(viewType) {
    
