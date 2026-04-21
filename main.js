@@ -15,8 +15,7 @@ const auth = firebase.auth();
 const storage = firebase.storage(); 
 const devicesCol = db.collection("devices"); 
 
-// เพิ่มตัวแปรสำหรับเก็บ Cache ให้รองรับการ Resize บนมือถือลื่นไหล
-let cachedDeviceStatus = {};
+let cachedDeviceStatus = {}; 
 
 function formatThaiDate(dateVal) {
     if (!dateVal || dateVal === '-' || dateVal.toString().trim() === '') return '-';
@@ -679,7 +678,6 @@ const doc = new Docx(zip, {
     }
 }
 
-// แก้ไขฟังก์ชัน deleteRecord เพิ่มการลบไฟล์จาก Storage 
 window.deleteRecord = async function(ts) {
     if (currentUserRole !== 'editor' && currentUserRole !== 'admin') return;
     if (!currentDevice) return;
@@ -693,7 +691,6 @@ window.deleteRecord = async function(ts) {
     const recordToDelete = records[idx];
     const dateRef = formatThaiDate(recordToDelete.brokenDate) || formatThaiDate(recordToDelete.fixedDate) || "ไม่ระบุวันที่";
     
-    // ตรวจสอบและลบรูปภาพแจ้งเสียและซ่อมแซมใน Firebase Storage ถ้ารูปภาพนั้นมีอยู่
     if (recordToDelete.brokenFileUrl) {
         try { await firebase.storage().refFromURL(recordToDelete.brokenFileUrl).delete(); } catch(e) { console.warn("Failed to delete brokenFile:", e); }
     }
@@ -934,7 +931,6 @@ chartInstance = new Chart(document.getElementById('chart').getContext('2d'), { t
 
 window.changePage = function(step) { currentPage += step; if (currentPage < 1) currentPage = 1; window.updateDeviceSummary(); }
 
-// แก้ไขฟังก์ชัน updateDeviceStatusOverlays เพื่อรองรับระบบ Cache เมื่อหน้าจอ Resize
 window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
     const mapContainer = document.getElementById(`map-${siteKey}`); if (!mapContainer) return;
     mapContainer.querySelectorAll('.device-overlay').forEach(el => el.remove());
@@ -1242,7 +1238,7 @@ window.startAutoLogoutTimer = function() {
 window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
 
 window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, count) {
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxfBgNYo0w9Yd1mCtW4UJV9kyFjZpmyA_HxbgV3obb-knVnj9_FEvQgO4UG6NITt82o0Q/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxYh7FI8w3Kl1RyXM_c0kwGECYWD-LMMKSKgrAYLgPjBkC_p5JHr-f57814KAxtPKBdww/exec"; 
     
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น `;
     const siteName = sites[currentSiteKey].name;
@@ -1390,9 +1386,7 @@ window.generateSelectedReport = async function () {
     }
 
     const dataMap = window.tempReportDataMap;
-    const groupedData = {}; // ใช้เก็บกลุ่มตาม Device + subDevice
-
-    // 1. จัดกลุ่มข้อมูลใหม่ตาม subDevice ของแต่ละรายการที่เลือก
+    const groupedData = {}; 
     selectedCheckboxes.forEach(v => {
         const [devName, ts] = v.split('|');
         const docData = dataMap[devName] || {};
@@ -1403,15 +1397,14 @@ window.generateSelectedReport = async function () {
             const assetInfo = docData.assetInfo || {};
             const subName = targetRec.subDevice || "";
             
-            // สร้าง Unique Key สำหรับกลุ่ม: ถ้าชื่อคือ Other ให้เอา subDevice มาแยกหัวข้อ
             let groupKey;
             let displayTitle;
             
             if (devName === "Other") {
-                groupKey = `Other_${subName}`; // แยกกลุ่มตาม subDevice
+                groupKey = `Other_${subName}`; 
                 displayTitle = subName ? `Other [${subName}]` : "Other";
             } else {
-                groupKey = devName; // อุปกรณ์หลักอื่นๆ ใช้ชื่อเดิม
+                groupKey = devName; 
                 displayTitle = devName;
             }
 
