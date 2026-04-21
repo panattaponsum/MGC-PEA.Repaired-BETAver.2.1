@@ -278,12 +278,30 @@ window.createLog = async function(action, details, siteKey = null) {
     } catch (e) {}
 };
 
-window.showActivityLogs = async function() {
-    const modal = document.getElementById('logModal'); const tableBody = document.getElementById('logTableBody');
-    const siteFilter = document.getElementById('logSiteFilter').value; const actionFilter = document.getElementById('logActionFilter').value;
+let currentLogPage = 1;
+let firstLogDoc = null;
+let lastLogDoc = null;
+let logPageStack = []; 
+
+window.showActivityLogs = async function(direction = 'first') {
+    const modal = document.getElementById('logModal'); 
+    const tableBody = document.getElementById('logTableBody');
+    const siteFilter = document.getElementById('logSiteFilter').value; 
+    const actionFilter = document.getElementById('logActionFilter').value;
+    const prevBtn = document.getElementById('prevLogBtn');
+    const nextBtn = document.getElementById('nextLogBtn');
+    const pageDisplay = document.getElementById('currentLogPageDisplay');
     
     if (!modal || !tableBody) return;
-    modal.classList.remove('hidden'); tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4">กำลังโหลด...</td></tr>';
+    modal.classList.remove('hidden'); 
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-bold">กำลังโหลดข้อมูล...</td></tr>';
+
+    if (direction === 'first') {
+        currentLogPage = 1;
+        firstLogDoc = null;
+        lastLogDoc = null;
+        logPageStack = [];
+    }
 
     try {
         let query = db.collection("activity_logs");
@@ -292,9 +310,32 @@ window.showActivityLogs = async function() {
             if (actionFilter === "AUTH") query = query.where("action", ">=", "AUTH_").where("action", "<=", "AUTH_\uf8ff").orderBy("action");
             else query = query.where("action", "==", actionFilter);
         }
-        const snapshot = await query.orderBy("timestamp", "desc").limit(100).get();
+        
+        query = query.orderBy("timestamp", "desc");
 
-        if (snapshot.empty) { tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic">ไม่พบข้อมูล</td></tr>'; return; }
+        // เงื่อนไขเปลี่ยนหน้า
+        if (direction === 'next' && lastLogDoc) {
+            logPageStack.push(firstLogDoc); 
+            query = query.startAfter(lastLogDoc).limit(100);
+            currentLogPage++;
+        } else if (direction === 'prev' && logPageStack.length > 0) {
+            const prevPageFirstDoc = logPageStack.pop();
+            query = prevPageFirstDoc ? query.startAt(prevPageFirstDoc).limit(100) : query.limit(100);
+            currentLogPage--;
+        } else {
+            query = query.limit(100); 
+        }
+
+        const snapshot = await query.get();
+
+        if (snapshot.empty) { 
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-400 italic">ไม่พบข้อมูล หรือถึงหน้าสุดท้ายแล้ว</td></tr>'; 
+            if (nextBtn) nextBtn.disabled = true;
+            return; 
+        }
+
+        firstLogDoc = snapshot.docs[0];
+        lastLogDoc = snapshot.docs[snapshot.docs.length - 1];
 
         let html = '';
         snapshot.forEach(doc => {
@@ -305,7 +346,19 @@ window.showActivityLogs = async function() {
             html += `<tr class="hover:bg-slate-50 border-b border-slate-100 text-center"><td class="p-2 border text-[10px] font-mono">${time}</td><td class="p-2 border text-[11px]">${d.userEmail || 'System'}</td><td class="p-2 border text-[11px]">${siteDisplay}</td><td class="p-2 border"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${d.action}</span></td><td class="p-2 border text-left text-[11px] text-slate-600">${d.details}</td></tr>`;
         });
         tableBody.innerHTML = html;
-    } catch (error) { tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4">เกิดข้อผิดพลาด: ${error.message}</td></tr>`; }
+
+        
+        if (pageDisplay) pageDisplay.innerText = currentLogPage;
+        if (prevBtn) prevBtn.disabled = (currentLogPage === 1);
+        if (nextBtn) nextBtn.disabled = (snapshot.docs.length < 100);
+
+    } catch (error) { 
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500 py-4 font-bold">เกิดข้อผิดพลาด: ${error.message}</td></tr>`; 
+    }
+};
+
+window.changeLogPage = function(direction) {
+    showActivityLogs(direction);
 };
 window.closeLogModal = function() { const modal = document.getElementById('logModal'); if (modal) modal.classList.add('hidden'); };
 
