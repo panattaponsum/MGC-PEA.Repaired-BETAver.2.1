@@ -1238,7 +1238,7 @@ window.startAutoLogoutTimer = function() {
 window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
 
 window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, count) {
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwYIXTdAZ3uVo7KzwceRPHDbWF1GHaqwCoKS_jXCMzyrXaHwEA4NSVfaFjsDwhgL_BpkQ/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwsmxDDfUKIQ2ZXLUoYfszWBMgkTgoV6djpwSrHSqj_akm9qNaNUnyq_1Y8paBBLTlNFQ/exec"; 
     
     let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น `;
     const siteName = sites[currentSiteKey].name;
