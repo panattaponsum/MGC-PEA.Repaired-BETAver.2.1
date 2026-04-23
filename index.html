@@ -69,29 +69,6 @@ body.modal-open {
   overflow: hidden;
 }
 
-.system-log-modal,
-.pdf-report-modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,.4);
-  z-index: 9999;
-  overscroll-behavior: contain;
-}
-
-.system-log-modal .modal-box,
-.pdf-report-modal .modal-box {
-  width: min(1100px, 94vw);
-  max-height: 85vh;
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -648,7 +625,8 @@ body.modal-open {
         </div>
     </div>
 
-    <div id="logModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001]">
+    <div id="logModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col z-[1001]">
+
         <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap justify-between items-center bg-slate-50 rounded-t-2xl gap-4">
             <div>
                 <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><span class="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">📜</span> System Activity Logs</h3>
@@ -682,7 +660,8 @@ body.modal-open {
         </div>
     </div>
 
-    <div id="reportModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001]">
+    <div id="reportModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col z-[1001]">
+
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
             <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><span class="p-1.5 bg-blue-100 text-blue-600 rounded-lg">🖨️</span> เลือกรายการเพื่อออกรายงาน PDF</h3>
             <button onclick="closeReportModal()" class="text-slate-400 hover:text-red-500 p-1">✖</button>
