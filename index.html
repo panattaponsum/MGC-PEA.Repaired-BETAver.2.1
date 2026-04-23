@@ -65,6 +65,33 @@
     to { opacity: 0.3; transform: scale(1.2); }
 }
         @keyframes blink-orange { from { opacity: 0.9; box-shadow: 0 0 8px theme('colors.status.warn'); } to { opacity: 0.4; box-shadow: 0 0 16px theme('colors.status.warn'); } }
+body.modal-open {
+  overflow: hidden;
+}
+
+.system-log-modal,
+.pdf-report-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.4);
+  z-index: 9999;
+  overscroll-behavior: contain;
+}
+
+.system-log-modal .modal-box,
+.pdf-report-modal .modal-box {
+  width: min(1100px, 94vw);
+  max-height: 85vh;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
