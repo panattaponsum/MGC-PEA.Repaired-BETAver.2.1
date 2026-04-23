@@ -62,13 +62,29 @@
         @keyframes blink-red-x {
     from { opacity: 1; transform: scale(1); } to { opacity: 0.3; transform: scale(1.2); }}
         @keyframes blink-orange { from { opacity: 0.9; box-shadow: 0 0 8px theme('colors.status.warn'); } to { opacity: 0.4; box-shadow: 0 0 16px theme('colors.status.warn'); } }
-#logModal, #reportModal, #userModal, #formModal {
-    pointer-events: auto;
+/* คลาสสำหรับหยุดการเลื่อนของพื้นหลังเมื่อเปิด Modal */
+body.modal-open {
+    overflow: hidden !important;
+    height: 100vh;
 }
-.modal-content-scroll {
-    overflow-y: auto !important;
-    max-height: calc(90vh - 120px); 
-    scrollbar-gutter: stable;
+
+/* ปรับปรุงสไตล์ Modal Content ให้เลื่อนได้ */
+#logModal .modal-content, 
+#reportModal .modal-content, 
+#userModal .modal-content {
+    max-height: 90vh; /* ให้ Modal สูงไม่เกิน 90% ของหน้าจอ */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ส่วนเนื้อหาภายในที่ต้องการให้เลื่อน */
+#logList, 
+#reportSelectionContainer, 
+#userListContainer {
+    flex: 1;
+    overflow-y: auto !important; /* บังคับให้เกิด Scrollbar ภายใน */
+    -webkit-overflow-scrolling: touch; /* สำหรับ iOS ให้เลื่อนลื่นขึ้น */
+    padding-right: 5px; /* กันเนื้อหาโดน Scrollbar ทับ */
 }
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
