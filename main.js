@@ -360,20 +360,33 @@ window.showActivityLogs = async function(direction = 'first') {
 window.changeLogPage = function(direction) {
     showActivityLogs(direction);
 };
+window.openLogModal = function() {
+    const modal = document.getElementById('logModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    document.body.classList.add('overflow-hidden');
+};
+
 window.closeLogModal = function() {
     const modal = document.getElementById('logModal');
     if (modal) {
         modal.classList.add('hidden');
-        
-        const siteFilter = document.getElementById('logSiteFilter');
-        const actionFilter = document.getElementById('logActionFilter');
-        
-        if (siteFilter) siteFilter.value = 'all';
-        if (actionFilter) actionFilter.value = 'all';
-        
-        const tableBody = document.getElementById('logTableBody');
-        if (tableBody) tableBody.innerHTML = '';
+        modal.classList.remove('flex');
     }
+
+    document.body.classList.remove('overflow-hidden');
+    
+    const siteFilter = document.getElementById('logSiteFilter');
+    const actionFilter = document.getElementById('logActionFilter');
+    
+    if (siteFilter) siteFilter.value = 'all';
+    if (actionFilter) actionFilter.value = 'all';
+    
+    const tableBody = document.getElementById('logTableBody');
+    if (tableBody) tableBody.innerHTML = '';
 };
 
 window.toggleBetongView = function(viewType) {
@@ -1499,7 +1512,18 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     window.tempReportDataMap = dataMap;
 };
 
-window.closeReportModal = function() { document.getElementById('reportModal').classList.add('hidden'); };
+function openReportModal() {
+  const modal = document.getElementById('reportModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.classList.add('overflow-hidden');
+}
+function closeReportModal() {
+  const modal = document.getElementById('reportModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.classList.remove('overflow-hidden');
+}
 window.selectAllReport = function(isChecked) { document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked); };
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
 window.generateSelectedReport = async function () {
