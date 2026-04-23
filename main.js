@@ -849,36 +849,96 @@ startEl.addEventListener('change', calculateEnd); yearsEl.addEventListener('chan
 window.openUserManagement = async function() { if (currentUserRole !== 'admin') return; document.getElementById('overlay').style.display = 'block'; document.getElementById('userModal').style.display = 'flex'; await loadUsers(); }
 window.closeUserManagement = function() { document.getElementById('overlay').style.display = 'none'; document.getElementById('userModal').style.display = 'none'; }
 window.loadUsers = async function() {
-    const listContainer = document.getElementById('userListContainer'); listContainer.innerHTML = '<div class="text-center py-4 text-gray-500">กำลังโหลด...</div>';
+    const listContainer = document.getElementById('userListContainer'); 
+    listContainer.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">กำลังโหลดข้อมูล...</div>';
+    
+    // เปลี่ยนจาก flex-row เป็น grid 2 คอลัมน์ (หรือ 1 คอลัมน์บนมือถือ)
+    listContainer.className = "grid grid-cols-1 md:grid-cols-2 gap-4 p-1";
+
     try {
-        const snapshot = await db.collection('users').get(); if (snapshot.empty) { listContainer.innerHTML = '<div class="text-center py-4 text-gray-500">ยังไม่มีผู้ใช้งาน</div>'; return; }
+        const snapshot = await db.collection('users').get(); 
+        if (snapshot.empty) { 
+            listContainer.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">ยังไม่มีผู้ใช้งาน</div>'; 
+            return; 
+        }
         listContainer.innerHTML = '';
+        
         snapshot.forEach(doc => {
-            const userData = doc.data(); const email = userData.email; const role = userData.role || 'viewer'; const fullName = userData.fullName || ''; 
-            const position = userData.position || ''; const department = userData.department || '';
-            const isMe = (email === currentUser.email); const isAdminMain = (email === ADMIN_EMAIL); const safeId = email.replace(/[@.]/g, ''); 
+            const userData = doc.data(); 
+            const email = userData.email; 
+            const role = userData.role || 'viewer'; 
+            const fullName = userData.fullName || ''; 
+            const position = userData.position || ''; 
+            const department = userData.department || '';
+            const phone = userData.phone || ''; 
+            const isMe = (email === currentUser.email); 
+            const isAdminMain = (email === ADMIN_EMAIL); 
+            const safeId = email.replace(/[@.]/g, ''); 
             
             const div = document.createElement('div'); 
-            div.className = 'user-item flex flex-row items-center gap-2 p-2 border-b border-gray-200 hover:bg-gray-50 transition-colors overflow-x-auto min-w-[1000px]';
-            const roleOptions = `<option value="viewer" ${role==='viewer'?'selected':''}>Viewer</option><option value="editor" ${role==='editor'?'selected':''}>Editor</option><option value="admin" ${role==='admin'?'selected':''}>Admin</option>`;
-            let deleteBtn = ''; if (!isAdminMain && !isMe) deleteBtn = `<button onclick="deleteUser('${email}')" class="p-1.5 text-gray-400 hover:text-red-600 transition-colors shrink-0" title="ลบผู้ใช้"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
-            const phone = userData.phone || ''; 
+            div.className = 'bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all flex flex-col gap-3';
+            
+            const roleOptions = `
+                <option value="viewer" ${role==='viewer'?'selected':''}>Viewer</option>
+                <option value="editor" ${role==='editor'?'selected':''}>Editor</option>
+                <option value="admin" ${role==='admin'?'selected':''}>Admin</option>
+            `;
+            
+            let deleteBtn = ''; 
+            if (!isAdminMain && !isMe) {
+                deleteBtn = `
+                <button onclick="deleteUser('${email}')" class="text-slate-400 hover:text-red-500 transition-colors p-1" title="ลบผู้ใช้">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>`;
+            }
 
-div.innerHTML = `
-    <div class="w-48 shrink-0 truncate font-medium text-sm ${isMe ? 'text-blue-600' : 'text-slate-800'}" title="${escapeHtml(email)}">${escapeHtml(email)} ${isMe ? '(คุณ)' : ''}</div>
-    <input type="text" id="name-${safeId}" value="${escapeHtml(fullName)}" placeholder="ชื่อ-นามสกุล..." class="flex-1 min-w-[120px] text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
-    <input type="text" id="pos-${safeId}" value="${escapeHtml(position)}" placeholder="ตำแหน่ง/แผนก..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
-    <input type="text" id="dept-${safeId}" value="${escapeHtml(department)}" placeholder="สังกัดกอง,กฟส..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
-    
-    <input type="text" id="phone-${safeId}" value="${escapeHtml(phone)}" placeholder="เบอร์โทร..." class="w-32 shrink-0 text-xs border border-gray-300 rounded p-1.5 outline-none focus:border-blue-500">
-    
-    <select id="role-${safeId}" class="w-24 shrink-0 bg-white border border-gray-300 text-gray-900 text-xs rounded focus:ring-blue-500 focus:border-blue-500 p-1.5 outline-none cursor-pointer">${roleOptions}</select>
-    <button onclick="updateUserFull('${email}', '${safeId}')" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors text-xs font-bold shadow-sm shrink-0" title="บันทึก">💾 บันทึก</button>
-    ${deleteBtn}
-`;
+            div.innerHTML = `
+                <div class="flex justify-between items-start border-b border-slate-50 pb-2">
+                    <div class="truncate">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">Email ${isMe ? '(บัญชีของคุณ)' : ''}</div>
+                        <div class="text-sm font-semibold ${isMe ? 'text-blue-600' : 'text-slate-700'} truncate" title="${email}">${email}</div>
+                    </div>
+                    ${deleteBtn}
+                </div>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">ชื่อ-นามสกุล</label>
+                        <input type="text" id="name-${safeId}" value="${fullName}" class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">ตำแหน่ง</label>
+                            <input type="text" id="pos-${safeId}" value="${position}" class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">สังกัด/กอง</label>
+                            <input type="text" id="dept-${safeId}" value="${department}" class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 items-end">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">เบอร์โทรศัพท์</label>
+                            <input type="text" id="phone-${safeId}" value="${phone}" class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">สิทธิ์การใช้งาน</label>
+                            <select id="role-${safeId}" class="w-full text-sm border border-slate-200 rounded-lg p-2 bg-slate-50 cursor-pointer font-bold">${roleOptions}</select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="updateUserFull('${email}', '${safeId}')" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-bold shadow-sm flex justify-center items-center gap-2">
+                        <span>💾 บันทึกข้อมูล</span>
+                    </button>
+                </div>
+            `;
             listContainer.appendChild(div);
         });
-    } catch (error) { listContainer.innerHTML = `<div class="text-red-500 text-center py-4">โหลดไม่สำเร็จ: ${error.message}</div>`; }
+    } catch (error) { 
+        listContainer.innerHTML = `<div class="col-span-full text-red-500 text-center py-10">โหลดไม่สำเร็จ: ${error.message}</div>`; 
+    }
 }
 window.updateUserFull = async function(email, safeId) {
     if (currentUserRole !== 'admin') return;
