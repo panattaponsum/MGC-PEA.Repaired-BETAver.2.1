@@ -607,27 +607,20 @@
         </div>
     </div>
 
-   <div id="userModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col z-[1001]">
-    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-        <div>
-            <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <span class="p-2 bg-purple-100 text-purple-600 rounded-lg">⚙️</span>
-                จัดการสิทธิ์ผู้ใช้งาน
-            </h3>
-        </div>
-        <button class="text-slate-400 hover:text-red-500 p-2 transition-colors" onclick="closeUserManagement()">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-    </div>
-    
-    <div class="p-6 flex-1 modal-content-scroll bg-slate-50/50">
-        <div id="userListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div id="userModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001]">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800">⚙️ จัดการสิทธิ์ผู้ใช้งาน (User Management)</h3>
+                <p class="text-xs text-slate-500 mt-1">ตั้งค่า ชื่อ, ตำแหน่ง, สังกัด และระดับสิทธิ์ของผู้ใช้งานในระบบ</p>
             </div>
+            <button class="text-slate-400 hover:text-red-500 p-1" onclick="closeUserManagement()">✖</button>
+        </div>
+        <div class="p-6 flex-1 overflow-auto bg-slate-50">
+            <div id="userListContainer" class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                </div>
+        </div>
     </div>
-    <div class="px-6 py-3 border-t bg-white text-right text-xs text-slate-400 rounded-b-2xl">
-        * การเปลี่ยนแปลงสิทธิ์จะมีผลทันทีเมื่อผู้ใช้ดำเนินการในครั้งถัดไป
-    </div>
-</div>
+
     <div id="logModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001]">
         <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap justify-between items-center bg-slate-50 rounded-t-2xl gap-4">
             <div>
