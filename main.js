@@ -360,14 +360,26 @@ window.showActivityLogs = async function(direction = 'first') {
 window.changeLogPage = function(direction) {
     showActivityLogs(direction);
 };
+
+// แก้ไขฟังก์ชันเปิด Logs
+window.openLogModal = function() {
+    const modal = document.getElementById('logModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('modal-active'); // ล็อคพื้นหลัง
+        loadLogs();
+    }
+};
+
+// แก้ไขฟังก์ชันปิด Logs (อ้างอิงจากโค้ดที่คุณส่งมา)
 window.closeLogModal = function() {
     const modal = document.getElementById('logModal');
     if (modal) {
         modal.classList.add('hidden');
+        document.body.classList.remove('modal-active'); // คืนค่าการเลื่อนพื้นหลัง
         
         const siteFilter = document.getElementById('logSiteFilter');
         const actionFilter = document.getElementById('logActionFilter');
-        
         if (siteFilter) siteFilter.value = 'all';
         if (actionFilter) actionFilter.value = 'all';
         
@@ -375,7 +387,6 @@ window.closeLogModal = function() {
         if (tableBody) tableBody.innerHTML = '';
     }
 };
-
 window.toggleBetongView = function(viewType) {
    
     document.getElementById('betong-main-view').classList.add('hidden');
@@ -1499,7 +1510,16 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     window.tempReportDataMap = dataMap;
 };
 
-window.closeReportModal = function() { document.getElementById('reportModal').classList.add('hidden'); };
+window.openReportModal = function() {
+    document.getElementById('reportModal').classList.remove('hidden');
+    document.body.classList.add('modal-open'); // หยุดการเลื่อนพื้นหลัง
+    renderReportSelection();
+};
+
+window.closeReportModal = function() {
+    document.getElementById('reportModal').classList.add('hidden');
+    document.body.classList.remove('modal-open'); // กลับมาเลื่อนพื้นหลังได้ปกติ
+};
 window.selectAllReport = function(isChecked) { document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked); };
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
 window.generateSelectedReport = async function () {
