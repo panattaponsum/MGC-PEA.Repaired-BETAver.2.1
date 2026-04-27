@@ -535,10 +535,17 @@
                 <div id="pagination" class="bg-white px-4 py-3 border-t border-slate-200"></div>
             </div>
 
-            <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow">
-                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg> กราฟวิเคราะห์ความถี่ปัญหาอุปกรณ์ (Top 10)</h3>
-                <div class="relative w-full h-[300px]"><canvas id="chart"></canvas></div>
-            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+    <div class="bg-white p-4 rounded-lg shadow border border-slate-200">
+        <h3 class="text-lg font-bold text-slate-700 mb-4">Top 10 อุปกรณ์ที่ชำรุด (สถานะการซ่อม)</h3>
+        <canvas id="defectStatusChart" height="250"></canvas>
+    </div>
+
+    <div class="bg-white p-4 rounded-lg shadow border border-slate-200">
+        <h3 class="text-lg font-bold text-slate-700 mb-4">Top 10 ระยะเวลาเฉลี่ยในการซ่อม (วัน)</h3>
+        <canvas id="avgRepairTimeChart" height="250"></canvas>
+    </div>
+</div>
 
         </div>
     </main>
