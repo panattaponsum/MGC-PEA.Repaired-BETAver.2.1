@@ -32,13 +32,20 @@
         .device-overlay { position: absolute; border-radius: 4px; pointer-events: none; z-index: 50; transition: all 0.3s; }
         .map-container:hover .device-overlay.normal { opacity: 0.6; }
         .device-overlay.down {
+    position: absolute;
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px;
+    min-height: 22px;
     border: none !important;
     background-color: transparent !important;
     z-index: 60;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: blink-red-x 1s infinite alternate;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    animation: blink-red-x 1s infinite ease-in-out;
 }
 
 .device-overlay.down::before, .device-overlay.down::after {
@@ -60,10 +67,11 @@
         }
         .device-overlay.normal { border: 2px solid theme('colors.status.ok'); background-color: rgba(16, 185, 129, 0.15); }
         
-      @keyframes blink-red-x {
-    from { opacity: 1; transform: scale(1); }
-    to { opacity: 0.3; transform: scale(1.2); }
+     @keyframes blink-red-x {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }
+
         @keyframes blink-orange { from { opacity: 0.9; box-shadow: 0 0 8px theme('colors.status.warn'); } to { opacity: 0.4; box-shadow: 0 0 16px theme('colors.status.warn'); } }
 body.modal-open {
   overflow: hidden;
