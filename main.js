@@ -641,72 +641,110 @@ infoEl.innerHTML = infoParts.join(' | ') || 'ลงทะเบียนแล�
 }
 
 window.loadHistory = async function() {
-    const container = document.getElementById('historySection'); container.innerHTML = '';
+    const container = document.getElementById('historySection'); 
+    container.innerHTML = '';
     if (!currentDevice) return;
+
     const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
     let docData = null, records = [], assetInfo = null;
+
     try {   
         const snap = await docRef.get({ source: 'server' }); 
-        if (snap.exists) { docData = snap.data(); records = docData.records || []; assetInfo = docData.assetInfo || null; }
-    } catch (e) { container.innerHTML = '<p>Error loading data</p>'; return; }
+        if (snap.exists) { 
+            docData = snap.data(); 
+            records = docData.records || []; 
+            assetInfo = docData.assetInfo || null; 
+        }
+    } catch (e) { 
+        container.innerHTML = '<p>Error loading data</p>'; 
+        return; 
+    }
 
     updateAssetDisplays(assetInfo);
-    if (document.getElementById('filterBrokenHistory')?.checked) records = records.filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
-    records.sort((a, b) => b.ts - a.ts); 
-    if (records.length === 0) { container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>'; return; }
 
-    const canEdit = hasWriteAccess(currentSiteKey) ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
+    if (document.getElementById('filterBrokenHistory')?.checked) {
+        records = records.filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
+    }
+
+    records.sort((a, b) => b.ts - a.ts); 
+    if (records.length === 0) { 
+        container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>'; 
+        return; 
+    }
+
+    // ตรวจสอบสิทธิ์การแก้ไข (viewer จะไม่มีสิทธิ์)
+    const canEdit = (currentUserRole !== 'viewer' && hasWriteAccess(currentSiteKey)) ? '' : 'disabled title="ไม่มีสิทธิ์จัดการข้อมูล" style="opacity: 0.5; cursor: not-allowed;"';
     
     records.forEach((r, index) => {
-    const recordSequence = records.length - index; 
-    let duration = '-';
-    if (r.brokenDate) {
-        if (r.fixedDate && r.fixedDate !== '-' && r.fixedDate !== '') { duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate)); } 
-        else { duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' <span class="text-sm text-red-500 font-semibold">(ยังไม่ได้ซ่อมแซม)</span>'; }
-    }
+        const recordSequence = records.length - index; 
+        let duration = '-';
+        if (r.brokenDate) {
+            if (r.fixedDate && r.fixedDate !== '-' && r.fixedDate !== '') { 
+                duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate)); 
+            } else { 
+                duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' <span class="text-sm text-red-500 font-semibold">(ยังไม่ได้ซ่อมแซม)</span>'; 
+            }
+        }
 
         let statusClass = 'tag-ok', statusText = '✅ ใช้งานได้';
         if(r.status === 'down') { statusClass = 'tag-bad'; statusText = '❎ ชำรุด'; }
         else if(r.status === 'abnormal') { statusClass = 'tag-warn'; statusText = '⚠️ ผิดปกติ'; }
 
         let subTag = r.subDevice ? `<span class="tag bg-blue-100 text-blue-800 ml-2 border border-blue-200">${r.subDevice}</span>` : '';
-        let brokenLinkHtml = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="text-blue-500 hover:underline inline-flex items-center gap-1">📄 หลักฐานแจ้งปัญหา</a>` : '';
-        let fixedLinkHtml = r.fixedFileUrl ? `<a href="${r.fixedFileUrl}" target="_blank" class="text-green-600 hover:underline inline-flex items-center gap-1">📄 หลักฐานซ่อมแซม</a>` : '';
-        let filesHtml = (brokenLinkHtml || fixedLinkHtml) ? `<div class="mt-2 pt-2 border-t border-gray-100 flex gap-4 text-xs font-semibold">${brokenLinkHtml} ${fixedLinkHtml}</div>` : '';
+
+        // --- ส่วนที่แก้ไข: ตรวจสอบสิทธิ์การมองเห็นรูปภาพ (Requirement 2) ---
+        let filesHtml = '';
+        if (currentUserRole !== 'viewer') {
+            let brokenLinkHtml = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="text-blue-500 hover:underline inline-flex items-center gap-1">📄 หลักฐานแจ้งปัญหา</a>` : '';
+            let fixedLinkHtml = r.fixedFileUrl ? `<a href="${r.fixedFileUrl}" target="_blank" class="text-green-600 hover:underline inline-flex items-center gap-1">📄 หลักฐานซ่อมแซม</a>` : '';
+            
+            if (brokenLinkHtml || fixedLinkHtml) {
+                filesHtml = `<div class="mt-2 pt-2 border-t border-gray-100 flex gap-4 text-xs font-semibold">${brokenLinkHtml} ${fixedLinkHtml}</div>`;
+            }
+        } else {
+            // กรณีเป็น viewer และมีการอัปโหลดรูปไว้ ให้แสดงข้อความแจ้งเตือนแทนการแสดงลิงก์
+            if (r.brokenFileUrl || r.fixedFileUrl) {
+                filesHtml = `<div class="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400 italic">🔒 รูปภาพ/ไฟล์แนบถูกจำกัดสิทธิ์เฉพาะ Editor/Admin</div>`;
+            }
+        }
+        // -----------------------------------------------------------
 
         const div = document.createElement('div');
         div.className = 'p-4 mb-3 border border-gray-200 bg-white rounded-lg shadow-sm'; 
 
-      div.innerHTML = `
-   <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
-        <div class="flex flex-col flex-1">
-            <div class="flex justify-between items-center w-full">
-                <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span>${subTag}</div>
-                <div class="text-base text-gray-500 font-medium">ครั้งที่ ${recordSequence}</div>
+        div.innerHTML = `
+            <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
+                <div class="flex flex-col flex-1">
+                    <div class="flex justify-between items-center w-full">
+                        <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span>${subTag}</div>
+                        <div class="text-base text-gray-500 font-medium">ครั้งที่ ${recordSequence}</div>
+                    </div>
+                    <div class="flex gap-4 text-sm mt-1">
+                        <div><span class="text-red-600">ผู้แจ้งเสีย:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
+                        <div><span class="text-green-600">ผู้แจ้งซ่อมแซม:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
+                    </div>
+                </div>
             </div>
-            <div class="flex gap-4 text-sm mt-1">
-                <div><span class="text-red-600">ผู้แจ้งเสีย:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
-                <div><span class="text-green-600">ผู้แจ้งซ่อมแซม:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
+            <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
+                <div>วันที่เกิดเหตุ : ${formatThaiDate(r.brokenDate)}</div><div>วันที่ซ่อมแซม : ${formatThaiDate(r.fixedDate)}</div>
+                <div>เลขที่ใบสั่ง : <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
+                <div>ราคาซ่อมแซม : <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
+                <div>หนังสือ มท : <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
+                <div>หนังสือ กฟภ. : <span class="font-semibold">${escapeHtml(r.docPEA || '-')}</span></div>
+                <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
             </div>
-        </div>
-    </div>
-    <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
-        <div>วันที่เกิดเหตุ : ${formatThaiDate(r.brokenDate)}</div><div>วันที่ซ่อมแซม : ${formatThaiDate(r.fixedDate)}</div>
-        <div>เลขที่ใบสั่ง : <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
-        <div>ราคาซ่อมแซม : <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
-        <div>หนังสือ มท. : <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
-        <div>หนังสือ กฟภ. : <span class="font-semibold">${escapeHtml(r.docPEA || '-')}</span></div>
-        <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
-    </div>
-    <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
-    <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข :</b> ${escapeHtml(r.solution || '-')}</div>
-    ${filesHtml}
-    
-    <div class="mt-3 flex justify-end space-x-2">
-        <button class="btn btn-ghost text-blue-600 hover:bg-blue-50 py-1" onclick="generateWordCoverLetter('${currentDevice}', '${r.ts}')">📝 สร้างใบแจ้งชำรุด (Word)</button>
-        <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
-        <button class="btn btn-ghost text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
-    </div>
+            <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
+            <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข :</b> ${escapeHtml(r.solution || '-')}</div>
+            
+            ${filesHtml}
+            
+            <div class="mt-3 flex justify-end space-x-2">
+                ${currentUserRole !== 'viewer' ? `
+                    <button class="btn btn-ghost text-blue-600 hover:bg-blue-50 py-1" onclick="generateWordCoverLetter('${currentDevice}', '${r.ts}')">📝 สร้างใบแจ้งชำรุด (Word)</button>
+                ` : ''}
+                <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
+                <button class="btn btn-ghost text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
+            </div>
         `;
         container.appendChild(div);
     });
@@ -1363,51 +1401,155 @@ function switchSite(siteKey) {
     toggleWriteAccess(currentUser !== null);
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-auth.onAuthStateChanged(async user => {
-    if (user) {
-        currentUser = user; document.getElementById('userInfo').classList.remove('hidden'); document.getElementById('loginButton').classList.add('hidden');
-        try {
-            const userSnap = await db.collection('users').doc(user.email).get();
-            if (!userSnap.exists) { 
-                let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer'; 
-                await db.collection('users').doc(user.email).set({ email: user.email, role: initialRole, allowedSites: [], fullName: '', position: '', department: '', phone: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); 
-                currentUserRole = initialRole; currentUserAllowedSites = []; currentUserFullName = ''; 
-            } 
-            else { 
-                currentUserRole = userSnap.data().role || 'viewer'; 
-                currentUserAllowedSites = userSnap.data().allowedSites || [];
-                currentUserFullName = userSnap.data().fullName || ''; 
-                currentUserPosition = userSnap.data().position || ''; 
-                currentUserDept = userSnap.data().department || '';
-                currentUserPhone = userSnap.data().phone || ''; 
-            }
-            if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
-            document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email; 
-            const sessionLogKey = `logged_in_${user.uid}`; if (!sessionStorage.getItem(sessionLogKey)) { await createLog("AUTH_LOGIN", `เข้าสู่ระบบ (Role: ${currentUserRole})`); sessionStorage.setItem(sessionLogKey, "true"); }
-            startAutoLogoutTimer();
-        } catch (e) { currentUserRole = 'viewer'; currentUserAllowedSites = []; }
-        toggleWriteAccess(true);
+function applyRoleRestrictions() {
+    const body = document.body;
+    
+    if (currentUserRole === 'viewer') {
+     
+        body.classList.add('viewer-mode');
+
+        toggleWriteAccess(false); 
     } else {
-        if (currentUser) sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
-        currentUser = null; currentUserRole = 'viewer'; currentUserAllowedSites = []; currentUserFullName = ''; currentUserPhone = ''; document.getElementById('userInfo').classList.add('hidden'); document.getElementById('loginButton').classList.remove('hidden'); toggleWriteAccess(false); stopAutoLogoutTimer();
+    
+        body.classList.remove('viewer-mode');
+        toggleWriteAccess(true);
+    }
+}
+document.addEventListener("DOMContentLoaded", function() {
+    auth.onAuthStateChanged(async user => {
+        
+        const appContent = document.getElementById('appContent');
+        const loginPrompt = document.getElementById('loginPrompt');
+
+        if (user) {
+          
+            if (appContent) appContent.classList.remove('hidden');
+            if (loginPrompt) loginPrompt.classList.add('hidden');
+
+            currentUser = user;
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('loginButton').classList.add('hidden');
+
+            try {
+                const userSnap = await db.collection('users').doc(user.email).get();
+                if (!userSnap.exists) {
+                    let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer';
+                    await db.collection('users').doc(user.email).set({
+                        email: user.email,
+                        role: initialRole,
+                        allowedSites: [],
+                        fullName: '',
+                        position: '',
+                        department: '',
+                        phone: '',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    currentUserRole = initialRole;
+                    currentUserAllowedSites = [];
+                    currentUserFullName = '';
+                } else {
+                    currentUserRole = userSnap.data().role || 'viewer';
+                    currentUserAllowedSites = userSnap.data().allowedSites || [];
+                    currentUserFullName = userSnap.data().fullName || '';
+                    currentUserPosition = userSnap.data().position || '';
+                    currentUserDept = userSnap.data().department || '';
+                    currentUserPhone = userSnap.data().phone || '';
+                }
+
+                if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
+                
+               
+                if (currentUserRole === 'viewer') {
+                    document.body.classList.add('viewer-mode'); 
+                    toggleWriteAccess(false); 
+                } else {
+                    document.body.classList.remove('viewer-mode'); 
+                    toggleWriteAccess(true); 
+                }
+
+                document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email;
+                document.getElementById('userRoleDisplay').textContent = currentUserRole; // แสดงสถานะบนหน้าจอ
+
+                const sessionLogKey = `logged_in_${user.uid}`;
+                if (!sessionStorage.getItem(sessionLogKey)) {
+                    await createLog("AUTH_LOGIN", `เข้าสู่ระบบ (Role: ${currentUserRole})`);
+                    sessionStorage.setItem(sessionLogKey, "true");
+                }
+                startAutoLogoutTimer();
+            } catch (e) {
+                console.error("Error fetching user role:", e);
+                currentUserRole = 'viewer';
+                document.body.classList.add('viewer-mode');
+            }
+            
+        } else {
+            if (appContent) appContent.classList.add('hidden');
+            if (loginPrompt) loginPrompt.classList.remove('hidden');
+            
+            if (currentUser) sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
+            currentUser = null;
+            currentUserRole = 'viewer';
+            currentUserAllowedSites = [];
+            currentUserFullName = '';
+            currentUserPhone = '';
+            
+            document.body.classList.remove('viewer-mode'); // ล้างสถานะ
+            document.getElementById('userInfo').classList.add('hidden');
+            document.getElementById('loginButton').classList.remove('hidden');
+            
+            toggleWriteAccess(false);
+            stopAutoLogoutTimer();
+        }
+    });
+
+  
+    document.getElementById('loginButton').addEventListener('click', login);
+    document.getElementById('logoutButton').addEventListener('click', logout);
+    setupWarrantyCalculators();
+
+    const locationSelect = document.getElementById("location-select");
+    if (locationSelect) {
+        locationSelect.addEventListener("change", function() {
+            switchSite(this.value);
+        });
+        try {
+            let initialSiteKey = locationSelect.value;
+            if (!sites[initialSiteKey]) initialSiteKey = Object.keys(sites)[0];
+            switchSite(initialSiteKey);
+        } catch (error) {}
     }
 });
-document.getElementById('loginButton').addEventListener('click', login); document.getElementById('logoutButton').addEventListener('click', logout); setupWarrantyCalculators();
-const locationSelect = document.getElementById("location-select");
-if (locationSelect) { locationSelect.addEventListener("change", function() { switchSite(this.value); }); try { let initialSiteKey = locationSelect.value; if (!sites[initialSiteKey]) initialSiteKey = Object.keys(sites)[0]; toggleWriteAccess(false); switchSite(initialSiteKey); } catch (error) {} }
-});
 
-let countdownInterval; const LOGOUT_TIME_LIMIT = 60 * 60 * 1000; 
+
+let countdownInterval; 
+const LOGOUT_TIME_LIMIT = 60 * 60 * 1000; 
 window.startAutoLogoutTimer = function() {
-    stopAutoLogoutTimer(); let expirationTime = localStorage.getItem('logoutExpiration'); if (!expirationTime) { expirationTime = Date.now() + LOGOUT_TIME_LIMIT; localStorage.setItem('logoutExpiration', expirationTime); }
+    stopAutoLogoutTimer(); 
+    let expirationTime = localStorage.getItem('logoutExpiration'); 
+    if (!expirationTime) { 
+        expirationTime = Date.now() + LOGOUT_TIME_LIMIT; 
+        localStorage.setItem('logoutExpiration', expirationTime); 
+    }
     countdownInterval = setInterval(() => {
-        let timeLeft = Math.ceil((expirationTime - Date.now()) / 1000); if (timeLeft <= 0) { stopAutoLogoutTimer(); localStorage.removeItem('logoutExpiration'); logout(); return; }
-        const minElem = document.getElementById('timerMinutes'); const secElem = document.getElementById('timerSeconds');
-        if (minElem && secElem) { minElem.textContent = Math.floor(timeLeft / 60).toString().padStart(2, '0'); secElem.textContent = (timeLeft % 60).toString().padStart(2, '0'); }
+        let timeLeft = Math.ceil((expirationTime - Date.now()) / 1000); 
+        if (timeLeft <= 0) { 
+            stopAutoLogoutTimer(); 
+            localStorage.removeItem('logoutExpiration'); 
+            logout(); 
+            return; 
+        }
+        const minElem = document.getElementById('timerMinutes'); 
+        const secElem = document.getElementById('timerSeconds');
+        if (minElem && secElem) { 
+            minElem.textContent = Math.floor(timeLeft / 60).toString().padStart(2, '0'); 
+            secElem.textContent = (timeLeft % 60).toString().padStart(2, '0'); 
+        }
     }, 1000);
 };
-window.stopAutoLogoutTimer = function() { if (countdownInterval) clearInterval(countdownInterval); localStorage.removeItem('logoutExpiration'); };
+window.stopAutoLogoutTimer = function() { 
+    if (countdownInterval) clearInterval(countdownInterval); 
+    localStorage.removeItem('logoutExpiration'); 
+};
 
 window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, count) {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyBgdIuxjOajJ10HZuJrskQGVxExt5j_DXcJMFcRrieo8WYktSnQT6xNCbIg7py6no-yg/exec"; 
