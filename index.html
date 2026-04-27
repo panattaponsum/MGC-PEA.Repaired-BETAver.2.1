@@ -41,19 +41,12 @@
 }
 
 .device-overlay.down {
-    position: absolute;
-    width: 22px !important;
-    height: 22px !important;
-    min-width: 22px;
-    min-height: 22px;
     border: none !important;
     background-color: transparent !important;
     z-index: 60;
     display: flex;
     align-items: center;
     justify-content: center;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
     animation: blink-red-x 1s infinite ease-in-out;
 }
 
@@ -62,9 +55,9 @@
     content: '';
     position: absolute;
     width: 100%;
-    height: 3px;
+    height: 4px;
     background-color: #ef4444;
-    border-radius: 9999px;
+    border-radius: 2px;
     box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
 }
 
@@ -74,18 +67,6 @@
 
 .device-overlay.down::after {
     transform: rotate(-45deg);
-}
-
-.device-overlay.abnormal {
-    border: 3px solid theme('colors.status.warn');
-    background-color: rgba(245, 158, 11, 0.3);
-    animation: blink-orange 1.2s infinite alternate;
-    z-index: 55;
-}
-
-.device-overlay.normal {
-    border: 2px solid theme('colors.status.ok');
-    background-color: rgba(16, 185, 129, 0.15);
 }
 
 @keyframes blink-red-x {
