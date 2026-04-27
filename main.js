@@ -1189,27 +1189,39 @@ window.renderDashboardCharts = async function(siteKey) {
     }
 
     // 3. กราฟ 2: MTTR (Horizontal Bar)
-    const top10MTTR = allDevicesData.filter(d => d.avgDays > 0).sort((a, b) => b.avgDays - a.avgDays).slice(0, 10);
-    const ctx2 = document.getElementById('avgRepairTimeChart');
-    if (ctx2) {
-        if (window.chart2) window.chart2.destroy();
-        window.chart2 = new Chart(ctx2, {
-            type: 'bar',
-            data: {
-                labels: top10MTTR.map(d => d.name),
-                datasets: [{
-                    label: 'วันเฉลี่ย',
-                    data: top10MTTR.map(d => d.avgDays.toFixed(1)),
-                    backgroundColor: '#3b82f6'
-                }]
-            },
-            options: { 
-                indexAxis: 'y', 
-                responsive: true,
-                scales: { x: { beginAtZero: true } } 
-            }
-        });
+   const top10MTTR = allDevicesData
+    .filter(d => typeof d.avgDays === 'number' && isFinite(d.avgDays) && d.avgDays > 0)
+    .sort((a, b) => b.avgDays - a.avgDays)
+    .slice(0, 10);
+
+console.log("ข้อมูลที่ส่งเข้ากราฟ MTTR:", top10MTTR); // ดูใน Console ว่ามีข้อมูลไหม
+
+const ctx2 = document.getElementById('avgRepairTimeChart');
+if (ctx2) {
+    if (window.chart2) window.chart2.destroy();
+    
+    // ถ้าไม่มีข้อมูลเลย ให้แสดงข้อความแจ้งเตือนที่ Console
+    if (top10MTTR.length === 0) {
+        console.warn("ไม่พบข้อมูล MTTR ที่มีค่ามากกว่า 0 เพื่อวาดกราฟ");
     }
+
+    window.chart2 = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: top10MTTR.map(d => d.name),
+            datasets: [{
+                label: 'วันเฉลี่ย',
+                data: top10MTTR.map(d => Number(d.avgDays.toFixed(1))),
+                backgroundColor: '#3b82f6'
+            }]
+        },
+        options: { 
+            indexAxis: 'y', 
+            responsive: true,
+            scales: { x: { beginAtZero: true } } 
+        }
+    });
+}
 };
 
 window.changePage = function(step) { currentPage += step; if (currentPage < 1) currentPage = 1; window.updateDeviceSummary(); }
