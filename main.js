@@ -1361,6 +1361,17 @@ const locationSelect = document.getElementById("location-select");
 if (locationSelect) { locationSelect.addEventListener("change", function() { switchSite(this.value); }); try { let initialSiteKey = locationSelect.value; if (!sites[initialSiteKey]) initialSiteKey = Object.keys(sites)[0]; toggleWriteAccess(false); switchSite(initialSiteKey); } catch (error) {} }
 });
 
+document.querySelectorAll('.device-overlay.down').forEach(el => {
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+
+    const diag = Math.sqrt((w * w) + (h * h));
+    const angle = Math.atan(h / w) * (180 / Math.PI);
+
+    el.style.setProperty('--diag-len', `${diag}px`);
+    el.style.setProperty('--diag-angle', `${angle}deg`);
+});
+
 let countdownInterval; const LOGOUT_TIME_LIMIT = 60 * 60 * 1000; 
 window.startAutoLogoutTimer = function() {
     stopAutoLogoutTimer(); let expirationTime = localStorage.getItem('logoutExpiration'); if (!expirationTime) { expirationTime = Date.now() + LOGOUT_TIME_LIMIT; localStorage.setItem('logoutExpiration', expirationTime); }
