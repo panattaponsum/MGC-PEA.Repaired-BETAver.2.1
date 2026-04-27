@@ -828,7 +828,9 @@ window.deleteRecord = async function(ts) {
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
     await createLog("DELETE_RECORD", `ลบประวัติของ ${currentDevice} (รายการวันที่ ${dateRef})`);
 
-    loadHistory(); window.updateDeviceSummary(); window.updateDeviceStatusOverlays(currentSiteKey); 
+    loadHistory(); 
+    window.updateDeviceSummary();
+    window.updateDeviceStatusOverlays(currentSiteKey); 
     Swal.fire('ลบข้อมูลเรียบร้อย', '', 'success');
 }
 
@@ -1136,8 +1138,15 @@ chartInstance = new Chart(document.getElementById('chart').getContext('2d'), { t
 window.changePage = function(step) { currentPage += step; if (currentPage < 1) currentPage = 1; window.updateDeviceSummary(); }
 
 window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
-    const mapContainer = document.getElementById(`map-${siteKey}`); if (!mapContainer) return;
+    const mapContainer = document.getElementById(`map-${siteKey}`); 
+    if (!mapContainer) return;
+    
+    // ลบ Overlay เก่าออก
     mapContainer.querySelectorAll('.device-overlay').forEach(el => el.remove());
+
+    // --- เพิ่มเงื่อนไขนี้: ถ้าเป็น Viewer ให้หยุดการทำงาน (ไม่วาด Overlay) ---
+    if (currentUserRole === 'viewer') return; 
+    // ------------------------------------------------------------------
     
     if (!useCache) {
         const docsSnap = await getAllDevicesDocs(siteKey); 
@@ -1158,13 +1167,26 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
         mapElement.querySelectorAll('area').forEach(area => {
             const deviceName = area.getAttribute('alt'); 
             if(!deviceName || deviceName === 'The other' || deviceName === 'To Powerstore' || deviceName === 'Back to Main') return; 
-            const status = devicesStatus[deviceName] || 'ok'; const coordsAttr = area.getAttribute('coords'); if(!coordsAttr) return;
-            const coords = coordsAttr.split(',').map(c => parseInt(c.trim())); const shape = area.getAttribute('shape');
+            const status = devicesStatus[deviceName] || 'ok'; 
+            const coordsAttr = area.getAttribute('coords'); 
+            if(!coordsAttr) return;
+            
+            const coords = coordsAttr.split(',').map(c => parseInt(c.trim())); 
+            const shape = area.getAttribute('shape');
+            
             let x, y, width, height;
-            if (shape === 'rect' && coords.length === 4) { x = coords[0]; y = coords[1]; width = Math.max(coords[2] - coords[0], 10); height = Math.max(coords[3] - coords[1], 10); } else return; 
+            if (shape === 'rect' && coords.length === 4) { 
+                x = coords[0]; y = coords[1]; width = Math.max(coords[2] - coords[0], 10); height = Math.max(coords[3] - coords[1], 10); 
+            } else return; 
+            
             const overlay = document.createElement('div');
-            if (status === 'down') overlay.className = 'device-overlay down'; else if (status === 'abnormal') overlay.className = 'device-overlay abnormal'; else overlay.className = 'device-overlay normal'; 
-            overlay.style.left = `${x}px`; overlay.style.top = `${y}px`; overlay.style.width = `${width}px`; overlay.style.height = `${height}px`; overlay.setAttribute('title', deviceName);
+            if (status === 'down') overlay.className = 'device-overlay down'; 
+            else if (status === 'abnormal') overlay.className = 'device-overlay abnormal'; 
+            else overlay.className = 'device-overlay normal'; 
+            
+            overlay.style.left = `${x}px`; overlay.style.top = `${y}px`; 
+            overlay.style.width = `${width}px`; overlay.style.height = `${height}px`; 
+            overlay.setAttribute('title', deviceName);
             mapContainer.appendChild(overlay);
         });
     });
