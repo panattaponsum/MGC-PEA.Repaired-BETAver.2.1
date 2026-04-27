@@ -33,7 +33,7 @@
     border-radius: 4px;
     pointer-events: none;
     z-index: 50;
-    transition: all 0.3s;
+    transition: opacity 0.3s ease;
 }
 
 .map-container:hover .device-overlay.normal {
@@ -55,7 +55,7 @@
     content: '';
     position: absolute;
     width: 100%;
-    height: 4px;
+    height: 3px;
     background-color: #ef4444;
     border-radius: 2px;
     box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
@@ -69,6 +69,18 @@
     transform: rotate(-45deg);
 }
 
+.device-overlay.abnormal {
+    border: 3px solid #f59e0b;
+    background-color: rgba(245, 158, 11, 0.3);
+    animation: blink-orange 1.2s infinite alternate;
+    z-index: 55;
+}
+
+.device-overlay.normal {
+    border: 2px solid #10b981;
+    background-color: rgba(16, 185, 129, 0.15);
+}
+
 @keyframes blink-red-x {
     0%, 100% {
         opacity: 1;
@@ -79,15 +91,16 @@
 }
 
 @keyframes blink-orange {
-    from {
+    0%, 100% {
         opacity: 0.9;
-        box-shadow: 0 0 8px theme('colors.status.warn');
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
     }
-    to {
+    50% {
         opacity: 0.4;
-        box-shadow: 0 0 16px theme('colors.status.warn');
+        box-shadow: 0 0 16px rgba(245, 158, 11, 1);
     }
 }
+
 
 
 
@@ -328,7 +341,7 @@
                         <area alt="emC-LUC-3-Controller" coords="768,548,884,614" shape="rect" href="" onclick="openForm('emC-LUC-3-Controller'); return false;">
                         <area alt="emC-LUC-4-Controller" coords="950,550,1050,611" shape="rect" href="" onclick="openForm('emC-LUC-4-Controller'); return false;">
                         <area alt="Battery System" coords="1109,616,1608,881" shape="rect" href="" onclick="openForm('Battery System'); return false;">
-                        <area alt="Inverter System" coords="286,646,1094,881" shape="rect" href="" onclick="openForm('Inverter System'); return false;">
+                        <area alt="Inverter System" coords="294,657,1087,863" shape="rect" href="" onclick="openForm('Inverter System'); return false;">
                     </map>
                 </div>
 
