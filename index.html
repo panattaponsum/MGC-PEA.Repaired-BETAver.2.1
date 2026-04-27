@@ -34,30 +34,38 @@
     pointer-events: none;
     z-index: 50;
     transition: opacity 0.3s ease;
+    box-sizing: border-box;
 }
 
 .map-container:hover .device-overlay.normal {
     opacity: 0.6;
 }
 
+.device-overlay.normal {
+    border: 2px solid #10b981;
+    background-color: rgba(16, 185, 129, 0.15);
+}
+
+.device-overlay.abnormal {
+    border: 3px solid #f59e0b;
+    background-color: rgba(245, 158, 11, 0.28);
+    animation: blink-orange 1.2s infinite alternate;
+    z-index: 55;
+    box-sizing: border-box;
+}
+
 .device-overlay.down {
     border: none !important;
     background-color: transparent !important;
     z-index: 60;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     animation: blink-red-x 1s infinite ease-in-out;
     overflow: hidden;
 }
 
-.device-overlay.down::before,
-.device-overlay.down::after {
-    content: '';
+.device-overlay.down .x-line {
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 140%;
     height: 3px;
     background-color: #ef4444;
     border-radius: 9999px;
@@ -65,34 +73,22 @@
     transform-origin: center;
 }
 
-.device-overlay.down::before {
-    transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.device-overlay.down::after {
-    transform: translate(-50%, -50%) rotate(-45deg);
-}
-
 @keyframes blink-red-x {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.3;
-    }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }
-
 
 @keyframes blink-orange {
     0%, 100% {
-        opacity: 0.9;
-        box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+        opacity: 0.95;
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.85);
     }
     50% {
-        opacity: 0.4;
+        opacity: 0.45;
         box-shadow: 0 0 16px rgba(245, 158, 11, 1);
     }
 }
+
 
 
 
