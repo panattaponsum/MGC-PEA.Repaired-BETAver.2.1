@@ -1137,17 +1137,25 @@ window.chart1 = null;
 window.chart2 = null;
 
 window.renderDashboardCharts = async function(siteKey) {
-    console.log("กำลังประมวลผลกราฟสำหรับ Site:", siteKey);
+    console.log("กำลังเริ่มคำนวณกราฟสำหรับ:", siteKey);
     const docs = await getAllDevicesDocs(siteKey);
     let allDevicesData = [];
     
-    // ฟังก์ชันช่วยแปลงวันที่จาก "YYYY/MM/DD" เป็น Timestamp
+    // ปรับปรุงฟังก์ชันแปลงวันที่ให้รองรับทั้ง / และ -
     const parseDate = (dateStr) => {
         if (!dateStr || dateStr === '-' || dateStr.toString().trim() === '') return null;
-        const parts = dateStr.toString().split('/'); // ตัดด้วย /
+        
+        // แยกส่วนวันที่โดยรองรับทั้ง / หรือ -
+        const parts = dateStr.toString().split(/[\/-]/); 
         if (parts.length !== 3) return null;
-        // new Date(year, monthIndex, day) โดยเดือนต้อง -1
-        return new Date(parts[0], parseInt(parts[1]) - 1, parseInt(parts[2])).getTime();
+        
+        // สร้าง Date โดยพยายามเดาตำแหน่ง: 
+        // ถ้า parts[0] มี 4 หลัก (ปี) -> YYYY-MM-DD
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]);
+        const day = parseInt(parts[2]);
+        
+        return new Date(year, month - 1, day).getTime();
     };
 
     docs.forEach(doc => {
@@ -1162,7 +1170,6 @@ window.renderDashboardCharts = async function(siteKey) {
                 
                 if (brokenTime) {
                     if (isFixed) fixed++; else broken++;
-                    // คำนวณความต่างเป็นวัน
                     const diffDays = Math.max(0, (fixedTime - brokenTime) / (1000 * 60 * 60 * 24));
                     totalDays += diffDays;
                 }
@@ -1177,7 +1184,10 @@ window.renderDashboardCharts = async function(siteKey) {
         });
     });
 
-    // --- กราฟ 1: Stacked Bar ---
+    // ถ้าไม่มีข้อมูลเลย ให้แสดงรายการว่างไว้ป้องกันกราฟพัง
+    if (allDevicesData.length === 0) allDevicesData = [{ name: 'ไม่มีข้อมูล', broken: 0, fixed: 0, avgDays: 0 }];
+
+    // --- วาดกราฟ 1 ---
     const top10 = allDevicesData.sort((a, b) => (b.broken + b.fixed) - (a.broken + a.fixed)).slice(0, 10);
     if (window.chart1) window.chart1.destroy();
     window.chart1 = new Chart(document.getElementById('topDefectsStackedChart'), {
@@ -1192,8 +1202,8 @@ window.renderDashboardCharts = async function(siteKey) {
         options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
     });
 
-    // --- กราฟ 2: MTTR ---
-    const top10MTTR = allDevicesData.filter(d => d.avgDays > 0).sort((a, b) => b.avgDays - a.avgDays).slice(0, 10);
+    // --- วาดกราฟ 2 ---
+    const top10MTTR = allDevicesData.sort((a, b) => b.avgDays - a.avgDays).slice(0, 10);
     if (window.chart2) window.chart2.destroy();
     window.chart2 = new Chart(document.getElementById('avgRepairTimeChart'), {
         type: 'bar',
@@ -1208,7 +1218,6 @@ window.renderDashboardCharts = async function(siteKey) {
         options: { indexAxis: 'y', responsive: true, scales: { x: { beginAtZero: true } } }
     });
 };
-
 window.changePage = function(step) { currentPage += step; if (currentPage < 1) currentPage = 1; window.updateDeviceSummary(); }
 
 window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
