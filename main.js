@@ -1127,9 +1127,12 @@ window.updateDeviceSummary = async function() {
         pagination.innerHTML = `<div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Showing ${startIndex + 1} to ${Math.min(startIndex + pageSize, summary.length)} of ${summary.length} entries</div><div class="flex items-center gap-1"><button onclick="changePage(-1)" ${currentPage===1?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button><div class="px-4 py-1 bg-white rounded-lg shadow-sm border border-slate-200 text-sm font-bold text-blue-600">${currentPage} / ${totalPages}</div><button onclick="changePage(1)" ${currentPage===totalPages?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button></div>`;
     }
     if (typeof renderDashboardCharts === 'function') {
-        renderDashboardCharts(SiteKey); 
+       renderDashboardCharts(currentSiteKey);
     }
 };
+
+
+let chart1, chart2;
 
 window.renderDashboardCharts = async function(siteKey) {
     const docs = await getAllDevicesDocs(siteKey);
@@ -1138,51 +1141,45 @@ window.renderDashboardCharts = async function(siteKey) {
     docs.forEach(doc => {
         const d = doc.data();
         if (d.records && d.records.length > 0) {
-            let brokenCount = 0;
-            let fixedCount = 0;
-            let totalRepairDays = 0;
-            let ongoingCases = 0;
-
+            let brokenCount = 0, fixedCount = 0, totalRepairDays = 0;
             d.records.forEach(r => {
                 const isFixed = r.fixedDate && r.fixedDate !== '-' && r.fixedDate !== '';
-                if (isFixed) {
-                    fixedCount++;
-                    totalRepairDays += calculateDaysDifference(r.brokenDate, r.fixedDate);
-                } else {
-                    brokenCount++;
-                    // คำนวณจากวันปัจจุบันสำหรับเคสที่ยังไม่ซ่อม
-                    totalRepairDays += calculateDaysDifference(r.brokenDate, Date.now());
-                }
+                const start = Number(r.brokenDate);
+                const end = isFixed ? Number(r.fixedDate) : Date.now();
+                
+                if (isFixed) fixedCount++; else brokenCount++;
+                totalRepairDays += Math.max(0, (end - start) / (1000 * 60 * 60 * 24));
             });
 
             allDevicesData.push({
                 name: doc.id,
-                broken: brokenCount, // ส่วนที่ยังไม่ได้ซ่อม
-                fixed: fixedCount,   // ส่วนที่ซ่อมแล้ว
+                broken: brokenCount,
+                fixed: fixedCount,
                 avgDays: (fixedCount + brokenCount) > 0 ? (totalRepairDays / (fixedCount + brokenCount)) : 0
             });
         }
     });
 
-    // เรียงข้อมูลเพื่อหา Top 10
     const top10 = allDevicesData.sort((a, b) => (b.broken + b.fixed) - (a.broken + a.fixed)).slice(0, 10);
 
-    // --- กราฟ 1: Stacked Bar Chart ---
-    new Chart(document.getElementById('topDefectsStackedChart'), {
+    // --- อัปเดตกราฟ 1 (Stacked) ---
+    if (chart1) chart1.destroy();
+    chart1 = new Chart(document.getElementById('topDefectsStackedChart'), {
         type: 'bar',
         data: {
             labels: top10.map(d => d.name),
             datasets: [
-                { label: 'ยังไม่ซ่อม (แดง)', data: top10.map(d => d.broken), backgroundColor: '#ef4444' },
-                { label: 'ซ่อมแล้ว (เขียว)', data: top10.map(d => d.fixed), backgroundColor: '#10b981' }
+                { label: 'ยังไม่ซ่อม', data: top10.map(d => d.broken), backgroundColor: '#ef4444' },
+                { label: 'ซ่อมแล้ว', data: top10.map(d => d.fixed), backgroundColor: '#10b981' }
             ]
         },
         options: { scales: { x: { stacked: true }, y: { stacked: true } } }
     });
 
-    // --- กราฟ 2: Avg Repair Time Chart ---
+    // --- อัปเดตกราฟ 2 (MTTR) ---
     const top10MTTR = [...allDevicesData].sort((a, b) => b.avgDays - a.avgDays).slice(0, 10);
-    new Chart(document.getElementById('avgRepairTimeChart'), {
+    if (chart2) chart2.destroy();
+    chart2 = new Chart(document.getElementById('avgRepairTimeChart'), {
         type: 'bar',
         data: {
             labels: top10MTTR.map(d => d.name),
@@ -1192,7 +1189,7 @@ window.renderDashboardCharts = async function(siteKey) {
                 backgroundColor: '#3b82f6'
             }]
         },
-        options: { indexAxis: 'y' } // แนวนอนจะดูง่ายกว่าสำหรับ Top 10
+        options: { indexAxis: 'y' }
     });
 };
 
