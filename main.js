@@ -1132,94 +1132,86 @@ window.updateDeviceSummary = async function() {
 };
 
 
-// ประกาศตัวแปร Global ไว้สำหรับเก็บ Chart instance
+// ประกาศตัวแปร Global ไว้ด้านบนของไฟล์
 window.chart1 = null;
 window.chart2 = null;
 
 window.renderDashboardCharts = async function(siteKey) {
-    try {
-        console.log("กำลังประมวลผลกราฟสำหรับ Site:", siteKey);
-        
-        const docs = await getAllDevicesDocs(siteKey);
-        let allDevicesData = [];
-        
-        docs.forEach(doc => {
-            const d = doc.data();
-            if (d.records && d.records.length > 0) {
-                let broken = 0, fixed = 0, totalDays = 0;
+    console.log("กำลังประมวลผลกราฟสำหรับ Site:", siteKey);
+    
+    // 1. ดึงข้อมูลจากฐานข้อมูล
+    const docs = await getAllDevicesDocs(siteKey);
+    let allDevicesData = [];
+    
+    docs.forEach(doc => {
+        const d = doc.data();
+        if (d.records && d.records.length > 0) {
+            let broken = 0, fixed = 0, totalDays = 0;
+            d.records.forEach(r => {
+                const isFixed = r.fixedDate && r.fixedDate !== '-' && r.fixedDate !== '';
+                const start = Number(r.brokenDate);
+                const end = isFixed ? Number(r.fixedDate) : Date.now();
                 
-                d.records.forEach(r => {
-                    const isFixed = r.fixedDate && r.fixedDate !== '-' && r.fixedDate !== '';
-                    const start = Number(r.brokenDate);
-                    // ถ้ายังไม่ซ่อม ให้ใช้เวลาปัจจุบันเป็นจุดสิ้นสุดในการคำนวณ
-                    const end = isFixed ? Number(r.fixedDate) : Date.now();
-                    
-                    if (isFixed) fixed++; else broken++;
-                    
-                    // คำนวณเป็นจำนวนวัน (1 วัน = 86,400,000 มิลลิวินาที)
-                    totalDays += Math.max(0, (end - start) / (1000 * 60 * 60 * 24));
-                });
+                if (isFixed) fixed++; else broken++;
+                totalDays += Math.max(0, (end - start) / (1000 * 60 * 60 * 24));
+            });
 
-                allDevicesData.push({
-                    name: doc.id,
-                    broken: broken,
-                    fixed: fixed,
-                    avgDays: (fixed + broken) > 0 ? (totalDays / (fixed + broken)) : 0
-                });
+            allDevicesData.push({
+                name: doc.id,
+                broken: broken,
+                fixed: fixed,
+                avgDays: (fixed + broken) > 0 ? (totalDays / (fixed + broken)) : 0
+            });
+        }
+    });
+
+    if (allDevicesData.length === 0) {
+        console.warn("ไม่พบข้อมูล records สำหรับวาดกราฟ");
+        return;
+    }
+
+    // 2. กราฟ 1: Stacked Bar
+    const top10 = allDevicesData.sort((a, b) => (b.broken + b.fixed) - (a.broken + a.fixed)).slice(0, 10);
+    const ctx1 = document.getElementById('topDefectsStackedChart');
+    if (ctx1) {
+        if (window.chart1) window.chart1.destroy();
+        window.chart1 = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: top10.map(d => d.name),
+                datasets: [
+                    { label: 'ยังไม่ซ่อม', data: top10.map(d => d.broken), backgroundColor: '#ef4444' },
+                    { label: 'ซ่อมแล้ว', data: top10.map(d => d.fixed), backgroundColor: '#10b981' }
+                ]
+            },
+            options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
+        });
+    }
+
+    // 3. กราฟ 2: MTTR (Horizontal Bar)
+    const top10MTTR = allDevicesData.filter(d => d.avgDays > 0).sort((a, b) => b.avgDays - a.avgDays).slice(0, 10);
+    const ctx2 = document.getElementById('avgRepairTimeChart');
+    if (ctx2) {
+        if (window.chart2) window.chart2.destroy();
+        window.chart2 = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: top10MTTR.map(d => d.name),
+                datasets: [{
+                    label: 'วันเฉลี่ย',
+                    data: top10MTTR.map(d => d.avgDays.toFixed(1)),
+                    backgroundColor: '#3b82f6'
+                }]
+            },
+            options: { 
+                indexAxis: 'y', 
+                responsive: true,
+                scales: { x: { beginAtZero: true } } 
             }
         });
-
-        // --- กราฟ 1: Stacked Bar (อุปกรณ์ที่เสียมากที่สุด) ---
-        const top10 = allDevicesData.sort((a, b) => (b.broken + b.fixed) - (a.broken + a.fixed)).slice(0, 10);
-        
-        const ctx1 = document.getElementById('topDefectsStackedChart');
-        if (ctx1) {
-            if (window.chart1) window.chart1.destroy();
-            window.chart1 = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: top10.map(d => d.name),
-                    datasets: [
-                        { label: 'ยังไม่ซ่อม', data: top10.map(d => d.broken), backgroundColor: '#ef4444' },
-                        { label: 'ซ่อมแล้ว', data: top10.map(d => d.fixed), backgroundColor: '#10b981' }
-                    ]
-                },
-                options: { 
-                    responsive: true,
-                    scales: { x: { stacked: true }, y: { stacked: true } } 
-                }
-            });
-        }
-
-        // --- กราฟ 2: MTTR (ระยะเวลาซ่อมเฉลี่ย) ---
-        // กรองเอาเฉพาะรายการที่มีประวัติซ่อมแล้ว และเรียงลำดับจากมากไปน้อย
-        const top10MTTR = allDevicesData.filter(d => d.avgDays > 0).sort((a, b) => b.avgDays - a.avgDays).slice(0, 10);
-        
-        const ctx2 = document.getElementById('avgRepairTimeChart');
-        if (ctx2) {
-            if (window.chart2) window.chart2.destroy();
-            window.chart2 = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: top10MTTR.map(d => d.name),
-                    datasets: [{
-                        label: 'วันเฉลี่ย',
-                        data: top10MTTR.map(d => d.avgDays.toFixed(1)),
-                        backgroundColor: '#3b82f6'
-                    }]
-                },
-                options: { 
-                    indexAxis: 'y',
-                    responsive: true,
-                    scales: { x: { beginAtZero: true } } 
-                }
-            });
-        }
-
-    } catch (error) {
-        console.error("เกิดข้อผิดพลาดในการโหลด Dashboard Charts:", error);
     }
 };
+
 window.changePage = function(step) { currentPage += step; if (currentPage < 1) currentPage = 1; window.updateDeviceSummary(); }
 
 window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
