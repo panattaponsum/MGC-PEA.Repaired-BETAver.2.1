@@ -118,11 +118,20 @@ let currentPage = 1;
 const pageSize = 7; 
 let currentUser = null;
 let currentUserRole = 'viewer'; 
+let currentUserAllowedSites = []; 
 let currentUserFullName = ''; 
 let currentUserPosition = ''; 
 let currentUserDept = '';
 let currentUserPhone = ''; 
 const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
+
+function hasWriteAccess(siteKey = currentSiteKey) {
+    if (currentUserRole === 'admin') return true;
+    if (currentUserRole === 'editor') {
+        return currentUserAllowedSites.includes(siteKey) || currentUserAllowedSites.includes('all');
+    }
+    return false;
+}
 
 const sites = {
 "ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "REC No.1 Panal", "REC No.2 Panal", "RCS No.1 Panal", "RCS No.2 Panal", "COV 1", "COV 2", "BCP", "PCS", "Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5", "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10", "Diesel Generator 1", "Diesel Generator 2", "Diesel Generator Master", "Gateway 1", "Gateway 2", "Firewall 1", "Firewall 2", "Firewall 3","GPS", "other" ] },
@@ -232,7 +241,8 @@ switch (status) { case 'ok': return '<span class="tag tag-warranty-ok">🛡️ �
 
 function toggleWriteAccess(isLoggedIn) {
     const role = isLoggedIn ? currentUserRole : 'viewer';
-    const isAdmin = role === 'admin'; const isEditor = role === 'editor' || isAdmin; 
+    const isAdmin = role === 'admin'; 
+    const isEditor = hasWriteAccess(currentSiteKey); 
 
     ['saveDataButton', 'clearDeviceButton', 'clearAllButton'].forEach(id => {
         const btn = document.getElementById(id);
@@ -313,7 +323,6 @@ window.showActivityLogs = async function(direction = 'first') {
         
         query = query.orderBy("timestamp", "desc");
 
-        // เงื่อนไขเปลี่ยนหน้า
         if (direction === 'next' && lastLogDoc) {
             logPageStack.push(firstLogDoc); 
             query = query.startAfter(lastLogDoc).limit(100);
@@ -362,25 +371,29 @@ window.changeLogPage = function(direction) {
 };
 window.openLogModal = function() {
     const modal = document.getElementById('logModal');
-    if (!modal) return;
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 
-    modal.classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
 };
 
 window.closeLogModal = function() {
     const modal = document.getElementById('logModal');
-    if (!modal) return;
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
 
-    modal.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
-
+    
     const siteFilter = document.getElementById('logSiteFilter');
     const actionFilter = document.getElementById('logActionFilter');
-
+    
     if (siteFilter) siteFilter.value = 'all';
     if (actionFilter) actionFilter.value = 'all';
-
+    
     const tableBody = document.getElementById('logTableBody');
     if (tableBody) tableBody.innerHTML = '';
 };
@@ -498,7 +511,7 @@ async function uploadFileToStorage(file, folderName) {
 }
 
 window.saveData = async function() {
-    if (currentUserRole !== 'editor' && currentUserRole !== 'admin') { Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor และ Admin เท่านั้นที่บันทึกข้อมูลได้', 'error'); return false; }
+    if (!hasWriteAccess(currentSiteKey)) { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์บันทึกข้อมูลในสถานที่นี้', 'error'); return false; }
     if (!currentUser || !currentDevice) return false;
 
     let statusVal = document.getElementById('status').value;
@@ -642,7 +655,7 @@ window.loadHistory = async function() {
     records.sort((a, b) => b.ts - a.ts); 
     if (records.length === 0) { container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>'; return; }
 
-    const canEdit = (currentUserRole === 'editor' || currentUserRole === 'admin') ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
+    const canEdit = hasWriteAccess(currentSiteKey) ? '' : 'disabled title="ไม่มีสิทธิ์แก้ไข"';
     
     records.forEach((r, index) => {
     const recordSequence = records.length - index; 
@@ -754,7 +767,7 @@ const doc = new Docx(zip, {
 }
 
 window.deleteRecord = async function(ts) {
-    if (currentUserRole !== 'editor' && currentUserRole !== 'admin') return;
+    if (!hasWriteAccess(currentSiteKey)) return;
     if (!currentDevice) return;
     const result = await Swal.fire({ title: 'ลบรายการนี้?', text: "คุณต้องการลบรายการประวัตินี้จริงหรือไม่?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ใช่, ลบ!', cancelButtonText: 'ยกเลิก' });
     if (!result.isConfirmed) return;
@@ -782,7 +795,7 @@ window.deleteRecord = async function(ts) {
 }
 
 window.editRecord = async function(ts) {
-    if (currentUserRole !== 'editor' && currentUserRole !== 'admin') return;
+    if (!hasWriteAccess(currentSiteKey)) return;
     if (!currentDevice) return;
     let records = await getDeviceRecords(currentSiteKey, currentDevice);
     const idx = records.findIndex(r => String(r.ts) === String(ts));
@@ -857,11 +870,11 @@ startEl.addEventListener('change', calculateEnd); yearsEl.addEventListener('chan
 
 window.openUserManagement = async function() { if (currentUserRole !== 'admin') return; document.getElementById('overlay').style.display = 'block'; document.getElementById('userModal').style.display = 'flex'; await loadUsers(); }
 window.closeUserManagement = function() { document.getElementById('overlay').style.display = 'none'; document.getElementById('userModal').style.display = 'none'; }
+
 window.loadUsers = async function() {
     const listContainer = document.getElementById('userListContainer'); 
     listContainer.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">กำลังโหลดข้อมูล...</div>';
     
-    // เปลี่ยนจาก flex-row เป็น grid 2 คอลัมน์ (หรือ 1 คอลัมน์บนมือถือ)
     listContainer.className = "grid grid-cols-1 md:grid-cols-2 gap-4 p-1";
 
     try {
@@ -880,6 +893,7 @@ window.loadUsers = async function() {
             const position = userData.position || ''; 
             const department = userData.department || '';
             const phone = userData.phone || ''; 
+            const allowedSites = userData.allowedSites || []; 
             const isMe = (email === currentUser.email); 
             const isAdminMain = (email === ADMIN_EMAIL); 
             const safeId = email.replace(/[@.]/g, ''); 
@@ -892,6 +906,13 @@ window.loadUsers = async function() {
                 <option value="editor" ${role==='editor'?'selected':''}>Editor</option>
                 <option value="admin" ${role==='admin'?'selected':''}>Admin</option>
             `;
+
+            const sitesHtml = Object.keys(sites).map(key => `
+                <label class="flex items-center gap-1 text-[10px] whitespace-nowrap cursor-pointer">
+                    <input type="checkbox" class="site-cb-${safeId} rounded text-blue-600" value="${key}" ${allowedSites.includes(key) ? 'checked' : ''}>
+                    ${sites[key].name.split(' ')[0]}
+                </label>
+            `).join('');
             
             let deleteBtn = ''; 
             if (!isAdminMain && !isMe) {
@@ -932,9 +953,14 @@ window.loadUsers = async function() {
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase">สิทธิ์การใช้งาน</label>
-                            <select id="role-${safeId}" class="w-full text-sm border border-slate-200 rounded-lg p-2 bg-slate-50 cursor-pointer font-bold">${roleOptions}</select>
+                            <select id="role-${safeId}" onchange="document.getElementById('sites-container-${safeId}').style.display = this.value === 'editor' ? 'block' : 'none'" class="w-full text-sm border border-slate-200 rounded-lg p-2 bg-slate-50 cursor-pointer font-bold">${roleOptions}</select>
                         </div>
                     </div>
+                </div>
+
+                <div id="sites-container-${safeId}" style="display: ${role === 'editor' ? 'block' : 'none'};" class="mt-2 p-2 bg-slate-100 border border-slate-200 rounded-lg">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-2 block">✅ สิทธิ์จัดการไซต์ (เฉพาะ Editor)</label>
+                    <div class="flex flex-wrap gap-3">${sitesHtml}</div>
                 </div>
 
                 <div class="pt-2">
@@ -949,6 +975,7 @@ window.loadUsers = async function() {
         listContainer.innerHTML = `<div class="col-span-full text-red-500 text-center py-10">โหลดไม่สำเร็จ: ${error.message}</div>`; 
     }
 }
+
 window.updateUserFull = async function(email, safeId) {
     if (currentUserRole !== 'admin') return;
     
@@ -956,8 +983,10 @@ window.updateUserFull = async function(email, safeId) {
     const newName = document.getElementById(`name-${safeId}`).value.trim();
     const newPos = document.getElementById(`pos-${safeId}`).value.trim();
     const newDept = document.getElementById(`dept-${safeId}`).value.trim();
-  
     const newPhone = document.getElementById(`phone-${safeId}`).value.trim(); 
+    
+    const allowedSitesCb = document.querySelectorAll(`.site-cb-${safeId}:checked`);
+    const newAllowedSites = Array.from(allowedSitesCb).map(cb => cb.value);
 
     if (email === ADMIN_EMAIL && newRole !== 'admin') { 
         Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Admin หลักได้', 'error'); 
@@ -965,9 +994,9 @@ window.updateUserFull = async function(email, safeId) {
     }
 
     try { 
-        
         await db.collection('users').doc(email).set({ 
             role: newRole, 
+            allowedSites: newRole === 'editor' ? newAllowedSites : [],
             fullName: newName, 
             position: newPos, 
             department: newDept,
@@ -981,8 +1010,10 @@ window.updateUserFull = async function(email, safeId) {
             currentUserFullName = newName; 
             currentUserPosition = newPos;
             currentUserDept = newDept;
-            currentUserPhone = newPhone; 
+            currentUserPhone = newPhone;
+            currentUserAllowedSites = newRole === 'editor' ? newAllowedSites : [];
             document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; 
+            toggleWriteAccess(true); 
         } 
         
         loadUsers(); 
@@ -1166,7 +1197,7 @@ async function processAndSaveImport(assetsToImport, recordsToImport) {
 }
 
 window.importData = function(event) {
-    if (currentUserRole !== 'editor' && currentUserRole !== 'admin') { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์นำเข้าข้อมูล', 'error'); event.target.value = null; return; }
+    if (!hasWriteAccess(currentSiteKey)) { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์นำเข้าข้อมูลในสถานที่นี้', 'error'); event.target.value = null; return; }
     const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
     reader.onload = function(e) {
         try {
@@ -1329,6 +1360,7 @@ function switchSite(siteKey) {
     
     if (typeof imageMapResize === 'function') { imageMapResize(); } 
     setupRealtimeListener(siteKey); window.updateDeviceStatusOverlays(currentSiteKey); 
+    toggleWriteAccess(currentUser !== null);
 }
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -1337,30 +1369,34 @@ auth.onAuthStateChanged(async user => {
         currentUser = user; document.getElementById('userInfo').classList.remove('hidden'); document.getElementById('loginButton').classList.add('hidden');
         try {
             const userSnap = await db.collection('users').doc(user.email).get();
-            if (!userSnap.exists) { let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer'; await db.collection('users').doc(user.email).set({ email: user.email, role: initialRole, fullName: '', position: '', department: '', phone: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); currentUserRole = initialRole; currentUserFullName = ''; } 
+            if (!userSnap.exists) { 
+                let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer'; 
+                await db.collection('users').doc(user.email).set({ email: user.email, role: initialRole, allowedSites: [], fullName: '', position: '', department: '', phone: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() }); 
+                currentUserRole = initialRole; currentUserAllowedSites = []; currentUserFullName = ''; 
+            } 
             else { 
-    currentUserRole = userSnap.data().role || 'viewer'; 
-    currentUserFullName = userSnap.data().fullName || ''; 
-    currentUserPosition = userSnap.data().position || ''; 
-    currentUserDept = userSnap.data().department || '';
-    currentUserPhone = userSnap.data().phone || ''; 
-}
+                currentUserRole = userSnap.data().role || 'viewer'; 
+                currentUserAllowedSites = userSnap.data().allowedSites || [];
+                currentUserFullName = userSnap.data().fullName || ''; 
+                currentUserPosition = userSnap.data().position || ''; 
+                currentUserDept = userSnap.data().department || '';
+                currentUserPhone = userSnap.data().phone || ''; 
+            }
             if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
             document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email; 
             const sessionLogKey = `logged_in_${user.uid}`; if (!sessionStorage.getItem(sessionLogKey)) { await createLog("AUTH_LOGIN", `เข้าสู่ระบบ (Role: ${currentUserRole})`); sessionStorage.setItem(sessionLogKey, "true"); }
             startAutoLogoutTimer();
-        } catch (e) { currentUserRole = 'viewer'; }
+        } catch (e) { currentUserRole = 'viewer'; currentUserAllowedSites = []; }
         toggleWriteAccess(true);
     } else {
         if (currentUser) sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
-        currentUser = null; currentUserRole = 'viewer'; currentUserFullName = ''; currentUserPhone = ''; document.getElementById('userInfo').classList.add('hidden'); document.getElementById('loginButton').classList.remove('hidden'); toggleWriteAccess(false); stopAutoLogoutTimer();
+        currentUser = null; currentUserRole = 'viewer'; currentUserAllowedSites = []; currentUserFullName = ''; currentUserPhone = ''; document.getElementById('userInfo').classList.add('hidden'); document.getElementById('loginButton').classList.remove('hidden'); toggleWriteAccess(false); stopAutoLogoutTimer();
     }
 });
 document.getElementById('loginButton').addEventListener('click', login); document.getElementById('logoutButton').addEventListener('click', logout); setupWarrantyCalculators();
 const locationSelect = document.getElementById("location-select");
 if (locationSelect) { locationSelect.addEventListener("change", function() { switchSite(this.value); }); try { let initialSiteKey = locationSelect.value; if (!sites[initialSiteKey]) initialSiteKey = Object.keys(sites)[0]; toggleWriteAccess(false); switchSite(initialSiteKey); } catch (error) {} }
 });
-
 
 let countdownInterval; const LOGOUT_TIME_LIMIT = 60 * 60 * 1000; 
 window.startAutoLogoutTimer = function() {
@@ -1509,25 +1545,18 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     window.tempReportDataMap = dataMap;
 };
 
-window.openReportModal = function() {
-    const modal = document.getElementById('reportModal');
-    if (!modal) return;
-
-    modal.classList.remove('hidden');
-    document.body.classList.add('overflow-hidden');
-};
-
-window.closeReportModal = function() {
-    const modal = document.getElementById('reportModal');
-    if (!modal) return;
-
-    modal.classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-
-    const container = document.getElementById('reportSelectionContainer');
-    if (container) container.scrollTop = 0;
-};
-
+function openReportModal() {
+  const modal = document.getElementById('reportModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.classList.add('overflow-hidden');
+}
+function closeReportModal() {
+  const modal = document.getElementById('reportModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.classList.remove('overflow-hidden');
+}
 window.selectAllReport = function(isChecked) { document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked); };
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
 window.generateSelectedReport = async function () {
