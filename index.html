@@ -48,37 +48,29 @@
     align-items: center;
     justify-content: center;
     animation: blink-red-x 1s infinite ease-in-out;
+    overflow: hidden;
 }
 
 .device-overlay.down::before,
 .device-overlay.down::after {
     content: '';
     position: absolute;
-    width: 100%;
+    left: 50%;
+    top: 50%;
+    width: 140%;
     height: 3px;
     background-color: #ef4444;
-    border-radius: 2px;
+    border-radius: 9999px;
     box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+    transform-origin: center;
 }
 
 .device-overlay.down::before {
-    transform: rotate(45deg);
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 .device-overlay.down::after {
-    transform: rotate(-45deg);
-}
-
-.device-overlay.abnormal {
-    border: 3px solid #f59e0b;
-    background-color: rgba(245, 158, 11, 0.3);
-    animation: blink-orange 1.2s infinite alternate;
-    z-index: 55;
-}
-
-.device-overlay.normal {
-    border: 2px solid #10b981;
-    background-color: rgba(16, 185, 129, 0.15);
+    transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 @keyframes blink-red-x {
@@ -89,6 +81,7 @@
         opacity: 0.3;
     }
 }
+
 
 @keyframes blink-orange {
     0%, 100% {
