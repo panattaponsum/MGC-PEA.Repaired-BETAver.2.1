@@ -304,6 +304,7 @@ window.showActivityLogs = async function(direction = 'first') {
     
     if (!modal || !tableBody) return;
     modal.classList.remove('hidden'); 
+    modal.classList.add('flex');
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-bold">กำลังโหลดข้อมูล...</td></tr>';
 
     if (direction === 'first') {
@@ -383,7 +384,6 @@ window.closeLogModal = function() {
     const modal = document.getElementById('logModal');
     if (modal) {
         modal.classList.add('hidden');
-        modal.classList.remove('flex');
     }
 
     document.body.classList.remove('overflow-hidden');
@@ -1788,9 +1788,12 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     if (!hasRecords) { Swal.fire('ไม่มีข้อมูล', 'ไม่มีประวัติการชำรุดในสถานที่นี้เลย', 'info'); return; }
     html += '</div>';
     document.getElementById('reportSelectionContainer').innerHTML = html;
-    document.getElementById('reportModal').classList.remove('hidden');
+    const reportModal = document.getElementById('reportModal');
+    reportModal.classList.remove('hidden');
+    reportModal.classList.add('flex');
     window.tempReportDataMap = dataMap;
 };
+
 
 function openReportModal() {
   const modal = document.getElementById('reportModal');
