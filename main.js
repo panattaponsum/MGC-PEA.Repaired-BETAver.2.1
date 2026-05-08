@@ -738,7 +738,7 @@ window.loadHistory = async function() {
             <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
                 <div class="flex flex-col flex-1">
                     <div class="flex justify-between items-center w-full">
-                        <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}${repairingText}</span>${subTag}</div>
+                        <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span>${subTag}</div>
                         <div class="text-base text-gray-500 font-medium">ครั้งที่ ${recordSequence}</div>
                     </div>
                     <div class="flex gap-4 text-sm mt-1">
@@ -1816,7 +1816,7 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
             </span>
         </div>
         <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${r.status !== 'ok' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">
-            ${statusText}${repairingText}
+            ${statusText}
         </span>
     </label>`;
 });
