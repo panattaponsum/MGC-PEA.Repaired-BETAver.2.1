@@ -132,6 +132,15 @@ function hasWriteAccess(siteKey = currentSiteKey) {
     }
     return false;
 }
+function hasEngineerSiteAccess(siteKey = currentSiteKey) {
+    return currentUserRole === 'engineer' && (currentUserAllowedSites.includes(siteKey) || currentUserAllowedSites.includes('all'));
+}
+function canAcknowledgeIssue(siteKey = currentSiteKey) {
+    return currentUserRole === 'admin' || hasWriteAccess(siteKey) || hasEngineerSiteAccess(siteKey);
+}
+function canMarkFixed(siteKey = currentSiteKey) {
+    return currentUserRole === 'admin' || hasEngineerSiteAccess(siteKey);
+}
 
 const sites = {
 "ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "REC No.1 Panal", "REC No.2 Panal", "RCS No.1 Panal", "RCS No.2 Panal", "COV 1", "COV 2", "BCP", "PCS", "Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5", "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10", "Diesel Generator 1", "Diesel Generator 2", "Diesel Generator Master", "Gateway 1", "Gateway 2", "Firewall 1", "Firewall 2", "Firewall 3","GPS", "other" ] },
@@ -511,7 +520,7 @@ async function uploadFileToStorage(file, folderName) {
 }
 
 window.saveData = async function() {
-    if (!hasWriteAccess(currentSiteKey)) { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์บันทึกข้อมูลในสถานที่นี้', 'error'); return false; }
+    if (!canAcknowledgeIssue(currentSiteKey)) { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์บันทึกข้อมูลในสถานที่นี้', 'error'); return false; }
     if (!currentUser || !currentDevice) return false;
 
     let statusVal = document.getElementById('status').value;
@@ -526,6 +535,8 @@ window.saveData = async function() {
 
     if (isValidDate(brokenDate) && isValidDate(fixedDate)) statusVal = 'ok';
     if (editIndex < 0 && statusVal === 'ok') { Swal.fire({ title: "ไม่อนุญาต", text: "การเพิ่มรายการใหม่ต้องเป็นสถานะ ชำรุด หรือ ผิดปกติ", icon: "warning" }); return false; }
+    if (currentUserRole === 'engineer' && !isEditing && (statusVal === 'down' || statusVal === 'abnormal')) { Swal.fire('ไม่อนุญาต', 'Engineer ไม่สามารถเพิ่มรายการแจ้งชำรุดใหม่ได้', 'warning'); return false; }
+    if (statusVal === 'ok' && !canMarkFixed(currentSiteKey)) { Swal.fire('ไม่อนุญาต', 'เฉพาะ Engineer หรือ Admin เท่านั้นที่แจ้งซ่อมแล้วเสร็จได้', 'warning'); return false; }
     
     const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999); 
     if (brokenDate && isValidDate(brokenDate) && new Date(brokenDate) > todayEnd) { Swal.fire("วันที่ผิดพลาด", "วันที่เกิดเหตุเป็นอนาคตไม่ได้", "warning"); return false; }
@@ -579,10 +590,20 @@ window.saveData = async function() {
             baseRec.fixedUser = originalRecord.fixedUser || (originalRecord.fixedDate ? originalRecord.user : null);
             baseRec.fixedUserPos = originalRecord.fixedUserPos || ''; baseRec.fixedUserDept = originalRecord.fixedUserDept || '';
         }
-        baseRec.user = currentUserStr; 
+        baseRec.user = currentUserStr;
+        if ((statusVal === 'down' || statusVal === 'abnormal') && !baseRec.acknowledgedAt) {
+            baseRec.acknowledgedAt = Date.now();
+            baseRec.acknowledgedBy = currentUserStr;
+            baseRec.acknowledgedByRole = currentUserRole;
+        } 
     } else {
        baseRec.customId = await generateAutoId(currentSiteKey);
-       baseRec.brokenUser = currentUserStr; baseRec.brokenUserPos = currentUserPosition; baseRec.brokenUserDept = currentUserDept; baseRec.user = currentUserStr; 
+       baseRec.brokenUser = currentUserStr; baseRec.brokenUserPos = currentUserPosition; baseRec.brokenUserDept = currentUserDept; baseRec.user = currentUserStr;
+        if ((statusVal === 'down' || statusVal === 'abnormal') && !baseRec.acknowledgedAt) {
+            baseRec.acknowledgedAt = Date.now();
+            baseRec.acknowledgedBy = currentUserStr;
+            baseRec.acknowledgedByRole = currentUserRole;
+        } 
         if (statusVal === 'ok') { baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept; }
     }
     try {
@@ -689,6 +710,7 @@ window.loadHistory = async function() {
         let statusClass = 'tag-ok', statusText = '✅ ใช้งานได้';
         if(r.status === 'down') { statusClass = 'tag-bad'; statusText = '❎ ชำรุด'; }
         else if(r.status === 'abnormal') { statusClass = 'tag-warn'; statusText = '⚠️ ผิดปกติ'; }
+        if (r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) { statusClass = 'tag-warn'; statusText += ' • 🛠️ กำลังซ่อมแซม'; }
 
         let subTag = r.subDevice ? `<span class="tag bg-blue-100 text-blue-800 ml-2 border border-blue-200">${r.subDevice}</span>` : '';
 
@@ -716,12 +738,13 @@ window.loadHistory = async function() {
             <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
                 <div class="flex flex-col flex-1">
                     <div class="flex justify-between items-center w-full">
-                        <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span>${subTag}</div>
+                        <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}${repairingText}</span>${subTag}</div>
                         <div class="text-base text-gray-500 font-medium">ครั้งที่ ${recordSequence}</div>
                     </div>
                     <div class="flex gap-4 text-sm mt-1">
                         <div><span class="text-red-600">ผู้แจ้งเสีย:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
                         <div><span class="text-green-600">ผู้แจ้งซ่อมแซม:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
+                        <div><span class="text-amber-600">Engineer รับทราบ:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.acknowledgedBy || '-')} ${r.acknowledgedAt ? '(' + formatThaiDateTime(r.acknowledgedAt) + ')' : ''}</span></div>
                     </div>
                 </div>
             </div>
@@ -944,6 +967,7 @@ window.loadUsers = async function() {
             const roleOptions = `
                 <option value="viewer" ${role==='viewer'?'selected':''}>Viewer</option>
                 <option value="editor" ${role==='editor'?'selected':''}>Editor</option>
+                <option value="engineer" ${role==='engineer'?'selected':''}>Engineer</option>
                 <option value="admin" ${role==='admin'?'selected':''}>Admin</option>
             `;
 
@@ -993,12 +1017,12 @@ window.loadUsers = async function() {
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase">สิทธิ์การใช้งาน</label>
-                            <select id="role-${safeId}" onchange="document.getElementById('sites-container-${safeId}').style.display = this.value === 'editor' ? 'block' : 'none'" class="w-full text-sm border border-slate-200 rounded-lg p-2 bg-slate-50 cursor-pointer font-bold">${roleOptions}</select>
+                            <select id="role-${safeId}" onchange="document.getElementById('sites-container-${safeId}').style.display = ['editor','engineer'].includes(this.value) ? 'block' : 'none'" class="w-full text-sm border border-slate-200 rounded-lg p-2 bg-slate-50 cursor-pointer font-bold">${roleOptions}</select>
                         </div>
                     </div>
                 </div>
 
-                <div id="sites-container-${safeId}" style="display: ${role === 'editor' ? 'block' : 'none'};" class="mt-2 p-2 bg-slate-100 border border-slate-200 rounded-lg">
+                <div id="sites-container-${safeId}" style="display: ${['editor','engineer'].includes(role) ? 'block' : 'none'};" class="mt-2 p-2 bg-slate-100 border border-slate-200 rounded-lg">
                     <label class="text-[10px] font-bold text-slate-500 uppercase mb-2 block">✅ สิทธิ์จัดการไซต์ (เฉพาะ Editor)</label>
                     <div class="flex flex-wrap gap-3">${sitesHtml}</div>
                 </div>
@@ -1036,7 +1060,7 @@ window.updateUserFull = async function(email, safeId) {
     try { 
         await db.collection('users').doc(email).set({ 
             role: newRole, 
-            allowedSites: newRole === 'editor' ? newAllowedSites : [],
+            allowedSites: ['editor','engineer'].includes(newRole) ? newAllowedSites : [],
             fullName: newName, 
             position: newPos, 
             department: newDept,
@@ -1051,7 +1075,7 @@ window.updateUserFull = async function(email, safeId) {
             currentUserPosition = newPos;
             currentUserDept = newDept;
             currentUserPhone = newPhone;
-            currentUserAllowedSites = newRole === 'editor' ? newAllowedSites : [];
+            currentUserAllowedSites = ['editor','engineer'].includes(newRole) ? newAllowedSites : [];
             document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; 
             toggleWriteAccess(true); 
         } 
@@ -1425,7 +1449,7 @@ window.exportAllDataExcel = async function() {
         'Timestamp', 'เลข ID อ้างอิง', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 
         'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'ลิงก์รูปชำรุด', 
         'วิธีแก้ไข', 'ลิงก์รูปแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 
-        'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด'
+        'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้รับทราบ(Engineer)', 'วัน-เวลารับทราบ', 'สถานะซ่อม', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด'
     ]];
     const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
@@ -1439,6 +1463,7 @@ window.exportAllDataExcel = async function() {
             let duration = '-', sequenceNumber = '-'; if (r.counted) { downCount++; sequenceNumber = downCount; }
             if (r.brokenDate) { if (r.fixedDate) duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate)); else if (r.status === 'down' || r.status === 'abnormal') duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' (ยังไม่ซ่อม)'; }
             let statusTH = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
+            const repairState = (r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : '-';
             let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
             
             recordsData.push([ 
@@ -1449,6 +1474,9 @@ window.exportAllDataExcel = async function() {
                 r.brokenUser || r.user || '-', 
                 r.brokenUserPos || '-', 
                 r.brokenUserDept || '-', 
+                r.acknowledgedBy || '-',
+                r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-',
+                repairState,
                 r.fixedUser || '-',
                 r.fixedUserPos || '-',
                 r.fixedUserDept || '-'
@@ -1771,6 +1799,7 @@ window.printReport = async function() {
 
 records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     const statusText = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : '✅ ปกติ');
+    const repairingText = (r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? ' • กำลังซ่อมแซม' : ''; 
     let subDeviceStr = r.subDevice ? ` <span class="text-blue-600 font-bold">[${r.subDevice}]</span>` : '';
     const desc = r.description || '-';
 
@@ -1787,7 +1816,7 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
             </span>
         </div>
         <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${r.status !== 'ok' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}">
-            ${statusText}
+            ${statusText}${repairingText}
         </span>
     </label>`;
 });
@@ -1910,6 +1939,8 @@ window.generateSelectedReport = async function () {
                     <div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber || '-'}</div>
                     <div class="doc-line"><b>หนังสือ มท.</b> ${r.docMinistry || '-'}</div>
                     <div><b>หนังสือ กฟภ.</b> ${r.docPEA || '-'}</div>
+                    <div><b>สถานะซ่อม:</b> ${(r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : '-'}</div>
+                    <div><b>รับทราบโดย Engineer:</b> ${r.acknowledgedBy || '-'} ${r.acknowledgedAt ? '(' + formatThaiDateTime(r.acknowledgedAt) + ')' : ''}</div>
                 </td>
                 <td class="center">
                     <div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${r.brokenUser || '-'}<div class="user-sub">(${r.brokenUserPos || ''} ${r.brokenUserDept || ''})</div></div>
