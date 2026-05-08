@@ -591,19 +591,11 @@ window.saveData = async function() {
             baseRec.fixedUserPos = originalRecord.fixedUserPos || ''; baseRec.fixedUserDept = originalRecord.fixedUserDept || '';
         }
         baseRec.user = currentUserStr;
-        if ((statusVal === 'down' || statusVal === 'abnormal') && !baseRec.acknowledgedAt) {
-            baseRec.acknowledgedAt = Date.now();
-            baseRec.acknowledgedBy = currentUserStr;
-            baseRec.acknowledgedByRole = currentUserRole;
-        } 
+
     } else {
        baseRec.customId = await generateAutoId(currentSiteKey);
        baseRec.brokenUser = currentUserStr; baseRec.brokenUserPos = currentUserPosition; baseRec.brokenUserDept = currentUserDept; baseRec.user = currentUserStr;
-        if ((statusVal === 'down' || statusVal === 'abnormal') && !baseRec.acknowledgedAt) {
-            baseRec.acknowledgedAt = Date.now();
-            baseRec.acknowledgedBy = currentUserStr;
-            baseRec.acknowledgedByRole = currentUserRole;
-        } 
+
         if (statusVal === 'ok') { baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept; }
     }
     try {
@@ -694,7 +686,7 @@ window.loadHistory = async function() {
     }
 
     // ตรวจสอบสิทธิ์การแก้ไข (viewer จะไม่มีสิทธิ์)
-    const canEdit = (currentUserRole !== 'viewer' && hasWriteAccess(currentSiteKey)) ? '' : 'disabled title="ไม่มีสิทธิ์จัดการข้อมูล" style="opacity: 0.5; cursor: not-allowed;"';
+    const canEdit = canAcknowledgeIssue(currentSiteKey) ? '' : 'disabled title="ไม่มีสิทธิ์จัดการข้อมูล" style="opacity: 0.5; cursor: not-allowed;"';
     
     records.forEach((r, index) => {
         const recordSequence = records.length - index; 
@@ -744,8 +736,9 @@ window.loadHistory = async function() {
                     <div class="flex gap-4 text-sm mt-1">
                         <div><span class="text-red-600">ผู้แจ้งเสีย:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
                         <div><span class="text-green-600">ผู้แจ้งซ่อมแซม:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
-                        <div><span class="text-amber-600">Engineer รับทราบ:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.acknowledgedBy || '-')} ${r.acknowledgedAt ? '(' + formatThaiDateTime(r.acknowledgedAt) + ')' : ''}</span></div>
-                    </div>
+                        </div>
+                    <div class="text-sm mt-1"><span class="text-amber-600">Engineer รับทราบ:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.acknowledgedBy || '-')}</span>${r.acknowledgedAt ? `<div class="text-xs text-slate-500">${formatThaiDateTime(r.acknowledgedAt)}</div>` : ''}</div>
+                    <div class="flex gap-2 mt-2">${((r.status === 'down' || r.status === 'abnormal') && !r.fixedDate && !r.acknowledgedAt && canAcknowledgeIssue(currentSiteKey)) ? `<button class="btn btn-ghost text-amber-700 hover:bg-amber-50 py-1" onclick="acknowledgeRecord('${r.ts}')">🛠️ รับทราบ</button>` : ''}</div>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
@@ -856,6 +849,25 @@ window.deleteRecord = async function(ts) {
     window.updateDeviceStatusOverlays(currentSiteKey); 
     Swal.fire('ลบข้อมูลเรียบร้อย', '', 'success');
 }
+
+
+window.acknowledgeRecord = async function(ts) {
+    if (!canAcknowledgeIssue(currentSiteKey)) { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์รับทราบรายการนี้', 'error'); return; }
+    let records = await getDeviceRecords(currentSiteKey, currentDevice);
+    const i = records.findIndex(r => String(r.ts) === String(ts));
+    if (i < 0) return;
+    const r = records[i];
+    if (r.fixedDate || (r.status !== 'down' && r.status !== 'abnormal')) return;
+    if (r.acknowledgedAt) { Swal.fire('รับทราบแล้ว', 'รายการนี้ถูกกดรับทราบแล้ว', 'info'); return; }
+    const userName = currentUserFullName || (currentUser && currentUser.email) || 'ไม่ระบุ';
+    records[i] = { ...r, acknowledgedAt: Date.now(), acknowledgedBy: userName, acknowledgedByRole: currentUserRole };
+    await saveDeviceRecords(currentSiteKey, currentDevice, records);
+    await createLog('ACKNOWLEDGE_ISSUE', `รับทราบอุปกรณ์ ${currentDevice} มีสถานะเป็น ${r.status === 'down' ? 'ชำรุด' : 'ผิดปกติ'}`);
+    await loadHistory();
+    window.updateDeviceSummary();
+    window.updateDeviceStatusOverlays(currentSiteKey);
+    Swal.fire('รับทราบแล้ว', '', 'success');
+};
 
 window.editRecord = async function(ts) {
     if (!hasWriteAccess(currentSiteKey)) return;
@@ -1302,7 +1314,7 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
 let unsubscribe = null; 
 function setupRealtimeListener(siteKey) {
   if (unsubscribe) unsubscribe(); if (!firebase.auth().currentUser) return; 
-  unsubscribe = db.collection(`sites`).doc(siteKey).collection(`devices`).onSnapshot(snapshot => { window.updateDeviceSummary(); }, (error) => { if (error.code !== 'permission-denied') console.error("Listener Error:", error); });
+  unsubscribe = db.collection(`sites`).doc(siteKey).collection(`devices`).onSnapshot(snapshot => { window.updateDeviceSummary(); window.updateDeviceStatusOverlays(siteKey); }, (error) => { if (error.code !== 'permission-denied') console.error("Listener Error:", error); });
 }
 
 async function processAndSaveImport(assetsToImport, recordsToImport) {
@@ -1398,7 +1410,8 @@ window.importData = function(event) {
                                         'หนังสือ มท.': headers.indexOf('หนังสือ มท.'), 'หนังสือ กฟภ.': headers.indexOf('หนังสือ กฟภ.'),
                                         'ผู้แจ้งชำรุด': headers.indexOf('ผู้แจ้งชำรุด') !== -1 ? headers.indexOf('ผู้แจ้งชำรุด') : headers.indexOf('ผู้บันทึก'),
                                         'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
-                                        'ผู้แจ้งซ่อมเสร็จ': headers.indexOf('ผู้แจ้งซ่อมเสร็จ'), 'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด') };
+                                        'ผู้แจ้งซ่อมเสร็จ': headers.indexOf('ผู้แจ้งซ่อมเสร็จ'), 'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
+                                        'ผู้รับทราบ(Engineer)': headers.indexOf('ผู้รับทราบ(Engineer)'), 'วัน-เวลารับทราบ': headers.indexOf('วัน-เวลารับทราบ') };
                     
                     if (headerMap['ชื่ออุปกรณ์'] !== -1 && headerMap['วันที่เกิดเหตุ'] !== -1) {
                         for (let i = 1; i < recordRawData.length; i++) {
@@ -1428,6 +1441,8 @@ window.importData = function(event) {
                                     brokenUserPos: (headerMap['ตำแหน่ง'] !== -1) ? (row[headerMap['ตำแหน่ง']] || '').toString() : '',
                                     brokenUserDept: (headerMap['สังกัด'] !== -1) ? (row[headerMap['สังกัด']] || '').toString() : '',
                                     fixedUser: (headerMap['ผู้แจ้งซ่อมเสร็จ'] !== -1) ? (row[headerMap['ผู้แจ้งซ่อมเสร็จ']] || '').toString() : '',
+                                    acknowledgedBy: (headerMap['ผู้รับทราบ(Engineer)'] !== -1) ? (row[headerMap['ผู้รับทราบ(Engineer)']] || '').toString() : '',
+                                    acknowledgedAt: (headerMap['วัน-เวลารับทราบ'] !== -1) ? parseThaiDateTimeToTS(row[headerMap['วัน-เวลารับทราบ']]) : null,
                                     user: (row[headerMap['ผู้บันทึก']] || '').toString() || (currentUserFullName || currentUser.email), 
                                     counted: !!importedBrokenDate
                             } });
@@ -1940,7 +1955,8 @@ window.generateSelectedReport = async function () {
                     <div class="doc-line"><b>หนังสือ มท.</b> ${r.docMinistry || '-'}</div>
                     <div><b>หนังสือ กฟภ.</b> ${r.docPEA || '-'}</div>
                     <div><b>สถานะซ่อม:</b> ${(r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : '-'}</div>
-                    <div><b>รับทราบโดย Engineer:</b> ${r.acknowledgedBy || '-'} ${r.acknowledgedAt ? '(' + formatThaiDateTime(r.acknowledgedAt) + ')' : ''}</div>
+                    <div><b>Engineer:</b> ${r.acknowledgedBy || '-'}</div>
+                    <div><b>วันเวลารับทราบ:</b> ${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>
                 </td>
                 <td class="center">
                     <div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${r.brokenUser || '-'}<div class="user-sub">(${r.brokenUserPos || ''} ${r.brokenUserDept || ''})</div></div>
