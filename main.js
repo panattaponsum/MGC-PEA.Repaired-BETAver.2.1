@@ -1483,6 +1483,12 @@ await batch.commit(); window.updateDeviceSummary(); window.updateDeviceStatusOve
 
 window.showSummary = function() { document.getElementById('topologyPage').classList.add('hidden'); document.getElementById('summaryPage').classList.remove('hidden'); window.updateDeviceSummary(); };
 window.showTopology = function() { document.getElementById('summaryPage').classList.add('hidden'); document.getElementById('topologyPage').classList.remove('hidden'); if (typeof imageMapResize === 'function') { imageMapResize(); } window.updateDeviceStatusOverlays(currentSiteKey); };
+function scheduleOverlayRefresh(siteKey = currentSiteKey, useCache = false) {
+    setTimeout(() => {
+        if (typeof imageMapResize === 'function') imageMapResize();
+        window.updateDeviceStatusOverlays(siteKey, useCache);
+    }, 100);
+}
 function switchSite(siteKey) { 
     const siteData = sites[siteKey]; if (!siteData) return; currentSiteKey = siteKey; 
     document.getElementById('locationTitle').textContent = `🔎 ${siteData.name}`; 
@@ -1502,7 +1508,9 @@ function switchSite(siteKey) {
     }
     
     if (typeof imageMapResize === 'function') { imageMapResize(); } 
-    setupRealtimeListener(siteKey); window.updateDeviceStatusOverlays(currentSiteKey); 
+    setupRealtimeListener(siteKey); 
+    window.updateDeviceStatusOverlays(currentSiteKey); 
+    scheduleOverlayRefresh(currentSiteKey, true);
     toggleWriteAccess(currentUser !== null);
 }
 
@@ -1580,6 +1588,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     await createLog("AUTH_LOGIN", `เข้าสู่ระบบ (Role: ${currentUserRole})`);
                     sessionStorage.setItem(sessionLogKey, "true");
                 }
+                scheduleOverlayRefresh(currentSiteKey);
                 startAutoLogoutTimer();
             } catch (e) {
                 console.error("Error fetching user role:", e);
