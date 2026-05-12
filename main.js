@@ -733,12 +733,18 @@ window.loadHistory = async function() {
                         <div class="text-lg font-bold text-slate-800"><span class="tag ${statusClass}">${statusText}</span>${subTag}</div>
                         <div class="text-base text-gray-500 font-medium">ครั้งที่ ${recordSequence}</div>
                     </div>
-                    <div class="flex gap-4 text-sm mt-1">
-                        <div><span class="text-red-600">ผู้แจ้งเสีย:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
-                        <div><span class="text-green-600">ผู้แจ้งซ่อมแซม:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-1">
+                        <div class="space-y-1">
+                            <div><span class="text-red-600">ชื่อ-สกุล ผู้แจ้งเหตุ :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
+                            <div><span class="text-green-600">ชื่อ-สกุล ผู้แจ้งซ่อมแซม :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
+                            <div><span class="text-amber-600">ชื่อ-สกุล ผู้รับทราบ :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.acknowledgedBy || '-')}</span></div>
                         </div>
-                    <div class="text-sm mt-1"><span class="text-amber-600">Engineer รับทราบ:</span> <span class="font-semibold text-slate-700">${escapeHtml(r.acknowledgedBy || '-')}</span>${r.acknowledgedAt ? `<div class="text-xs text-slate-500">${formatThaiDateTime(r.acknowledgedAt)}</div>` : ''}</div>
-                    <div class="flex gap-2 mt-2">${((r.status === 'down' || r.status === 'abnormal') && !r.fixedDate && !r.acknowledgedAt && canAcknowledgeIssue(currentSiteKey)) ? `<button class="btn btn-ghost text-amber-700 hover:bg-amber-50 py-1" onclick="acknowledgeRecord('${r.ts}')">🛠️ รับทราบ</button>` : ''}</div>
+                        <div class="space-y-1 md:text-right text-slate-500">
+                            <div>${r.brokenDate ? formatThaiDateTime(r.brokenDate) : '-'}</div>
+                            <div>${r.fixedDate ? formatThaiDateTime(r.fixedDate) : '-'}</div>
+                            <div>${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
@@ -747,7 +753,7 @@ window.loadHistory = async function() {
                 <div>ราคาซ่อมแซม : <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
                 <div>หนังสือ มท : <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
                 <div>หนังสือ กฟภ. : <span class="font-semibold">${escapeHtml(r.docPEA || '-')}</span></div>
-                <div class="col-span-2 text-red-600">ระยะเวลา: ${duration}</div>
+                <div class="col-span-2 text-red-600">ระยะเวลาที่เกิดเหตุ: ${duration}</div>
             </div>
             <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
             <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข :</b> ${escapeHtml(r.solution || '-')}</div>
@@ -755,11 +761,12 @@ window.loadHistory = async function() {
             ${filesHtml}
             
             <div class="mt-3 flex justify-end space-x-2">
+                ${((r.status === 'down' || r.status === 'abnormal') && !r.fixedDate && !r.acknowledgedAt && canAcknowledgeIssue(currentSiteKey)) ? `<button class="btn btn-ghost text-amber-700 hover:bg-amber-50 py-1" onclick="acknowledgeRecord('${r.ts}')">🛠️ รับทราบ</button>` : ''}
                 ${currentUserRole !== 'viewer' ? `
-                    <button class="btn btn-ghost text-blue-600 hover:bg-blue-50 py-1" onclick="generateWordCoverLetter('${currentDevice}', '${r.ts}')">📝 สร้างใบแจ้งชำรุด (Word)</button>
+                    <button class="btn btn-ghost text-blue-600 hover:bg-blue-50 py-1" onclick="generateWordCoverLetter('${currentDevice}', '${r.ts}')">📝 สร้างใบแจ้งชำรุด</button>
                 ` : ''}
-                <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไข</button>
-                <button class="btn btn-ghost text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบ</button>
+                <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไขข้อมูล</button>
+                <button class="btn btn-ghost text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบข้อมูล</button>
             </div>
         `;
         container.appendChild(div);
@@ -1035,7 +1042,7 @@ window.loadUsers = async function() {
                 </div>
 
                 <div id="sites-container-${safeId}" style="display: ${['editor','engineer'].includes(role) ? 'block' : 'none'};" class="mt-2 p-2 bg-slate-100 border border-slate-200 rounded-lg">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-2 block">✅ สิทธิ์จัดการไซต์ (เฉพาะ Editor)</label>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-2 block">✅ สิทธิ์จัดการไซต์ </label>
                     <div class="flex flex-wrap gap-3">${sitesHtml}</div>
                 </div>
 
@@ -1168,7 +1175,7 @@ window.updateDeviceSummary = async function() {
 };
 
 
-// ประกาศตัวแปร Global ไว้ด้านบนของไฟล์
+
 window.chart1 = null;
 window.chart2 = null;
 
@@ -1260,12 +1267,8 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
     const mapContainer = document.getElementById(`map-${siteKey}`); 
     if (!mapContainer) return;
     
-    // ลบ Overlay เก่าออก
     mapContainer.querySelectorAll('.device-overlay').forEach(el => el.remove());
-
-    // --- เพิ่มเงื่อนไขนี้: ถ้าเป็น Viewer ให้หยุดการทำงาน (ไม่วาด Overlay) ---
     if (currentUserRole === 'viewer') return; 
-    // ------------------------------------------------------------------
     
     if (!useCache) {
         const docsSnap = await getAllDevicesDocs(siteKey); 
@@ -1407,11 +1410,11 @@ window.importData = function(event) {
                                         'วันที่เกิดเหตุ': headers.indexOf('วันที่เกิดเหตุ') !== -1 ? headers.indexOf('วันที่เกิดเหตุ') : headers.indexOf('วันที่ชำรุด'), 
                                         'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'), 'สถานะ': headers.indexOf('สถานะ'), 'คำอธิบาย': headers.indexOf('คำอธิบาย'),'ลิงก์รูปชำรุด': headers.indexOf('ลิงก์รูปชำรุด'), 'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'),'ลิงก์รูปแก้ไข': headers.indexOf('ลิงก์รูปแก้ไข'), 
                                         'เลขที่ใบสั่ง': headers.indexOf('เลขที่ใบสั่ง'), 'ราคาซ่อม': headers.indexOf('ราคาซ่อม'), 
-                                        'หนังสือ มท.': headers.indexOf('หนังสือ มท.'), 'หนังสือ กฟภ.': headers.indexOf('หนังสือ กฟภ.'),
-                                        'ผู้แจ้งชำรุด': headers.indexOf('ผู้แจ้งชำรุด') !== -1 ? headers.indexOf('ผู้แจ้งชำรุด') : headers.indexOf('ผู้บันทึก'),
+                                        'หนังสือ มท': headers.indexOf('หนังสือ มท'), 'หนังสือ กฟภ.': headers.indexOf('หนังสือ กฟภ.'),
+                                        'ชื่อ-สกุล ผู้แจ้งเหตุ': headers.indexOf('ชื่อ-สกุล ผู้แจ้งเหตุ') !== -1 ? headers.indexOf('ชื่อ-สกุล ผู้แจ้งเหตุ') : headers.indexOf('ผู้บันทึก'),
                                         'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
-                                        'ผู้แจ้งซ่อมเสร็จ': headers.indexOf('ผู้แจ้งซ่อมเสร็จ'), 'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
-                                        'ผู้รับทราบ(Engineer)': headers.indexOf('ผู้รับทราบ(Engineer)'), 'วัน-เวลารับทราบ': headers.indexOf('วัน-เวลารับทราบ') };
+                                        'ชื่อ-สกุล ผู้แจ้งซ่อมแซม': headers.indexOf('ชื่อ-สกุล ผู้แจ้งซ่อมแซม'), 'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
+                                        'ชื่อ-สกุล ผู้รับทราบ': headers.indexOf('ผู้รับทราบ'), 'วันที่-เวลา': headers.indexOf('วันที่-เวลา') };
                     
                     if (headerMap['ชื่ออุปกรณ์'] !== -1 && headerMap['วันที่เกิดเหตุ'] !== -1) {
                         for (let i = 1; i < recordRawData.length; i++) {
@@ -1429,20 +1432,20 @@ window.importData = function(event) {
                            recordsToImport.push({ deviceName, record: {
                                     ts: timestampToSave, customId: customId,brokenDate: importedBrokenDate || '', 
                                     fixedDate: importedFixedDate || null,  status: finalStatus, 
-                                    description: (row[headerMap['คำอธิบาย']] || '').toString() || 'นำเข้าจาก Excel', 
+                                    description: (row[headerMap['รายละเอียดปัญหา']] || '').toString() || 'นำเข้าจาก Excel', 
                                     brokenFileUrl: row[headerMap['ลิงก์รูปชำรุด']] || null,
                                     solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
                                     fixedFileUrl: row[headerMap['ลิงก์รูปแก้ไข']] || null, 
                                     orderNumber: (headerMap['เลขที่ใบสั่ง'] !== -1) ? (row[headerMap['เลขที่ใบสั่ง']] || '').toString() : '', 
                                     repairCost: (headerMap['ราคาซ่อม'] !== -1) ? (row[headerMap['ราคาซ่อม']] || '').toString() : '',
-                                    docMinistry: (headerMap['หนังสือ มท.'] !== -1) ? (row[headerMap['หนังสือ มท.']] || '').toString() : '',
+                                    docMinistry: (headerMap['หนังสือ มท'] !== -1) ? (row[headerMap['หนังสือ มท']] || '').toString() : '',
                                     docPEA: (headerMap['หนังสือ กฟภ.'] !== -1) ? (row[headerMap['หนังสือ กฟภ.']] || '').toString() : '',
-                                    brokenUser: (headerMap['ผู้แจ้งชำรุด'] !== -1) ? (row[headerMap['ผู้แจ้งชำรุด']] || '').toString() : (currentUserFullName || currentUser.email), 
+                                    brokenUser: (headerMap['ชื่อ-สกุล ผู้แจ้งเหตุ'] !== -1) ? (row[headerMap['ชื่อ-สกุล ผู้แจ้งเหตุ']] || '').toString() : (currentUserFullName || currentUser.email), 
                                     brokenUserPos: (headerMap['ตำแหน่ง'] !== -1) ? (row[headerMap['ตำแหน่ง']] || '').toString() : '',
                                     brokenUserDept: (headerMap['สังกัด'] !== -1) ? (row[headerMap['สังกัด']] || '').toString() : '',
-                                    fixedUser: (headerMap['ผู้แจ้งซ่อมเสร็จ'] !== -1) ? (row[headerMap['ผู้แจ้งซ่อมเสร็จ']] || '').toString() : '',
-                                    acknowledgedBy: (headerMap['ผู้รับทราบ(Engineer)'] !== -1) ? (row[headerMap['ผู้รับทราบ(Engineer)']] || '').toString() : '',
-                                    acknowledgedAt: (headerMap['วัน-เวลารับทราบ'] !== -1) ? parseThaiDateTimeToTS(row[headerMap['วัน-เวลารับทราบ']]) : null,
+                                    fixedUser: (headerMap['ชื่อ-สกุล ผู้แจ้งซ่อมแซม'] !== -1) ? (row[headerMap['ชื่อ-สกุล ผู้แจ้งซ่อมแซม']] || '').toString() : '',
+                                    acknowledgedBy: (headerMap['ชื่อ-สกุล ผู้รับทราบ'] !== -1) ? (row[headerMap['ชื่อ-สกุล ผู้รับทราบ']] || '').toString() : '',
+                                    acknowledgedAt: (headerMap['วันที่-เวลารับทราบ'] !== -1) ? parseThaiDateTimeToTS(row[headerMap['วันที่-เวลารับทราบ']]) : null,
                                     user: (row[headerMap['ผู้บันทึก']] || '').toString() || (currentUserFullName || currentUser.email), 
                                     counted: !!importedBrokenDate
                             } });
@@ -1462,9 +1465,9 @@ window.exportAllDataExcel = async function() {
 
   const recordsData = [[
         'Timestamp', 'เลข ID อ้างอิง', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 
-        'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'คำอธิบาย', 'ลิงก์รูปชำรุด', 
-        'วิธีแก้ไข', 'ลิงก์รูปแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท.', 'หนังสือ กฟภ.', 
-        'ผู้แจ้งชำรุด', 'ตำแหน่ง', 'สังกัด', 'ผู้รับทราบ(Engineer)', 'วัน-เวลารับทราบ', 'สถานะซ่อม', 'ผู้แจ้งซ่อมเสร็จ', 'ตำแหน่ง', 'สังกัด'
+        'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'รายละเอียดปัญหา', 'ลิงก์รูปชำรุด', 
+        'วิธีแก้ไข', 'ลิงก์รูปแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท', 'หนังสือ กฟภ.', 
+        'ชื่อ-สกุล ผู้แจ้งเหตุ', 'ตำแหน่ง', 'สังกัด', 'ชื่อ-สกุล ผู้รับทราบ', 'วันที่-เวลารับทราบ', 'สถานะซ่อม', 'ชื่อ-สกุล ผู้แจ้งซ่อมแซม', 'ตำแหน่ง', 'สังกัด'
     ]];
     const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
@@ -1499,7 +1502,7 @@ window.exportAllDataExcel = async function() {
         });
     }
 
-    const logData = [['วัน-เวลา', 'ผู้ใช้งาน', 'การกระทำ', 'รายละเอียด', 'ไซต์']];
+    const logData = [['วันที่-เวลา', 'ชื่อ-สกุล ผู้ใช้งาน', 'การกระทำ', 'รายละเอียด', 'ไซต์']];
     try {
         const logSnap = await db.collection("activity_logs").where("siteKey", "==", currentSiteKey).orderBy("timestamp", "desc").limit(1000).get();
         logSnap.forEach(doc => { const d = doc.data(); logData.push([ d.timestamp ? formatThaiDateTime(d.timestamp.toMillis()) : '-', d.userEmail || '-', d.action || '-', d.details || '-', d.siteKey || '-' ]); });
@@ -1624,7 +1627,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
 
                 document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email;
-                document.getElementById('userRoleDisplay').textContent = currentUserRole; // แสดงสถานะบนหน้าจอ
+                document.getElementById('userRoleDisplay').textContent = currentUserRole; 
 
                 const sessionLogKey = `logged_in_${user.uid}`;
                 if (!sessionStorage.getItem(sessionLogKey)) {
@@ -1650,7 +1653,7 @@ document.addEventListener("DOMContentLoaded", function() {
             currentUserFullName = '';
             currentUserPhone = '';
             
-            document.body.classList.remove('viewer-mode'); // ล้างสถานะ
+            document.body.classList.remove('viewer-mode'); 
             document.getElementById('userInfo').classList.add('hidden');
             document.getElementById('loginButton').classList.remove('hidden');
             
@@ -1719,7 +1722,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
     let assetText = assetInfo ? `\n📦 ข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'}` : '';
     
     
-    let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | เลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'} | เลขที่หนังสือ มท.: ${baseRec.docMinistry || '-'}`;
+    let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | เลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'} | เลขที่หนังสือ มท : ${baseRec.docMinistry || '-'}`;
     let costText = type === 'fixed' ? `\n💰 งบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
     
 
@@ -1751,11 +1754,11 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
 🛠️ อุปกรณ์: ${deviceName}${subDeviceText}${assetText}
 📝 รายละเอียดปัญหา: ${baseRec.description || '-'}
 📅 วันที่เกิดเหตุ: ${brokenDateStr}
-👤 ผู้แจ้งเสีย: ${brokenUserDisplay}
+👤 ชื่อ-สกุล ผู้แจ้งเหตุ: ${brokenUserDisplay}
 
 💡 วิธีแก้ไข: ${baseRec.solution || '-'}${docText}${costText}
 📅 วันที่ซ่อมแซม: ${fixedDateStr}
-👤 ผู้แจ้งซ่อมแซม: ${fixedUserDisplay}
+👤 ชื่อ-สกุล ผู้แจ้งซ่อมแซม: ${fixedUserDisplay}
 ------------------------------------------`;
 
     try { 
@@ -1952,15 +1955,15 @@ window.generateSelectedReport = async function () {
                 <td class="details">
                     <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</div>
                     <div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber || '-'}</div>
-                    <div class="doc-line"><b>หนังสือ มท.</b> ${r.docMinistry || '-'}</div>
+                    <div class="doc-line"><b>หนังสือ มท</b> ${r.docMinistry || '-'}</div>
                     <div><b>หนังสือ กฟภ.</b> ${r.docPEA || '-'}</div>
                     <div><b>สถานะซ่อม:</b> ${(r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : '-'}</div>
-                    <div><b>Engineer:</b> ${r.acknowledgedBy || '-'}</div>
-                    <div><b>วันเวลารับทราบ:</b> ${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>
+                    <div><b>ชื่อ-สกุล ผู้รับทราบ :</b> ${r.acknowledgedBy || '-'}</div>
+                    <div><b>วันที่-เวลา :</b> ${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>
                 </td>
                 <td class="center">
-                    <div class="user-block"><b>ชื่อผู้แจ้งเสีย</b><br>${r.brokenUser || '-'}<div class="user-sub">(${r.brokenUserPos || ''} ${r.brokenUserDept || ''})</div></div>
-                    <div class="user-block"><b>ชื่อผู้แจ้งซ่อมแซม</b><br>${r.fixedUser || '-'}<div class="user-sub">(${r.fixedUserPos || ''} ${r.fixedUserDept || ''})</div></div>
+                    <div class="user-block"><b>ชื่อ-สกุล ผู้แจ้งเหตุ</b><br>${r.brokenUser || '-'}<div class="user-sub">(${r.brokenUserPos || ''} ${r.brokenUserDept || ''})</div></div>
+                    <div class="user-block"><b>ชื่อ-สกุล ผู้แจ้งซ่อมแซม</b><br>${r.fixedUser || '-'}<div class="user-sub">(${r.fixedUserPos || ''} ${r.fixedUserDept || ''})</div></div>
                 </td>
             </tr>`;
         });
