@@ -45,7 +45,12 @@ function formatThaiDate(dateVal) {
 
 function formatThaiDateTime(ts) {
     if (!ts) return '-';
-    const d = new Date(Number(ts));
+    let d;
+    if (typeof ts === 'number' || (typeof ts === 'string' && ts.trim() !== '' && !isNaN(ts))) {
+        d = new Date(Number(ts));
+    } else {
+        d = new Date(ts);
+    }
     if (isNaN(d.getTime())) return '-';
     const day = String(d.getDate()).padStart(2, '0');
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -571,7 +576,7 @@ window.saveData = async function() {
     if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong')) { 
         baseRec.subDevice = document.getElementById('othersDeviceSelect').value; 
     }
-
+   if (!isEditing) baseRec.brokenAt = Date.now();
    if (editIndex >= 0) {
         const originalRecord = records[editIndex];
         baseRec.customId = originalRecord.customId;
@@ -584,19 +589,22 @@ window.saveData = async function() {
         baseRec.brokenUserPos = originalRecord.brokenUserPos || '';
         baseRec.brokenUserDept = originalRecord.brokenUserDept || '';
 
-        if (statusVal === 'ok' && !originalRecord.fixedDate) {
+       if (statusVal === 'ok' && !originalRecord.fixedDate) {
             baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept;
+            baseRec.fixedAt = Date.now();
         } else {
             baseRec.fixedUser = originalRecord.fixedUser || (originalRecord.fixedDate ? originalRecord.user : null);
             baseRec.fixedUserPos = originalRecord.fixedUserPos || ''; baseRec.fixedUserDept = originalRecord.fixedUserDept || '';
+            baseRec.fixedAt = originalRecord.fixedAt || null;
         }
         baseRec.user = currentUserStr;
+        baseRec.brokenAt = originalRecord.brokenAt || originalRecord.ts || Date.now();
 
     } else {
        baseRec.customId = await generateAutoId(currentSiteKey);
        baseRec.brokenUser = currentUserStr; baseRec.brokenUserPos = currentUserPosition; baseRec.brokenUserDept = currentUserDept; baseRec.user = currentUserStr;
 
-        if (statusVal === 'ok') { baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept; }
+        if (statusVal === 'ok') { baseRec.fixedUser = currentUserStr; baseRec.fixedUserPos = currentUserPosition; baseRec.fixedUserDept = currentUserDept; baseRec.fixedAt = Date.now(); }
     }
     try {
         if (brokenFile) { baseRec.brokenFileUrl = await uploadFileToStorage(brokenFile, 'broken'); baseRec.brokenFileType = brokenFile.type; }
@@ -735,14 +743,14 @@ window.loadHistory = async function() {
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-1">
                         <div class="space-y-1">
-                            <div><span class="text-red-600">ชื่อ-สกุล ผู้แจ้งเหตุ :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
-                            <div><span class="text-green-600">ชื่อ-สกุล ผู้แจ้งซ่อมแซม :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
-                            <div><span class="text-amber-600">ชื่อ-สกุล ผู้รับทราบ :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.acknowledgedBy || '-')}</span></div>
+                            <div><span class="text-red-600">ชื่อผู้แจ้งเหตุ :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.brokenUser ? r.brokenUser : (r.user || 'ไม่ระบุ'))}</span></div>
+                            <div><span class="text-green-600">ชื่อผู้แจ้งซ่อมแซม :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.fixedUser ? r.fixedUser : '-')}</span></div>
+                            <div><span class="text-amber-600">ชื่อผู้รับทราบ :</span> <span class="font-semibold text-slate-700">${escapeHtml(r.acknowledgedBy || '-')}</span></div>
                         </div>
                         <div class="space-y-1 md:text-right text-slate-500">
-                            <div>${r.brokenDate ? formatThaiDateTime(r.brokenDate) : '-'}</div>
-                            <div>${r.fixedDate ? formatThaiDateTime(r.fixedDate) : '-'}</div>
-                            <div>${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>
+                            <div>${(r.brokenAt || r.ts) ? formatThaiDateTime(r.brokenAt || r.ts) : '-'}</div>
+                            <div>${(r.fixedAt || (r.fixedDate ? r.ts : null)) ? formatThaiDateTime(r.fixedAt || r.ts) : '-'}</div>
+                            <div>${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>␊
                         </div>
                     </div>
                 </div>
@@ -1957,7 +1965,7 @@ window.generateSelectedReport = async function () {
                     <div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber || '-'}</div>
                     <div class="doc-line"><b>หนังสือ มท</b> ${r.docMinistry || '-'}</div>
                     <div><b>หนังสือ กฟภ.</b> ${r.docPEA || '-'}</div>
-                    <div><b>สถานะซ่อม:</b> ${(r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : '-'}</div>
+                    <div><b>สถานะซ่อม:</b> ${r.fixedDate ? 'ซ่อมแล้ว' : ((r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : 'รอดำเนินการ')}</div>
                     <div><b>ชื่อ-สกุล ผู้รับทราบ :</b> ${r.acknowledgedBy || '-'}</div>
                     <div><b>วันที่-เวลา :</b> ${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>
                 </td>
