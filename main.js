@@ -750,7 +750,7 @@ window.loadHistory = async function() {
                         <div class="space-y-1 md:text-right text-slate-500">
                             <div>${(r.brokenAt || r.ts) ? formatThaiDateTime(r.brokenAt || r.ts) : '-'}</div>
                             <div>${(r.fixedAt || (r.fixedDate ? r.ts : null)) ? formatThaiDateTime(r.fixedAt || r.ts) : '-'}</div>
-                            <div>${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>␊
+                            <div>${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>
                         </div>
                     </div>
                 </div>
