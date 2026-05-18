@@ -446,14 +446,24 @@ window.toggleBetongView = function(viewType) {
     window.updateDeviceStatusOverlays('betong');
 };
 
+function parseDeviceSelection(deviceName) {
+    if (typeof deviceName !== 'string') return { mainDevice: deviceName, subDevice: null };
+    const parts = deviceName.split(' / ').map(p => p.trim()).filter(Boolean);
+    if (parts[0] === 'other' && parts.length > 1) {
+        return { mainDevice: 'other', subDevice: parts.slice(1).join(' / ') };
+    }
+    return { mainDevice: deviceName.trim(), subDevice: null };
+}
+
 window.openForm = async function(deviceName) {
-    currentDevice = deviceName; editIndex = -1;
+    const { mainDevice, subDevice } = parseDeviceSelection(deviceName);
+    currentDevice = mainDevice; editIndex = -1;
     document.getElementById('formTitle').textContent = `บันทึกข้อมูล: ${deviceName}`;
     const othersContainer = document.getElementById('othersDeviceContainer');
     const othersSelect = document.getElementById('othersDeviceSelect');
     
   
-    if (deviceName === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
+    if (mainDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
         othersContainer.classList.remove('hidden'); 
         let optionsHtml = '';
         
@@ -487,6 +497,10 @@ window.openForm = async function(deviceName) {
                 <option value="The Other">The Other</option>`;
         }
         othersSelect.innerHTML = optionsHtml;
+        if (subDevice) {
+            const hasOption = Array.from(othersSelect.options).some(opt => opt.value === subDevice);
+            othersSelect.value = hasOption ? subDevice : othersSelect.options[0]?.value;
+        }
     } else { 
         othersContainer.classList.add('hidden'); 
     }
