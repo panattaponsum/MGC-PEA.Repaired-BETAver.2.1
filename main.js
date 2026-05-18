@@ -147,36 +147,6 @@ function canMarkFixed(siteKey = currentSiteKey) {
     return currentUserRole === 'admin' || hasEngineerSiteAccess(siteKey);
 }
 
-function isOtherParentDevice(siteKey, deviceName) {
-    return deviceName === 'other' && ['phrao', 'betong', 'ko-phaluay'].includes(siteKey);
-}
-
-function getOtherSubDevices(siteKey) {
-    if (siteKey === 'phrao') return ['Local panel', 'UPS', 'Cooling fan'];
-    if (siteKey === 'ko-phaluay') return ['Fire Alarm', 'Air Condition', 'Lighting'];
-    if (siteKey === 'betong') return ['VSAT', 'Internet Link', 'Gateway Peripheral'];
-    return [];
-}
-
-function buildSummaryDeviceList(siteKey) {
-    const siteData = sites[siteKey];
-    if (!siteData) return [];
-    const list = [];
-    siteData.devices.forEach(dev => {
-        if (isOtherParentDevice(siteKey, dev)) {
-            const subs = getOtherSubDevices(siteKey);
-            if (subs.length > 0) {
-                subs.forEach(sub => list.push({ key: `${dev}::${sub}`, device: dev, display: `other (${sub})`, subDevice: sub }));
-            } else {
-                list.push({ key: dev, device: dev, display: dev, subDevice: null });
-            }
-        } else {
-            list.push({ key: dev, device: dev, display: dev, subDevice: null });
-        }
-    });
-    return list;
-}
-
 const sites = {
 "ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "REC No.1 Panal", "REC No.2 Panal", "RCS No.1 Panal", "RCS No.2 Panal", "COV 1", "COV 2", "BCP", "PCS", "Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5", "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10", "Diesel Generator 1", "Diesel Generator 2", "Diesel Generator Master", "Gateway 1", "Gateway 2", "Firewall 1", "Firewall 2", "Firewall 3","GPS", "other" ] },
 "mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: [ "FireWall 1","Web Server", "PCS-9893 (Web Server B)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "(PCS-9895 Cyber Security Manager)", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892 (Cyber Security Gateway)", "PCS-9893 (Web Server A)", "PCS-9799 (Gateway A)", "PCS-9799 (Gateway B)", "PCS-9617 (MGC 1)", "PCS-9617 (MGC 2)", "PCS-9651 (ATS)", "PCS-9794 (Protocol Converter A)", "PCS-9617 (Diesel Generator Controller)", "PCS-9794 (Protocol Converter B)", "PCS-9726 (Transformer Protection)", "PCS-9567C (BESS Controller)", "PCS-9567 (PCS 1)", "PCS-9567 (PCS 2)", "PCS-9567 (PCS 3)", "PCS-9567 (PCS 4)", "PCS-9567 (PCS 5)", "PCS-9567 (PCS 6)", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15", "other" ] },
@@ -187,15 +157,20 @@ const sites = {
     "Recloser-31", "Recloser-32", "Recloser-33", "Recloser-34", "Recloser-35", "other" ] },
 "phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1 (LC1000-1) ", "ETH Switch 2 (LC1000-1) ", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 1 (LC1000-2) ", "ETH Switch 2 (LC1000-2) ", "PCS-1", "PCS-2", "PCS-3","Sync. Relay (RCS)", "RCS","ETH Switch (RCS) ", "Recloser","ETH Switch (Recloser)", "BATT-1", "BATT-2", "other" ] }
 };
+const OTHER_SUBDEVICES = {
+    phrao: ["Office","Current Transformer","Voltage Transformer","Step-up Transformer 5 MVA","Service Transformer 160 KVA","Disconnecting Switch","Fire Alarm","PQ Meter","Power Meter","The Other"],
+    betong: ["Office","SVG","Fire Alarm System","The Other"],
+    "ko-phaluay": ["Office","Cellular","33 SwitchGear Panel","Meter","Weather","CCTV","PQM","The Other"]
+};
 const sitePrefixes = {
-    "ko-phaluay": "KPL",
-    "betong": "BTG",
-    "mae-sariang": "MSR",
-    "phrao": "PHR"
+    "ko-phaluay": "kpl",
+    "betong": "btg",
+    "mae-sariang": "msr",
+    "phrao": "pra"
 };
 
 async function generateAutoId(siteKey) {
-    const prefixes = { "ko-phaluay": "KPL", "betong": "BTG", "mae-sariang": "MSR", "phrao": "PHR" };
+    const prefixes = { "ko-phaluay": "kpl", "betong": "btg", "mae-sariang": "msr", "phrao": "pra" };
     const prefix = prefixes[siteKey] || "gen";
     
     
@@ -572,13 +547,6 @@ window.saveData = async function() {
     if (editIndex < 0 && statusVal === 'ok') { Swal.fire({ title: "ไม่อนุญาต", text: "การเพิ่มรายการใหม่ต้องเป็นสถานะ ชำรุด หรือ ผิดปกติ", icon: "warning" }); return false; }
     if (currentUserRole === 'engineer' && !isEditing && (statusVal === 'down' || statusVal === 'abnormal')) { Swal.fire('ไม่อนุญาต', 'Engineer ไม่สามารถเพิ่มรายการแจ้งชำรุดใหม่ได้', 'warning'); return false; }
     if (statusVal === 'ok' && !canMarkFixed(currentSiteKey)) { Swal.fire('ไม่อนุญาต', 'เฉพาะ Engineer หรือ Admin เท่านั้นที่แจ้งซ่อมแล้วเสร็จได้', 'warning'); return false; }
-    if (isEditing && statusVal === 'ok') {
-        const originalRecord = records[editIndex];
-        if (originalRecord && (originalRecord.status === 'down' || originalRecord.status === 'abnormal') && !originalRecord.acknowledgedAt) {
-            Swal.fire('ยังไม่ได้รับทราบ', 'ต้องกดปุ่ม "รับทราบ" ก่อน จึงจะเปลี่ยนสถานะเป็นใช้งานได้', 'warning');
-            return false;
-        }
-    }
     
     const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999); 
     if (brokenDate && isValidDate(brokenDate) && new Date(brokenDate) > todayEnd) { Swal.fire("วันที่ผิดพลาด", "วันที่เกิดเหตุเป็นอนาคตไม่ได้", "warning"); return false; }
@@ -599,6 +567,13 @@ window.saveData = async function() {
     Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
     let records = await getDeviceRecords(currentSiteKey, currentDevice); 
+    if (statusVal === 'ok' && isEditing) {
+        const originalRecord = records[editIndex];
+        if (!originalRecord?.acknowledgedAt) {
+            Swal.fire('ยังไม่ได้รับทราบ', 'ต้องกด "รับทราบ" ก่อน จึงจะเปลี่ยนสถานะเป็นใช้งานได้', 'warning');
+            return false;
+        }
+    }
     let baseRec = {
         status: statusVal, brokenDate, fixedDate,
         description: document.getElementById('description').value,
@@ -610,7 +585,7 @@ window.saveData = async function() {
         ts: Date.now(), counted: true 
     };
 
-    if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong')) { 
+    if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
         baseRec.subDevice = document.getElementById('othersDeviceSelect').value; 
     }
    if (!isEditing) baseRec.brokenAt = Date.now();
@@ -729,6 +704,8 @@ window.loadHistory = async function() {
         container.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่พบประวัติการบันทึกสำหรับอุปกรณ์นี้</p>'; 
         return; 
     }
+
+    // ตรวจสอบสิทธิ์การแก้ไข (viewer จะไม่มีสิทธิ์)
     const canEdit = canAcknowledgeIssue(currentSiteKey) ? '' : 'disabled title="ไม่มีสิทธิ์จัดการข้อมูล" style="opacity: 0.5; cursor: not-allowed;"';
     
     records.forEach((r, index) => {
@@ -938,7 +915,7 @@ window.editRecord = async function(ts) {
     document.getElementById('orderNumber').value = r.orderNumber || ''; document.getElementById('repairCost').value = r.repairCost || ''; 
     document.getElementById('docMinistry').value = r.docMinistry || ''; document.getElementById('docPEA').value = r.docPEA || ''; 
 
-    if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong') && r.subDevice) {
+    if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay') && r.subDevice) {
         document.getElementById('othersDeviceSelect').value = r.subDevice;
     }
 
@@ -1158,31 +1135,41 @@ window.updateDeviceSummary = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData) return;
     const search = document.getElementById('searchInput').value.toLowerCase(); const sortOrder = document.getElementById('sortOrder').value; const filterStatus = document.getElementById('filterStatus').value; const from = document.getElementById('fromDate').value; const to = document.getElementById('toDate').value;
     const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' }); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
-    const summaryDevices = buildSummaryDeviceList(currentSiteKey);
-    let summary = []; let totalDevices = summaryDevices.length; let currentBrokenCount = 0; let currentNormalCount = 0;
+    let summary = []; let totalDevices = 0; let currentBrokenCount = 0; let currentNormalCount = 0;
 
-    for (const item of summaryDevices) {
-        const docData = dataMap[item.device]; const allRecords = (docData?.records || []).slice(); if (allRecords.length > 0) allRecords.sort((a, b) => a.ts - b.ts);
-        const records = item.subDevice ? allRecords.filter(r => (r.subDevice || '') === item.subDevice) : allRecords;
-        let downCount = records.filter(r => r.status === 'down' || r.status === 'abnormal').length;
-        const isUnresolved = (r) => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null');
-        const remainingIssues = records.filter(isUnresolved); const remainingCount = remainingIssues.length;
-        let latestBrokenDuration = '-', latestBrokenDays = 0, earliestBrokenDate = '-', latestFixedDate = '-'; let currentStatusDisplay = 'ปกติ'; let isDown = false, isAbnormal = false;
-        remainingIssues.forEach(r => { if(r.status === 'down') isDown = true; if(r.status === 'abnormal') isAbnormal = true; });
-        if (isDown && isAbnormal) currentStatusDisplay = 'ชำรุด / ผิดปกติ'; else if (isDown) currentStatusDisplay = 'ชำรุด'; else if (isAbnormal) currentStatusDisplay = 'ผิดปกติ'; else currentStatusDisplay = 'ปกติ';
-        const latestRecord = records.length > 0 ? records[records.length - 1] : null;
+    for (const dev of siteData.devices) {
+        const docData = dataMap[dev]; const records = docData?.records || []; if (records.length > 0) records.sort((a, b) => a.ts - b.ts);
+        const subDevices = (dev === 'other' && OTHER_SUBDEVICES[currentSiteKey]) ? OTHER_SUBDEVICES[currentSiteKey] : [null];
 
-        if (remainingCount > 0) { currentBrokenCount++; const oldestIssue = remainingIssues[0]; earliestBrokenDate = oldestIssue.brokenDate || '-'; latestBrokenDays = calculateDaysDifference(earliestBrokenDate, null); latestBrokenDuration = formatDuration(latestBrokenDays); }
-        else { currentNormalCount++; if (latestRecord && latestRecord.brokenDate) { earliestBrokenDate = latestRecord.brokenDate; latestFixedDate = latestRecord.fixedDate || '-'; if (latestRecord.fixedDate && latestRecord.fixedDate !== '-') { latestBrokenDays = calculateDaysDifference(latestRecord.brokenDate, latestRecord.fixedDate); latestBrokenDuration = formatDuration(latestBrokenDays); } } }
+        for (const subDeviceName of subDevices) {
+            totalDevices++;
+            const scopedRecords = subDeviceName ? records.filter(r => (r.subDevice || 'The Other') === subDeviceName) : records;
+            let downCount = scopedRecords.filter(r => r.counted).length;
+            const isUnresolved = (r) => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null');
+            const remainingIssues = scopedRecords.filter(isUnresolved); const remainingCount = remainingIssues.length;
+            let latestBrokenDuration = '-', latestBrokenDays = 0, earliestBrokenDate = '-', latestFixedDate = '-'; let currentStatusDisplay = 'ปกติ'; let isDown = false, isAbnormal = false;
+            remainingIssues.forEach(r => { if(r.status === 'down') isDown = true; if(r.status === 'abnormal') isAbnormal = true; });
+            if (isDown && isAbnormal) currentStatusDisplay = 'ชำรุด / ผิดปกติ'; else if (isDown) currentStatusDisplay = 'ชำรุด'; else if (isAbnormal) currentStatusDisplay = 'ผิดปกติ'; else currentStatusDisplay = 'ปกติ';
+            const latestRecord = scopedRecords.length > 0 ? scopedRecords[scopedRecords.length - 1] : null;
 
-        let dateFilterSource = earliestBrokenDate !== '-' ? earliestBrokenDate : (latestRecord?.brokenDate);
-        if (dateFilterSource && dateFilterSource !== '-') { const latestTs = new Date(dateFilterSource).getTime(); if (from && latestTs < new Date(from).getTime()) continue; if (to && latestTs >= new Date(to).getTime() + 86400000) continue; }
-        if (filterStatus === 'currently-down' && !isDown) continue; if (filterStatus === 'currently-abnormal' && !isAbnormal) continue;
-        if (filterStatus === 'down' && (records.length === 0 || remainingCount > 0)) continue;
-        if (filterStatus === 'clean' && records.length > 0) continue;
-        if (search && !item.display.toLowerCase().includes(search)) continue;
+            if (remainingCount > 0) {
+                currentBrokenCount++; const oldestIssue = remainingIssues[0]; earliestBrokenDate = oldestIssue.brokenDate || '-'; latestFixedDate = '-'; latestBrokenDays = calculateDaysDifference(earliestBrokenDate, null); latestBrokenDuration = formatDuration(latestBrokenDays);
+            } else {
+                currentNormalCount++;
+                if (latestRecord && latestRecord.brokenDate) { earliestBrokenDate = latestRecord.brokenDate; latestFixedDate = latestRecord.fixedDate || '-'; if (latestRecord.fixedDate && latestRecord.fixedDate !== '-') { latestBrokenDays = calculateDaysDifference(latestRecord.brokenDate, latestRecord.fixedDate); latestBrokenDuration = formatDuration(latestBrokenDays); } }
+            }
 
-        summary.push({ device: item.display, count: downCount, remaining: remainingCount, brokenDate: earliestBrokenDate, fixedDate: latestFixedDate, status: currentStatusDisplay, latestDescription: latestRecord?.description || '-', latestSolution: latestRecord?.solution || '-', latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays });
+            let dateFilterSource = earliestBrokenDate !== '-' ? earliestBrokenDate : (latestRecord?.brokenDate);
+            if (dateFilterSource && dateFilterSource !== '-') { const latestTs = new Date(dateFilterSource).getTime(); if (from && latestTs < new Date(from).getTime()) continue; if (to && latestTs >= new Date(to).getTime() + 86400000) continue; }
+            if (filterStatus === 'currently-down' && !isDown) continue; if (filterStatus === 'currently-abnormal' && !isAbnormal) continue;
+            if (filterStatus === 'down' && (scopedRecords.length === 0 || remainingCount > 0)) continue;
+            if (filterStatus === 'clean' && scopedRecords.length > 0) continue;
+
+            const deviceLabel = subDeviceName ? `${dev} / ${subDeviceName}` : dev;
+            if (search && !deviceLabel.toLowerCase().includes(search)) continue;
+
+            summary.push({ device: deviceLabel, count: downCount, remaining: remainingCount, brokenDate: earliestBrokenDate, fixedDate: latestFixedDate, status: currentStatusDisplay, latestDescription: latestRecord?.description || '-', latestSolution: latestRecord?.solution || '-', latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays });
+        }
     }
 
     if (document.getElementById('cardTotal')) document.getElementById('cardTotal').innerText = totalDevices; if (document.getElementById('cardNormal')) document.getElementById('cardNormal').innerText = currentNormalCount; if (document.getElementById('cardBroken')) document.getElementById('cardBroken').innerText = currentBrokenCount;
@@ -1198,9 +1185,10 @@ window.updateDeviceSummary = async function() {
             else if (s.status === 'ชำรุด') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-red-50 text-red-600 border border-red-100"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>ชำรุด</span>`;
             else if (s.status === 'ผิดปกติ') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-100"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>ผิดปกติ</span>`;
             else statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-100"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>ปกติ</span>`;
-            const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group';
+
+            const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer'; 
             tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${escapeHtml(s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
-            tbody.appendChild(tr);
+            tr.onclick = () => window.openForm(s.device); tbody.appendChild(tr);
         });
     }
 
@@ -1209,8 +1197,12 @@ window.updateDeviceSummary = async function() {
         pagination.className = "flex items-center justify-between px-6 py-4 bg-slate-50/50";
         pagination.innerHTML = `<div class="text-xs font-bold text-slate-400 uppercase tracking-widest">Showing ${startIndex + 1} to ${Math.min(startIndex + pageSize, summary.length)} of ${summary.length} entries</div><div class="flex items-center gap-1"><button onclick="changePage(-1)" ${currentPage===1?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button><div class="px-4 py-1 bg-white rounded-lg shadow-sm border border-slate-200 text-sm font-bold text-blue-600">${currentPage} / ${totalPages}</div><button onclick="changePage(1)" ${currentPage===totalPages?'disabled':''} class="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 transition-all"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button></div>`;
     }
-    if (typeof renderDashboardCharts === 'function') renderDashboardCharts(currentSiteKey);
+    if (typeof renderDashboardCharts === 'function') {
+       renderDashboardCharts(currentSiteKey);
+    }
 };
+
+
 
 window.chart1 = null;
 window.chart2 = null;
@@ -1220,11 +1212,16 @@ window.renderDashboardCharts = async function(siteKey) {
     const docs = await getAllDevicesDocs(siteKey);
     let allDevicesData = [];
     
+    // ปรับปรุงฟังก์ชันแปลงวันที่ให้รองรับทั้ง / และ -
     const parseDate = (dateStr) => {
         if (!dateStr || dateStr === '-' || dateStr.toString().trim() === '') return null;
         
+        // แยกส่วนวันที่โดยรองรับทั้ง / หรือ -
         const parts = dateStr.toString().split(/[\/-]/); 
         if (parts.length !== 3) return null;
+        
+        // สร้าง Date โดยพยายามเดาตำแหน่ง: 
+        // ถ้า parts[0] มี 4 หลัก (ปี) -> YYYY-MM-DD
         const year = parseInt(parts[0]);
         const month = parseInt(parts[1]);
         const day = parseInt(parts[2]);
@@ -1258,10 +1255,10 @@ window.renderDashboardCharts = async function(siteKey) {
         });
     });
 
-  
+    // ถ้าไม่มีข้อมูลเลย ให้แสดงรายการว่างไว้ป้องกันกราฟพัง
     if (allDevicesData.length === 0) allDevicesData = [{ name: 'ไม่มีข้อมูล', broken: 0, fixed: 0, avgDays: 0 }];
 
-   
+    // --- วาดกราฟ 1 ---
     const top10 = allDevicesData.sort((a, b) => (b.broken + b.fixed) - (a.broken + a.fixed)).slice(0, 10);
     if (window.chart1) window.chart1.destroy();
     window.chart1 = new Chart(document.getElementById('topDefectsStackedChart'), {
@@ -1276,7 +1273,7 @@ window.renderDashboardCharts = async function(siteKey) {
         options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
     });
 
-   
+    // --- วาดกราฟ 2 ---
     const top10MTTR = allDevicesData.sort((a, b) => b.avgDays - a.avgDays).slice(0, 10);
     if (window.chart2) window.chart2.destroy();
     window.chart2 = new Chart(document.getElementById('avgRepairTimeChart'), {
@@ -1558,7 +1555,7 @@ await batch.commit(); window.updateDeviceSummary(); window.updateDeviceStatusOve
 }
 }
 
-window.showSummary = function() { document.getElementById('topologyPage').classList.add('hidden'); document.getElementById('summaryPage').classList.remove('hidden'); window.updateDeviceSummary(); };
+window.showSummary = function() { document.getElementById('topologyPage').classList.add('hidden'); document.getElementById('summaryPage').classList.remove('hidden'); window.updateDeviceSummary(); scheduleOverlayRefresh(currentSiteKey, true); };
 window.showTopology = function() { document.getElementById('summaryPage').classList.add('hidden'); document.getElementById('topologyPage').classList.remove('hidden'); if (typeof imageMapResize === 'function') { imageMapResize(); } window.updateDeviceStatusOverlays(currentSiteKey); };
 function scheduleOverlayRefresh(siteKey = currentSiteKey, useCache = false) {
     setTimeout(() => {
@@ -1587,8 +1584,7 @@ function switchSite(siteKey) {
     if (typeof imageMapResize === 'function') { imageMapResize(); } 
     setupRealtimeListener(siteKey); 
     window.updateDeviceStatusOverlays(currentSiteKey); 
-    scheduleOverlayRefresh(currentSiteKey, true);
-    setTimeout(() => window.updateDeviceStatusOverlays(currentSiteKey, true), 400);
+    scheduleOverlayRefresh(currentSiteKey, false);
     toggleWriteAccess(currentUser !== null);
 }
 
@@ -1774,7 +1770,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
         fixedUserDisplay = "-";
     } else {
        
-        brokenUserDisplay = `${baseRec.user} ${userDetail}`; 
+        brokenUserDisplay = `${baseRec.user} ${userDetail}`;
        
         fixedUserDisplay = `${baseRec.user} ${userDetail}`;
     }
