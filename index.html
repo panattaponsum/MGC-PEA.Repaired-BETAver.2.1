@@ -479,7 +479,7 @@
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
-                    <div><p class="text-xs text-slate-500 font-bold uppercase mb-1">อุปกรณ์ทั้งหมดในระบบ</p><h3 class="text-3xl font-black text-slate-800" id="cardTotal">0</h3></div>
+                    <div><p class="text-xs text-slate-500 font-bold uppercase mb-1">จำนวนอุปกรณ์ทั้งหมดในระบบ</p><h3 class="text-3xl font-black text-slate-800" id="cardTotal">0</h3></div>
                     <div class="p-3 bg-slate-50 rounded-xl text-2xl border border-slate-100">📦</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
@@ -487,7 +487,7 @@
                     <div class="p-3 bg-emerald-50 rounded-xl text-2xl border border-emerald-100">✅</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
-                    <div><p class="text-xs text-slate-500 font-bold uppercase mb-1">พบปัญหาการใช้งาน</p><h3 class="text-3xl font-black text-red-600" id="cardBroken">0</h3></div>
+                    <div><p class="text-xs text-slate-500 font-bold uppercase mb-1">สถานะมีปัญหา</p><h3 class="text-3xl font-black text-red-600" id="cardBroken">0</h3></div>
                     <div class="p-3 bg-red-50 rounded-xl text-2xl border border-red-100">🚨</div>
                 </div>
             </div>
@@ -502,11 +502,11 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">เรียงลำดับ</label>
                         <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none cursor-pointer">
-                            <option value="desc">📉 มีปัญหา มากไปน้อย</option><option value="asc">📈 มีปัญหา น้อยไปมาก</option>
+                            <option value="desc">📉 มีปัญหา มาก⮕น้อย</option><option value="asc">📈 มีปัญหา น้อย⮕มาก</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">สถานะ</label>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">สถานะ (Status)</label>
                         <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none cursor-pointer">
                             <option value="all">ทั้งหมด</option>
                             <option value="currently-down">🚨 กำลังชำรุด</option>
@@ -531,8 +531,8 @@
                     <table class="w-full text-left border-collapse whitespace-nowrap" id="summaryTable">
                         <thead>
                             <tr class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider font-bold border-b border-slate-200">
-                                <th class="px-4 py-3">🛠️ อุปกรณ์</th>
-                                <th class="px-4 py-3 text-center">ปัญหา (รวม/ค้าง)</th>
+                                <th class="px-4 py-3">🛠️ รายชื่ออุปกรณ์</th>
+                                <th class="px-4 py-3 text-center">จำนวนปัญหา (รวม/ค้าง)</th>
                                 <th class="px-4 py-3 text-center">วันที่เกิดเหตุ</th>
                                 <th class="px-4 py-3 text-center">วันที่ซ่อม</th>
                                 <th class="px-4 py-3 text-center">สถานะปัจจุบัน</th>
@@ -550,7 +550,7 @@
 
          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="text-sm font-bold text-slate-700 mb-4">สถานะการซ่อมแซม (Top 10 อุปกรณ์)</h3>
+        <h3 class="text-sm font-bold text-slate-700 mb-4">สถานะการซ่อมแซม (Top 10 อุปกรณ์ชำรุด)</h3>
         <canvas id="topDefectsStackedChart"></canvas>
     </div>
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
@@ -587,11 +587,11 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div id="othersDeviceContainer" class="hidden sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">ระบุอุปกรณ์ย่อย (Others)</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">ระบุอุปกรณ์ย่อย (Other)</label>
                             <select id="othersDeviceSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"></select>
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อผู้บันทึก</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อ-สกุล ผู้บันทึก</label>
                             <input type="text" id="userName" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 text-slate-500 cursor-not-allowed" readOnly/>
                         </div>
                         <div>
@@ -632,15 +632,15 @@
                         </div>
                         <div></div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">หนังสือ มท.</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">เลขที่หนังสือ มท</label>
                             <input type="text" id="docMinistry" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"/>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">หนังสือ กฟภ.</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">เลขที่หนังสือ กฟภ.</label>
                             <input type="text" id="docPEA" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"/>
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">วิธีแก้ไข</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">รายละเอียดวิธีแก้ไข</label>
                             <textarea id="solution" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
                         </div>
                         <div class="sm:col-span-2">
@@ -661,7 +661,7 @@
                         <h3 class="text-lg font-bold text-slate-800">📜 ประวัติการเกิดเหตุ</h3>
                         <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer bg-slate-50 px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 transition-colors">
                             <input type="checkbox" id="filterBrokenHistory" onchange="loadHistory()" class="rounded text-brand-600 focus:ring-brand-500">
-                            <span class="font-medium">ดูเฉพาะรายการที่ค้างซ่อม</span>
+                            <span class="font-medium">ดูเฉพาะรายการที่คงค้าง</span>
                         </label>
                     </div>
                     <div id="historySection" class="flex-1 overflow-y-auto pr-2 space-y-4 pb-4">
