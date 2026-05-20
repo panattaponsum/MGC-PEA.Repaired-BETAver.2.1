@@ -212,7 +212,7 @@
                 
                 <button onclick="showActivityLogs()" class="px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">📜 Logs</button>
                 <button onclick="window.printReport()" class="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors">🖨️ PDF</button>
-                <button onclick="exportAllDataExcel()" class="px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-100 rounded-lg hover:bg-green-100 transition-colors">📤 Excel</button>
+                <button onclick="exportAllDataExcel()" class="px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-100 rounded-lg hover:bg-green-100 transition-colors">📤 Export</button>
                 
                 <label id="importButtonLabel" class="hidden px-3 py-1.5 text-sm font-medium text-amber-600 bg-amber-50 border border-amber-100 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer">
                     📥 Import<input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
@@ -229,44 +229,57 @@
             <div id="map-ko-phaluay" class="map-container relative map-wrapper">
                 <img class="device-img bg-white" src="phaluay.jpg" loading="lazy" decoding="async" usemap="#netmap" width="1736" height="920" alt="Topology" />
                 <map name="netmap">
-                    <area alt="HMI Server 1" coords="203,375,282,444" shape="rect" href="" onclick="openForm('HMI Server 1'); return false;">
-                    <area alt="HMI Server 2" coords="370,368,452,442" shape="rect" href="" onclick="openForm('HMI Server 2'); return false;">
-                    <area alt="Operation Station" coords="536,368,616,442" shape="rect" href="" onclick="openForm('Operation Station'); return false;">
-                    <area alt="Printer" coords="692,370,774,432" shape="rect" href="" onclick="openForm('Printer'); return false;">
-                    <area alt="Time Server" coords="57,449,136,487" shape="rect" href="" onclick="openForm('Time Server'); return false;">
-                    <area alt="MGC" coords="54,578,133,620" shape="rect" href="" onclick="openForm('MGC'); return false;">
-                    <area alt="ETH Switch 1" coords="155,531,585,606" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
-                    <area alt="ETH Switch 2" coords="1083,531,1513,601" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;">
-                    <area alt="ETH Switch 3" coords="1184,647,1282,691" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
-                    <area alt="ETH Switch 4" coords="1292,647,1377,689" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
-                    <area alt="REC No.1 Panal" coords="1181,721,1333,828" shape="rect" href="" onclick="openForm('REC No.1 Panal'); return false;">
-                    <area alt="REC No.2 Panal" coords="1183,839,1333,944" shape="rect" href="" onclick="openForm('REC No.2 Panal'); return false;">
-                    <area alt="RCS No.1 Panal" coords="1344,721,1494,830" shape="rect" href="" onclick="openForm('RCS No.1 Panal'); return false;">
-                    <area alt="RCS No.2 Panal" coords="1341,839,1494,943" shape="rect" href="" onclick="openForm('RCS No.2 Panal'); return false;">
-                    <area alt="COV 1" coords="620,527,779,590" shape="rect" href="" onclick="openForm('COV 1'); return false;">
-                    <area alt="COV 2" coords="823,533,986,585" shape="rect" href="" onclick="openForm('COV 2'); return false;">
-                    <area alt="BCP" coords="287,723,375,757" shape="rect" href="" onclick="openForm('BCP'); return false;">
-                    <area alt="PCS" coords="395,723,487,755" shape="rect" href="" onclick="openForm('PCS'); return false;">
-                    <area alt="Inverter 1" coords="872,728,964,757" shape="rect" href="" onclick="openForm('Inverter 1'); return false;">
-                    <area alt="Inverter 2" coords="872,768,961,795" shape="rect" href="" onclick="openForm('Inverter 2'); return false;">
-                    <area alt="Inverter 3" coords="872,804,966,830" shape="rect" href="" onclick="openForm('Inverter 3'); return false;">
-                    <area alt="Inverter 4" coords="873,842,959,869" shape="rect" href="" onclick="openForm('Inverter 4'); return false;">
-                    <area alt="Inverter 5" coords="868,882,961,906" shape="rect" href="" onclick="openForm('Inverter 5'); return false;">
-                    <area alt="Inverter 6" coords="1013,731,1097,755" shape="rect" href="" onclick="openForm('Inverter 6'); return false;">
-                    <area alt="Inverter 7" coords="1008,768,1093,790" shape="rect" href="" onclick="openForm('Inverter 7'); return false;">
-                    <area alt="Inverter 8" coords="1011,804,1093,829" shape="rect" href="" onclick="openForm('Inverter 8'); return false;">
-                    <area alt="Inverter 9" coords="1006,841,1097,866" shape="rect" href="" onclick="openForm('Inverter 9'); return false;">
-                    <area alt="Inverter 10" coords="1008,882,1093,903" shape="rect" href="" onclick="openForm('Inverter 10'); return false;">
-                    <area alt="Diesel Generator 1" coords="1571,724,1670,835" shape="rect" href="" onclick="openForm('Diesel Generator 1'); return false;">
-                    <area alt="Diesel Generator 2" coords="1682,726,1781,835" shape="rect" href="" onclick="openForm('Diesel Generator 2'); return false;">
-                    <area alt="Diesel Generator Master" coords="1568,842,1781,943" shape="rect" href="" onclick="openForm('Diesel Generator Master'); return false;">
-                    <area alt="Gateway 1" coords="1098,429,1181,466" shape="rect" href="" onclick="openForm('Gateway 1'); return false;">
-                    <area alt="Gateway 2" coords="1213,429,1295,468" shape="rect" href="" onclick="openForm('Gateway 2'); return false;">
-                    <area alt="Firewall 1" coords="1088,384,1181,417" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
-                    <area alt="Firewall 2" coords="1216,384,1292,411" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
-                    <area alt="Firewall 3" coords="1429,416,1513,446" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
-                    <area alt="GPS" coords="49,325,142,425" shape="rect" href="" onclick="openForm('GPS'); return false;">
+                  <area alt="HMI Server 1" coords="180,311,259,375" shape="rect" href="" onclick="openForm('HMI Server 1'); return false;">
+<area alt="HMI Server 2" coords="331,311,407,377" shape="rect" href="" onclick="openForm('HMI Server 2'); return false;">
+<area alt="Operation Station" coords="482,311,558,375" shape="rect" href="" onclick="openForm('Operation Station'); return false;">
+<area alt="Printer" coords="619,309,706,382" shape="rect" href="" onclick="openForm('Printer'); return false;">
+<area alt="Time Server" coords="46,382,129,419" shape="rect" href="" onclick="openForm('Time Server'); return false;">
+<area alt="MGC" coords="46,492,126,526" shape="rect" href="" onclick="openForm('MGC'); return false;">
+<area alt="ETH Switch 1" coords="131,450,536,516" shape="rect" href="" onclick="openForm('ETH Switch 1'); return false;">
+<area alt="ETH Switch 2" coords="972,448,1379,514" shape="rect" href="" onclick="openForm('ETH Switch 2'); return false;">
+<area alt="ETH Switch 3" coords="1079,553,1160,584" shape="rect" href="" onclick="openForm('ETH Switch 3'); return false;">
+<area alt="ETH Switch 4" coords="1167,555,1243,584" shape="rect" href="" onclick="openForm('ETH Switch 4'); return false;">
+<area alt="ETH Switch 5 (REC No.1)" coords="1097,624,1182,660" shape="rect" href="" onclick="openForm('ETH Switch 5 (REC No.1)'); return false;">
+<area alt="REC No.1" coords="1097,670,1182,704" shape="rect" href="" onclick="openForm('REC No.1'); return false;">
+<area alt="ETH Switch 6 (REC No.2)" coords="1097,724,1179,753" shape="rect" href="" onclick="openForm('ETH Switch 6 (REC No.2)'); return false;">
+<area alt="REC No.2" coords="1097,767,1179,797" shape="rect" href="" onclick="openForm('REC No.2'); return false;">
+<area alt="ETH Switch 7 (RCS No.1)" coords="1240,628,1323,658" shape="rect" href="" onclick="openForm('RCS No.1 Panal'); return false;">
+<area alt="RCS No.1" coords="1240,672,1321,699" shape="rect" href="" onclick="openForm('RCS No.1'); return false;">
+<area alt="ETH Switch 8 (RCS No.2)" coords="1240,724,1323,755" shape="rect" href="" onclick="openForm('ETH Switch 8 (RCS No.2)'); return false;">
+<area alt="RCS No.2" coords="1240,772,1318,797" shape="rect" href="" onclick="openForm('RCS No.2'); return false;">
+<area alt="COV 1" coords="555,450,706,501" shape="rect" href="" onclick="openForm('COV 1'); return false;">
+<area alt="COV 2" coords="892,501,738,455" shape="rect" href="" onclick="openForm('COV 2'); return false;">
+<area alt="BCP" coords="251,587,343,672" shape="rect" href="" onclick="openForm('BCP'); return false;">
+<area alt="PCS" coords="355,587,446,672" shape="rect" href="" onclick="openForm('PCS'); return false;">
+<area alt="Inverter 1" coords="784,616,872,645" shape="rect" href="" onclick="openForm('Inverter 1'); return false;">
+<area alt="Inverter 2" coords="784,650,872,677" shape="rect" href="" onclick="openForm('Inverter 2'); return false;">
+<area alt="Inverter 3" coords="787,682,872,706" shape="rect" href="" onclick="openForm('Inverter 3'); return false;">
+<area alt="Inverter 4" coords="787,711,870,736" shape="rect" href="" onclick="openForm('Inverter 4'); return false;">
+<area alt="Inverter 5" coords="792,746,867,772" shape="rect" href="" onclick="openForm('Inverter 5'); return false;">
+<area alt="Inverter 6" coords="906,614,989,645" shape="rect" href="" onclick="openForm('Inverter 6'); return false;">
+<area alt="Inverter 7" coords="909,648,987,677" shape="rect" href="" onclick="openForm('Inverter 7'); return false;">
+<area alt="Inverter 8" coords="909,682,987,706" shape="rect" href="" onclick="openForm('Inverter 8'); return false;">
+<area alt="Inverter 9" coords="909,714,989,738" shape="rect" href="" onclick="openForm('Inverter 9'); return false;">
+<area alt="Inverter 10" coords="911,746,987,770" shape="rect" href="" onclick="openForm('Inverter 10'); return false;">
+<area alt="Diesel Generator 1" coords="1416,616,1509,709" shape="rect" href="" onclick="openForm('Diesel Generator 1'); return false;">
+<area alt="Diesel Generator 2" coords="1523,614,1609,709" shape="rect" href="" onclick="openForm('Diesel Generator 2'); return false;">
+<area alt="Diesel Generator Master" coords="1418,731,1611,804" shape="rect" href="" onclick="openForm('Diesel Generator Master'); return false;">
+<area alt="Gateway 1" coords="984,360,1067,399" shape="rect" href="" onclick="openForm('Gateway 1'); return false;">
+<area alt="Gateway 2" coords="1094,360,1172,401" shape="rect" href="" onclick="openForm('Gateway 2'); return false;">
+<area alt="Firewall 1" coords="984,323,1067,353" shape="rect" href="" onclick="openForm('Firewall 1'); return false;">
+<area alt="Firewall 2" coords="1094,321,1170,353" shape="rect" href="" onclick="openForm('Firewall 2'); return false;">
+<area alt="Firewall 3" coords="1289,348,1365,375" shape="rect" href="" onclick="openForm('Firewall 3'); return false;">
+<area alt="GPS" coords="46,277,129,362" shape="rect" href="" onclick="openForm('GPS'); return false;">
+<area alt="Weather" coords="923,807,838,777" shape="rect" href="" onclick="openForm('Weather'); return false;">
+<area alt="Jump Server" coords="1292,382,1365,406" shape="rect" href="" onclick="openForm('Jump Server'); return false;">
+<area alt="CCTV" coords="1448,345,1555,392" shape="rect" href="" onclick="openForm('CCTV'); return false;">
+<area alt="4G Router 1" coords="984,284,1067,318" shape="rect" href="" onclick="openForm('4G Router 1'); return false;">
+<area alt="4G Router 2" coords="1092,282,1175,318" shape="rect" href="" onclick="openForm('4G Router 2'); return false;">
+<area alt="4G Router 3" coords="1289,299,1362,338" shape="rect" href="" onclick="openForm('4G Router 3'); return false;">
+<area alt="33 Switchgear Panal" coords="134,586,237,776" shape="rect" href="" onclick="openForm('33 Switchgear Panal'); return false;">
+<area alt="Meter" coords="464,586,597,743" shape="rect" href="" onclick="openForm('Meter'); return false;">
                     <area shape="default" alt="other" href="#" onclick="openForm('other'); return false;">
+                    
                 </map>
                 <div id="overlay-container-ko-phaluay" class="absolute inset-0 pointer-events-none z-10"></div>
             </div>
