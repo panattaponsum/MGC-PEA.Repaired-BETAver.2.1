@@ -217,10 +217,10 @@ const OTHER_SUBDEVICES = {
 "PQM",
 "Generator",
 "PV",
-"BATTERY",
+"Battery",
 "โทรศัพท์",
 "วิทยุสื่อสาร",
-"BATTERY",
+"Breaker",
 "The Other"]
 };
 const sitePrefixes = {
@@ -557,10 +557,10 @@ window.openForm = async function(deviceName) {
                 <option value="PQM">PQM</option>
                 <option value="Generator">Generator</option>
                 <option value="PV">PV</option>
-                <option value="BATTERY">BATTERY</option>
+                <option value="Battery">Battery</option>
                 <option value="โทรศัพท์">โทรศัพท์</option>
                 <option value="วิทยุสื่อสาร">วิทยุสื่อสาร</option>
-                <option value="BATTERY">BATTERY</option>
+                <option value="Breaker">Breaker</option>
                 <option value="The Other">The Other</option>`;
         }
         othersSelect.innerHTML = optionsHtml;
