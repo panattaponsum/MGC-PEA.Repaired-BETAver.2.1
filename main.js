@@ -148,7 +148,55 @@ function canMarkFixed(siteKey = currentSiteKey) {
 }
 
 const sites = {
-"ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1", "HMI Server 2", "Operation Station", "Printer", "Time Server", "MGC", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "REC No.1 Panal", "REC No.2 Panal", "RCS No.1 Panal", "RCS No.2 Panal", "COV 1", "COV 2", "BCP", "PCS", "Inverter 1", "Inverter 2", "Inverter 3", "Inverter 4", "Inverter 5", "Inverter 6", "Inverter 7", "Inverter 8", "Inverter 9", "Inverter 10", "Diesel Generator 1", "Diesel Generator 2", "Diesel Generator Master", "Gateway 1", "Gateway 2", "Firewall 1", "Firewall 2", "Firewall 3","GPS", "other" ] },
+"ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1",
+"HMI Server 2",
+"Operation Station",
+"Printer",
+"Time Server",
+"MGC",
+"ETH Switch 1",
+"ETH Switch 2",
+"ETH Switch 3",
+"ETH Switch 4",
+"ETH Switch 5 (REC No.1)",
+"REC No.1",
+"ETH Switch 6 (REC No.2)",
+"REC No.2",
+"ETH Switch 7 (RCS No.1)",
+"RCS No.1",
+"ETH Switch 8 (RCS No.2)",
+"RCS No.2",
+"COV 1",
+"COV 2",
+"BCP",
+"PCS",
+"Inverter 1",
+"Inverter 2",
+"Inverter 3",
+"Inverter 4",
+"Inverter 5",
+"Inverter 6",
+"Inverter 7",
+"Inverter 8",
+"Inverter 9",
+"Inverter 10",
+"Diesel Generator 1",
+"Diesel Generator 2",
+"Diesel Generator Master",
+"Gateway 1",
+"Gateway 2",
+"Firewall 1",
+"Firewall 2",
+"Firewall 3",
+"GPS",
+"Weather",
+"Jump Server",
+"CCTV",
+"4G Router 1",
+"4G Router 2",
+"4G Router 3",
+"33 Switchgear Panal",
+"Meter", "other" ] },
 "mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: [ "FireWall 1","Web Server", "PCS-9893 (Web Server B)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "(PCS-9895 Cyber Security Manager)", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892 (Cyber Security Gateway)", "PCS-9893 (Web Server A)", "PCS-9799 (Gateway A)", "PCS-9799 (Gateway B)", "PCS-9617 (MGC 1)", "PCS-9617 (MGC 2)", "PCS-9651 (ATS)", "PCS-9794 (Protocol Converter A)", "PCS-9617 (Diesel Generator Controller)", "PCS-9794 (Protocol Converter B)", "PCS-9726 (Transformer Protection)", "PCS-9567C (BESS Controller)", "PCS-9567 (PCS 1)", "PCS-9567 (PCS 2)", "PCS-9567 (PCS 3)", "PCS-9567 (PCS 4)", "PCS-9567 (PCS 5)", "PCS-9567 (PCS 6)", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15", "other" ] },
 "betong": { name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา", devices: [ "Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 5", "ETH Switch 6", "ETH Switch 7", "eMC-N-Controller INC1", "eMC-N-Controller BAAN3", "eMC-N-Controller BAAN4", "RTU SVG", "RTU Substation", "eMC-G-Controller", "ADMS-1", "ADMS-2", "Firewall 1", "Firewall 2", "Firewall 3", "RTU Gateway -1", "RTU Gateway -2", "Security HMI", "GPS", "emC-Scada","emC-P-Controller","emC-E-Controller", "emC-LUC-1-Controller", "emC-LUC-2-Controller", "emC-LUC-3-Controller", "emC-LUC-4-Controller", "Battery System", "Diesel Generator System","Inverter System",
     "Recloser-1", "Recloser-2", "Recloser-3", "Recloser-4", "Recloser-5", "Recloser-6", "Recloser-7", "Recloser-8", "Recloser-9", "Recloser-10",
@@ -160,17 +208,30 @@ const sites = {
 const OTHER_SUBDEVICES = {
     phrao: ["Office","Current Transformer","Voltage Transformer","Step-up Transformer 5 MVA","Service Transformer 160 KVA","Disconnecting Switch","Fire Alarm","PQ Meter","Power Meter","The Other"],
     betong: ["Office","SVG","Fire Alarm System","The Other"],
-    "ko-phaluay": ["Office","Cellular","33 SwitchGear Panel","Meter","Weather","CCTV","PQM","The Other"]
+    "ko-phaluay": ["ระบบควบคุมอาคาร",
+"เครื่องปรับอากาศ",
+"Cable",
+"Riser Pole",
+"ไฟฉุกเฉิน",
+"ถังดับเพลิง",
+"PQM",
+"Generator",
+"PV",
+"BATTERY",
+"โทรศัพท์",
+"วิทยุสื่อสาร",
+"BATTERY",
+"The Other"]
 };
 const sitePrefixes = {
-    "ko-phaluay": "kpl",
-    "betong": "btg",
-    "mae-sariang": "msr",
-    "phrao": "pra"
+    "ko-phaluay": "KPL",
+    "betong": "BTG",
+    "mae-sariang": "MSR",
+    "phrao": "PRA"
 };
 
 async function generateAutoId(siteKey) {
-    const prefixes = { "ko-phaluay": "kpl", "betong": "btg", "mae-sariang": "msr", "phrao": "pra" };
+    const prefixes = { "ko-phaluay": "KPL", "betong": "BTG", "mae-sariang": "MSR", "phrao": "PRA" };
     const prefix = prefixes[siteKey] || "gen";
     
     
@@ -487,13 +548,19 @@ window.openForm = async function(deviceName) {
                 <option value="The Other">The Other</option>`;
         } else if (currentSiteKey === 'ko-phaluay') {
             optionsHtml = `
-                <option value="Office">Office</option>
-                <option value="Cellular">Cellular</option>
-                <option value="33 SwitchGear Panel">33 SwitchGear Panel</option>
-                <option value="Meter">Meter</option>
-                <option value="Weather">Weather Station</option>
-                <option value="CCTV">CCTV</option>
+                <option value="ระบบควบคุมอาคาร">ระบบควบคุมอาคาร</option>
+                <option value="เครื่องปรับอากาศ">เครื่องปรับอากาศ</option>
+                <option value="Cable">Cable</option>
+                <option value="Riser Pole">Riser Pole</option>
+                <option value="ไฟฉุกเฉิน">ไฟฉุกเฉิน</option>
+                <option value="ถังดับเพลิง">ถังดับเพลิง</option>
                 <option value="PQM">PQM</option>
+                <option value="Generator">Generator</option>
+                <option value="PV">PV</option>
+                <option value="BATTERY">BATTERY</option>
+                <option value="โทรศัพท์">โทรศัพท์</option>
+                <option value="วิทยุสื่อสาร">วิทยุสื่อสาร</option>
+                <option value="BATTERY">BATTERY</option>
                 <option value="The Other">The Other</option>`;
         }
         othersSelect.innerHTML = optionsHtml;
