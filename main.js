@@ -212,6 +212,7 @@ const OTHER_SUBDEVICES = {
 "เครื่องปรับอากาศ",
 "Cable",
 "Riser Pole",
+"Recloser",
 "ไฟฉุกเฉิน",
 "ถังดับเพลิง",
 "PQM",
@@ -561,6 +562,7 @@ window.openForm = async function(deviceName) {
                 <option value="โทรศัพท์">โทรศัพท์</option>
                 <option value="วิทยุสื่อสาร">วิทยุสื่อสาร</option>
                 <option value="Breaker">Breaker</option>
+                <option value="Recloser">Recloser</option>
                 <option value="The Other">The Other</option>`;
         }
         othersSelect.innerHTML = optionsHtml;
