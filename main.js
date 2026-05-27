@@ -880,17 +880,24 @@ window.generateWordCoverLetter = async function(deviceName, ts) {
         Swal.fire({ title: 'กำลังสร้างเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
         let records = await getDeviceRecords(currentSiteKey, deviceName);
-        const r = records.find(rec => String(rec.ts) === String(ts));
+        const recordIndex = records.findIndex(rec => String(rec.ts) === String(ts));
+        const r = recordIndex >= 0 ? records[recordIndex] : null;
         
         if (!r) {
             Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลประวัติรายการนี้', 'error');
             return;
         }
+        if (!r.customId) {
+            const generatedId = await generateAutoId(currentSiteKey);
+            records[recordIndex].customId = generatedId;
+            await saveDeviceRecords(currentSiteKey, deviceName, records);
+            r.customId = generatedId;
+        }
        let templateUrl = "";
 if (currentSiteKey === "phrao") {
     templateUrl = "แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx";
 } else if (currentSiteKey === "ko-phaluay") {
-    templateUrl = "แบบฟอร์มแจ้งอุปกรณ์ชำรุด_เกาะพะลวย.docx";
+    templateUrl = "รายงานอุปกรณ์ชำรุดสถานีไฟฟ้าไมโครกริดเกาะพะลวย.docx";
 } else {
     templateUrl = "แบบฟอร์มแจ้งอุปกรณ์ชำรุด_ทั่วไป.docx";
 }
@@ -905,7 +912,8 @@ if (currentSiteKey === "phrao") {
             description: r.description || '-',
             userName: currentUserFullName || currentUser.email || 'ไม่ระบุ',
             userPosition: currentUserPosition || '-',
-            userPhone: currentUserPhone || '-'
+            userPhone: currentUserPhone || '-',
+            autoId: r.customId || '-'
         };
 
 const zip = new PizZip(arrayBuffer); 
