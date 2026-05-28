@@ -204,8 +204,9 @@
 
             <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                 <div class="flex bg-slate-100 p-1 rounded-lg">
-                    <button onclick="showTopology()" class="px-4 py-1.5 text-sm font-semibold rounded-md bg-white text-brand-600 shadow-sm">🗺️ แผนผัง (Topology)</button>
-                    <button onclick="showSummary()" class="px-4 py-1.5 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900">📊 ประวัติชำรุด</button>
+                    <button id="tab-topology" onclick="showTopology()" class="px-4 py-1.5 text-sm font-semibold rounded-md bg-white text-brand-600 shadow-sm">🗺️ แผนผัง (Topology)</button>
+                    <button id="tab-summary" onclick="showSummary()" class="px-4 py-1.5 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900">📊 ประวัติชำรุด</button>
+                    <button id="tab-registry" onclick="showAssetRegistry()" class="px-4 py-1.5 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900">🗂️ ทะเบียนทรัพย์สิน</button>
                 </div>
                 
                 <div class="h-6 w-px bg-slate-200 hidden sm:block mx-1"></div>
@@ -753,6 +754,57 @@
             <button class="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(true)">✅ เลือกทั้งหมด</button>
             <button class="px-4 py-2 text-sm font-bold text-slate-500 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(false)">🔳 เอาออกทั้งหมด</button>
             <button class="px-6 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-md" onclick="generateSelectedReport()">📑 สร้าง PDF</button>
+        </div>
+    </div>
+
+    <!-- ====== ASSET REGISTRY PAGE ====== -->
+    <div id="assetRegistryPage" class="hidden">
+        <!-- Header & Controls -->
+        <div class="bg-white rounded-xl card-shadow border border-slate-200 p-4 mb-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span class="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">🗂️</span>
+                        ทะเบียนทรัพย์สินทั้งหมด
+                        <span id="registrySiteName" class="text-sm font-medium text-slate-500"></span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">คลิกเลือกอุปกรณ์เพื่อจัดกลุ่ม · ข้อมูลบันทึกอัตโนมัติใน Firestore</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="openAddGroupModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors">
+                        ➕ เพิ่มกลุ่มใหม่
+                    </button>
+                    <button onclick="loadAssetRegistry()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                        🔄 รีเฟรช
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats Cards -->
+        <div id="registryStatsRow" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+
+        <!-- Loading -->
+        <div id="registryLoading" class="text-center py-16 text-slate-400">
+            <div class="inline-block animate-spin text-4xl mb-3">⚙️</div>
+            <p class="font-medium">กำลังโหลดข้อมูลทรัพย์สิน...</p>
+        </div>
+
+        <!-- Main Content: Groups + Ungrouped -->
+        <div id="registryContent" class="hidden space-y-4"></div>
+    </div>
+
+    <!-- Add/Rename Group Modal -->
+    <div id="groupModal" class="hidden fixed inset-0 z-[1010] flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeGroupModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10">
+            <h3 id="groupModalTitle" class="text-lg font-bold text-slate-800 mb-4">➕ เพิ่มกลุ่มใหม่</h3>
+            <input type="text" id="groupNameInput" placeholder="ชื่อกลุ่ม เช่น ระบบ SCADA, Network..." 
+                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none mb-4"/>
+            <div class="flex gap-2 justify-end">
+                <button onclick="closeGroupModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">ยกเลิก</button>
+                <button onclick="confirmGroupAction()" id="groupModalConfirm" class="px-5 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow">ยืนยัน</button>
+            </div>
         </div>
     </div>
 
