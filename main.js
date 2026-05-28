@@ -1755,82 +1755,95 @@ function getDeviceStats(devKey) {
     return { total, unresolved, status: d.currentStatus || 'ok', assetInfo: d.assetInfo || null };
 }
 
-function deviceCardHTML(devKey, isInGroup, groupId) {
+function deviceRowHTML(devKey, isInGroup, groupId) {
     const stats = getDeviceStats(devKey);
     const a = stats.assetInfo || {};
-    const statusColor = stats.status === 'down' ? 'bg-red-100 border-red-300 text-red-700' : stats.status === 'abnormal' ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700';
-    const statusDot = stats.status === 'down' ? '🔴' : stats.status === 'abnormal' ? '🟡' : '🟢';
+
+    const statusColor = stats.status === 'down'
+        ? 'bg-red-100 text-red-700 border-red-200'
+        : stats.status === 'abnormal'
+        ? 'bg-amber-100 text-amber-700 border-amber-200'
+        : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    const statusDot  = stats.status === 'down' ? '🔴' : stats.status === 'abnormal' ? '🟡' : '🟢';
     const statusLabel = stats.status === 'down' ? 'ชำรุด' : stats.status === 'abnormal' ? 'ผิดปกติ' : 'ปกติ';
 
     const warrantyBadge = a.warrantyEnd ? (() => {
         const ws = getWarrantyStatus(a.warrantyEnd);
-        return ws === 'ok' ? '<span class="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold border border-green-200">✅ ในประกัน</span>' :
-               ws === 'warn' ? '<span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold border border-amber-200">⚠️ ใกล้หมดประกัน</span>' :
-               '<span class="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-bold border border-red-200">❌ หมดประกัน</span>';
-    })() : '<span class="text-[9px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full font-bold border border-slate-200">— ไม่มีข้อมูลประกัน</span>';
+        return ws === 'ok'
+            ? '<span class="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold border border-green-200 whitespace-nowrap">✅ ในประกัน</span>'
+            : ws === 'warn'
+            ? '<span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold border border-amber-200 whitespace-nowrap">⚠️ ใกล้หมด</span>'
+            : '<span class="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-bold border border-red-200 whitespace-nowrap">❌ หมดประกัน</span>';
+    })() : '<span class="text-[9px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full border border-slate-200 whitespace-nowrap">— ไม่มีข้อมูล</span>';
 
-    // Asset info rows — show dash if empty
     const v = (val) => (val && String(val).trim()) ? escapeHtml(String(val)) : '<span class="text-slate-300">—</span>';
-    const priceFormatted = a.price ? Number(a.price).toLocaleString('th-TH') + ' บาท' : null;
+    const priceFormatted = a.price ? Number(a.price).toLocaleString('th-TH') + ' ฿' : null;
 
-    const assetRows = `
-        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2 pt-2 border-t border-slate-100">
-            <div class="text-slate-400 font-semibold">S/N</div>
-            <div class="text-slate-700 font-medium truncate" title="${escapeHtml(a.serial||'')}">${v(a.serial)}</div>
-            <div class="text-slate-400 font-semibold">Model</div>
-            <div class="text-slate-700 font-medium truncate" title="${escapeHtml(a.model||'')}">${v(a.model)}</div>
-            <div class="text-slate-400 font-semibold">PEA No.</div>
-            <div class="text-slate-700 font-medium truncate" title="${escapeHtml(a.peaNo||'')}">${v(a.peaNo)}</div>
-            <div class="text-slate-400 font-semibold">ผู้ผลิต</div>
-            <div class="text-slate-700 font-medium truncate" title="${escapeHtml(a.manufacturer||'')}">${v(a.manufacturer)}</div>
-            <div class="text-slate-400 font-semibold">ราคา</div>
-            <div class="text-slate-700 font-medium">${v(priceFormatted)}</div>
-        </div>`;
-
-    // Group selector dropdown
+    // Group selector — escape devKey for use in JS string safely via data attribute + inline handler
+    const safeDevKey = devKey.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeGroupId = (isInGroup && groupId) ? groupId.replace(/'/g,"\\'") : '';
     const groupOptions = registryGroups.map(g =>
         `<option value="${escapeHtml(g.id)}" ${(isInGroup && groupId === g.id) ? 'selected' : ''}>${escapeHtml(g.name)}</option>`
     ).join('');
     const moveSelect = registryGroups.length > 0 ? `
-        <select onchange="assignDeviceToGroup('${escapeHtml(devKey)}', this.value, '${isInGroup ? groupId : ''}')"
-            class="text-[10px] border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 cursor-pointer max-w-[130px] focus:ring-1 focus:ring-indigo-400 outline-none">
-            <option value="">— ย้ายกลุ่ม —</option>
+        <select onchange="assignDeviceToGroup('${safeDevKey}', this.value, '${safeGroupId}')"
+            class="text-[10px] border border-slate-200 rounded-lg px-1.5 py-1 bg-white text-slate-600 cursor-pointer w-full focus:ring-1 focus:ring-indigo-400 outline-none">
+            <option value="">— เลือกกลุ่ม —</option>
             ${groupOptions}
             ${isInGroup ? '<option value="__remove__">❌ นำออกจากกลุ่ม</option>' : ''}
-        </select>` : '';
+        </select>` : '<span class="text-[10px] text-slate-300">ยังไม่มีกลุ่ม</span>';
 
-    const borderClass = stats.status === 'down' ? 'border-red-300' : stats.status === 'abnormal' ? 'border-amber-300' : 'border-slate-200';
+    const rowBg = stats.status === 'down' ? 'bg-red-50/40' : stats.status === 'abnormal' ? 'bg-amber-50/40' : '';
 
-    return `
-    <div class="bg-white border ${borderClass} rounded-xl p-3 hover:shadow-md transition-all flex flex-col gap-1.5"
-         id="devcard-${CSS.escape(devKey)}">
+    return `<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors ${rowBg}">
+        <td class="px-3 py-2.5 text-sm font-semibold text-slate-800 whitespace-nowrap">${escapeHtml(devKey)}</td>
+        <td class="px-3 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor} whitespace-nowrap">${statusDot} ${statusLabel}</span></td>
+        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">${v(a.serial)}</td>
+        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">${v(a.model)}</td>
+        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">${v(a.peaNo)}</td>
+        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">${v(a.manufacturer)}</td>
+        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">${v(priceFormatted)}</td>
+        <td class="px-3 py-2.5">${warrantyBadge}</td>
+        <td class="px-3 py-2.5 text-center"><span class="text-xs font-bold text-amber-600">${stats.total}</span></td>
+        <td class="px-3 py-2.5 text-center"><span class="text-xs font-bold ${stats.unresolved > 0 ? 'text-red-600' : 'text-emerald-600'}">${stats.unresolved}</span></td>
+        <td class="px-3 py-2.5 min-w-[130px]">${moveSelect}</td>
+        <td class="px-3 py-2.5 text-center">
+            <button onclick="openForm('${safeDevKey}')"
+                class="text-[10px] font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-2 py-0.5 rounded-lg transition-colors whitespace-nowrap">
+                ดูประวัติ
+            </button>
+        </td>
+    </tr>`;
+}
 
-        <!-- Header: name + status badge -->
-        <div class="flex items-start justify-between gap-2">
-            <div class="font-bold text-slate-800 text-sm leading-tight truncate flex-1" title="${escapeHtml(devKey)}">${escapeHtml(devKey)}</div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusColor} shrink-0 whitespace-nowrap">${statusDot} ${statusLabel}</span>
-        </div>
+const TABLE_HEADER = `
+    <thead class="bg-slate-100 sticky top-0 z-10">
+        <tr class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">ชื่ออุปกรณ์</th>
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">สถานะ</th>
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">S/N</th>
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">Model</th>
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">PEA No.</th>
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">ผู้ผลิต</th>
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">ราคา</th>
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">ประกัน</th>
+            <th class="px-3 py-2.5 text-center whitespace-nowrap">ชำรุด</th>
+            <th class="px-3 py-2.5 text-center whitespace-nowrap">ค้างแก้</th>
+            <th class="px-3 py-2.5 text-left whitespace-nowrap">กลุ่ม</th>
+            <th class="px-3 py-2.5 text-center whitespace-nowrap">ประวัติ</th>
+        </tr>
+    </thead>`;
 
-        <!-- Warranty badge -->
-        <div>${warrantyBadge}</div>
-
-        <!-- Asset detail grid -->
-        ${assetRows}
-
-        <!-- Footer: fault stats + actions -->
-        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 mt-1">
-            <div class="flex gap-3 text-[11px]">
-                <span class="text-slate-500">ชำรุด <b class="text-amber-600">${stats.total}</b> ครั้ง</span>
-                <span class="text-slate-500">ค้าง <b class="${stats.unresolved > 0 ? 'text-red-600' : 'text-emerald-600'}">${stats.unresolved}</b></span>
-            </div>
-            <div class="flex items-center gap-1.5 shrink-0">
-                ${moveSelect}
-                <button onclick="openForm('${escapeHtml(devKey)}')" 
-                    class="text-[10px] font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-2 py-0.5 rounded-lg transition-colors whitespace-nowrap">
-                    ดูประวัติ
-                </button>
-            </div>
-        </div>
+function buildGroupTable(deviceKeys, isInGroup, groupId) {
+    if (deviceKeys.length === 0) {
+        return '<p class="text-slate-400 text-sm text-center py-4">ยังไม่มีอุปกรณ์ในกลุ่มนี้</p>';
+    }
+    const rows = deviceKeys.map(dk => deviceRowHTML(dk, isInGroup, groupId)).join('');
+    return `<div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+            ${TABLE_HEADER}
+            <tbody>${rows}</tbody>
+        </table>
     </div>`;
 }
 
@@ -1838,15 +1851,17 @@ function renderRegistryContent(siteData) {
     const allDevices = siteData.devices.filter(d => d !== 'other');
     const assignedDevices = new Set(registryGroups.flatMap(g => g.deviceKeys));
     const ungrouped = allDevices.filter(d => !assignedDevices.has(d));
+    const canEdit = (currentUserRole === 'admin' || currentUserRole === 'editor');
 
     let html = '';
 
     // Render each group
     registryGroups.forEach(group => {
-        const devCards = group.deviceKeys.map(dk => deviceCardHTML(dk, true, group.id)).join('');
-        const groupFaults = group.deviceKeys.reduce((sum, dk) => sum + getDeviceStats(dk).total, 0);
-        const groupUnresolved = group.deviceKeys.reduce((sum, dk) => sum + getDeviceStats(dk).unresolved, 0);
-        const canEdit = (currentUserRole === 'admin' || currentUserRole === 'editor');
+        const groupFaults     = group.deviceKeys.reduce((s,dk) => s + getDeviceStats(dk).total, 0);
+        const groupUnresolved = group.deviceKeys.reduce((s,dk) => s + getDeviceStats(dk).unresolved, 0);
+        // safe escaping for inline onclick — use data-id pattern via JS binding below
+        const gIdEsc = group.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const gNameEsc = group.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 
         html += `
         <div class="bg-white border border-slate-200 rounded-xl card-shadow overflow-hidden" id="group-block-${escapeHtml(group.id)}">
@@ -1860,33 +1875,39 @@ function renderRegistryContent(siteData) {
                 </div>
                 ${canEdit ? `
                 <div class="flex gap-1 shrink-0">
-                    <button onclick="openRenameGroupModal('${escapeHtml(group.id)}', '${escapeHtml(group.name).replace(/'/g,"\\'")}')}" 
+                    <button data-gid="${escapeHtml(group.id)}" data-gname="${escapeHtml(group.name)}" onclick="openRenameGroupModal(this.dataset.gid, this.dataset.gname)"
                         class="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">✏️ เปลี่ยนชื่อ</button>
-                    <button onclick="deleteGroup('${escapeHtml(group.id)}')" 
+                    <button data-gid="${escapeHtml(group.id)}" onclick="deleteGroup(this.dataset.gid)"
                         class="px-2.5 py-1 text-xs font-semibold text-red-500 bg-white border border-red-200 rounded-lg hover:bg-red-50">🗑️</button>
                 </div>` : ''}
             </div>
-            <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                ${devCards || '<p class="text-slate-400 text-sm col-span-full text-center py-4">ยังไม่มีอุปกรณ์ในกลุ่มนี้</p>'}
-            </div>
+            ${buildGroupTable(group.deviceKeys, true, group.id)}
         </div>`;
     });
 
     // Render ungrouped
     if (ungrouped.length > 0) {
-        const ungroupedCards = ungrouped.map(dk => deviceCardHTML(dk, false, null)).join('');
         html += `
         <div class="bg-white border border-dashed border-slate-300 rounded-xl overflow-hidden">
             <div class="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
                 <span class="text-slate-400 text-lg">📂</span>
                 <div>
                     <h3 class="font-bold text-slate-600">อุปกรณ์ที่ยังไม่ได้จัดกลุ่ม</h3>
-                    <div class="text-xs text-slate-400">${ungrouped.length} อุปกรณ์</div>
+                    <div class="text-xs text-slate-400">${ungrouped.length} อุปกรณ์ · เลือกกลุ่มในช่องสุดท้ายของแต่ละแถวเพื่อจัดหมวดหมู่</div>
                 </div>
             </div>
-            <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                ${ungroupedCards}
+            ${buildGroupTable(ungrouped, false, null)}
+        </div>`;
+    } else if (registryGroups.length === 0) {
+        html = `<div class="bg-white border border-dashed border-slate-300 rounded-xl overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <span class="text-slate-400 text-lg">📂</span>
+                <div>
+                    <h3 class="font-bold text-slate-600">อุปกรณ์ทั้งหมด</h3>
+                    <div class="text-xs text-slate-400">${allDevices.length} อุปกรณ์ · กด "เพิ่มกลุ่มใหม่" เพื่อเริ่มจัดหมวดหมู่</div>
+                </div>
             </div>
+            ${buildGroupTable(allDevices, false, null)}
         </div>`;
     }
 
@@ -1895,8 +1916,11 @@ function renderRegistryContent(siteData) {
 
 async function saveRegistryGroups() {
     try {
-        await getRegistryDocRef(currentSiteKey).set({ groups: registryGroups }, { merge: false });
-    } catch(e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
+        await getRegistryDocRef(currentSiteKey).set({ groups: registryGroups });
+    } catch(e) {
+        console.error('saveRegistryGroups error:', e);
+        Swal.fire('บันทึกไม่สำเร็จ', 'กรุณาตรวจสอบสิทธิ์ Firestore: ' + e.message, 'error');
+    }
 }
 
 window.assignDeviceToGroup = async function(devKey, newGroupId, oldGroupId) {
@@ -1937,9 +1961,11 @@ window.openRenameGroupModal = function(groupId, currentName) {
     if (currentUserRole !== 'admin' && currentUserRole !== 'editor') {
         Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin หรือ Editor เท่านั้น', 'warning'); return;
     }
+    // currentName comes from data-gname attribute (HTML-escaped), decode it
+    const decoded = currentName.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
     groupModalMode = 'rename'; groupModalTargetId = groupId;
     document.getElementById('groupModalTitle').textContent = '✏️ เปลี่ยนชื่อกลุ่ม';
-    document.getElementById('groupNameInput').value = currentName;
+    document.getElementById('groupNameInput').value = decoded;
     document.getElementById('groupModal').classList.remove('hidden');
     setTimeout(() => document.getElementById('groupNameInput').focus(), 100);
 };
