@@ -202,24 +202,24 @@
                     </div>
                 </div>
 
-            <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                <div class="flex bg-slate-100 p-1 rounded-lg">
-                    <button id="tab-topology" onclick="showTopology()" class="px-4 py-1.5 text-sm font-semibold rounded-md bg-white text-brand-600 shadow-sm">🗺️ แผนผัง (Topology)</button>
-                    <button id="tab-summary" onclick="showSummary()" class="px-4 py-1.5 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900">📊 ประวัติชำรุด</button>
-                    <button id="tab-registry" onclick="showAssetRegistry()" class="px-4 py-1.5 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900">🗂️ ทะเบียนทรัพย์สิน</button>
+            <div class="flex items-center gap-1.5 w-full lg:w-auto overflow-x-auto scrollbar-none pb-0.5">
+                <div class="flex bg-slate-100 p-1 rounded-lg shrink-0">
+                    <button id="tab-topology" onclick="showTopology()" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-brand-600 shadow-sm whitespace-nowrap">🗺️ แผนผัง</button>
+                    <button id="tab-summary" onclick="showSummary()" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap">📊 ประวัติชำรุด</button>
+                    <button id="tab-registry" onclick="showAssetRegistry()" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap">🗂️ ทะเบียนทรัพย์สิน</button>
                 </div>
                 
-                <div class="h-6 w-px bg-slate-200 hidden sm:block mx-1"></div>
+                <div class="h-5 w-px bg-slate-200 shrink-0 mx-0.5"></div>
                 
-                <button onclick="showActivityLogs()" class="px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">📜 Logs</button>
-                <button onclick="window.printReport()" class="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors">🖨️ PDF</button>
-                <button onclick="exportAllDataExcel()" class="px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-100 rounded-lg hover:bg-green-100 transition-colors">📤 Export</button>
+                <button onclick="showActivityLogs()" class="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">📜 Logs</button>
+                <button onclick="window.printReport()" class="px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shrink-0">🖨️ PDF</button>
+                <button onclick="exportAllDataExcel()" class="px-2.5 py-1.5 text-xs font-medium text-green-600 bg-green-50 border border-green-100 rounded-lg hover:bg-green-100 transition-colors whitespace-nowrap shrink-0">📤 Export</button>
                 
-                <label id="importButtonLabel" class="hidden px-3 py-1.5 text-sm font-medium text-amber-600 bg-amber-50 border border-amber-100 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer">
+                <label id="importButtonLabel" class="hidden px-2.5 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-100 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer whitespace-nowrap shrink-0">
                     📥 Import<input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
                 </label>
                 
-                <button id="manageUsersBtn" class="hidden px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 border border-purple-100 rounded-lg hover:bg-purple-100 transition-colors" onclick="openUserManagement()">⚙️ Users</button>
+                <button id="manageUsersBtn" class="hidden px-2.5 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 border border-purple-100 rounded-lg hover:bg-purple-100 transition-colors whitespace-nowrap shrink-0" onclick="openUserManagement()">⚙️ Users</button>
             </div>
         </div>
 
@@ -768,7 +768,7 @@
                         ทะเบียนทรัพย์สินทั้งหมด
                         <span id="registrySiteName" class="text-sm font-medium text-slate-500"></span>
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">คลิกเลือกอุปกรณ์เพื่อจัดกลุ่ม · ข้อมูลบันทึกอัตโนมัติใน Firestore</p>
+                    <p class="text-xs text-slate-400 mt-0.5">เลือกกลุ่มในช่อง "กลุ่ม" ของแต่ละแถวเพื่อจัดหมวดหมู่ · บันทึกอัตโนมัติใน Firestore</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="openAddGroupModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors">
@@ -790,7 +790,7 @@
             <p class="font-medium">กำลังโหลดข้อมูลทรัพย์สิน...</p>
         </div>
 
-        <!-- Main Content: Groups + Ungrouped -->
+        <!-- Main Content: Groups + Ungrouped (table layout) -->
         <div id="registryContent" class="hidden space-y-4"></div>
     </div>
 
