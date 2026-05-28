@@ -1717,62 +1717,6 @@ async function loadAssetRegistry() {
     renderRegistryContent(siteData);
 }
 
-function renderRegistryStats(siteData) {
-    const allDevices = siteData.devices.filter(d => d !== 'other');
-
-    let totalFaults = 0;
-    let unresolved = 0;
-
-    for (const dev of allDevices) {
-        const d = registryDataMap[dev];
-        if (!d) continue;
-
-        const records = d.records || [];
-
-        totalFaults += records.filter(r =>
-            r.counted ||
-            r.status === 'down' ||
-            r.status === 'abnormal'
-        ).length;
-
-        unresolved += records.filter(r =>
-            (r.status === 'down' || r.status === 'abnormal') &&
-            (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-')
-        ).length;
-    }
-
-    const grouped = registryGroups.reduce((acc, g) => acc + g.deviceKeys.length, 0);
-
-    document.getElementById('registryStatsRow').innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 p-4 card-shadow">
-            <div class="text-2xl font-bold text-slate-800">${allDevices.length}</div>
-            <div class="text-xs font-semibold text-slate-500 mt-1">
-                อุปกรณ์ทั้งหมด
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-4 card-shadow">
-            <div class="text-2xl font-bold text-indigo-600">${registryGroups.length}</div>
-            <div class="text-xs font-semibold text-slate-500 mt-1">
-                กลุ่มที่สร้างแล้ว (${grouped} อุปกรณ์)
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-4 card-shadow">
-            <div class="text-2xl font-bold text-amber-600">${totalFaults}</div>
-            <div class="text-xs font-semibold text-slate-500 mt-1">
-                ชำรุดทั้งหมด
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-4 card-shadow">
-            <div class="text-2xl font-bold text-red-600">${unresolved}</div>
-            <div class="text-xs font-semibold text-slate-500 mt-1">
-                ค้างแก้ไข
-            </div>
-        </div>
-    `;
-}
 
 function getDeviceStats(devKey) {
     const d = registryDataMap[devKey];
@@ -1806,13 +1750,35 @@ function getDeviceStats(devKey) {
 const TABLE_HEADER = `
 <thead class="bg-slate-100 sticky top-0 z-10">
     <tr class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-        <th class="px-3 py-2.5 text-left whitespace-nowrap">ชื่ออุปกรณ์</th>
-        <th class="px-3 py-2.5 text-left whitespace-nowrap">S/N</th>
-        <th class="px-3 py-2.5 text-left whitespace-nowrap">Model</th>
-        <th class="px-3 py-2.5 text-left whitespace-nowrap">PEA No.</th>
-        <th class="px-3 py-2.5 text-left whitespace-nowrap">ผู้ผลิต</th>
-        <th class="px-3 py-2.5 text-left whitespace-nowrap">สถานะประกัน</th>
-        <th class="px-3 py-2.5 text-left whitespace-nowrap">กลุ่ม</th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            ชื่ออุปกรณ์
+        </th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            S/N
+        </th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            Model
+        </th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            PEA No.
+        </th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            ผู้ผลิต
+        </th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            ประกัน
+        </th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            กลุ่ม
+        </th>
+
     </tr>
 </thead>`;
 
@@ -1872,39 +1838,39 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
         `
         : '<span class="text-[10px] text-slate-300">ยังไม่มีกลุ่ม</span>';
 
-    return `
-    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+  return `
+<tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
 
-        <td class="px-3 py-2.5 text-sm font-semibold text-slate-800 whitespace-nowrap">
-            ${escapeHtml(devKey)}
-        </td>
+    <td class="px-3 py-2.5 text-sm font-semibold text-slate-800 whitespace-nowrap text-center">
+        ${escapeHtml(devKey)}
+    </td>
 
-        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">
-            ${v(a.serial)}
-        </td>
+    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+        ${v(a.serial)}
+    </td>
 
-        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">
-            ${v(a.model)}
-        </td>
+    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+        ${v(a.model)}
+    </td>
 
-        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">
-            ${v(a.peaNo)}
-        </td>
+    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+        ${v(a.peaNo)}
+    </td>
 
-        <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap">
-            ${v(a.manufacturer)}
-        </td>
+    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+        ${v(a.manufacturer)}
+    </td>
 
-        <td class="px-3 py-2.5">
-            ${warrantyBadge}
-        </td>
+    <td class="px-3 py-2.5 text-center">
+        ${warrantyBadge}
+    </td>
 
-        <td class="px-3 py-2.5 min-w-[130px]">
-            ${moveSelect}
-        </td>
+    <td class="px-3 py-2.5 min-w-[130px] text-center">
+        ${moveSelect}
+    </td>
 
-    </tr>
-    `;
+</tr>
+`;
 }
 
 function buildGroupTable(deviceKeys, isInGroup, groupId) {
