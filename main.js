@@ -1439,7 +1439,7 @@ function setupRealtimeListener(siteKey) {
   unsubscribe = db.collection(`sites`).doc(siteKey).collection(`devices`).onSnapshot(snapshot => { window.updateDeviceSummary(); window.updateDeviceStatusOverlays(siteKey); }, (error) => { if (error.code !== 'permission-denied') console.error("Listener Error:", error); });
 }
 
-async function processAndSaveImport(assetsToImport, recordsToImport) {
+async function processAndSaveImport(assetsToImport, recordsToImport, importedGroupMap = {}) {
     Swal.fire({ title: 'กำลังนำเข้า...', didOpen: () => { Swal.showLoading(); } }); const batch = db.batch(); const assetMap = new Map();
     for (const item of assetsToImport) assetMap.set(item.deviceName, item.assetInfo);
     const recordMap = new Map(); 
@@ -1457,14 +1457,9 @@ async function processAndSaveImport(assetsToImport, recordsToImport) {
                 const key = r.customId || `ts-${r.ts}`;
                 finalRecordsMap.set(key, r);
             }
-
-         
             for (const r of (recordMap.get(deviceName) || [])) {
                 const key = r.customId || `ts-${r.ts}`;
-        
-                if (!finalRecordsMap.has(key)) {
-                    finalRecordsMap.set(key, r);
-                }
+                if (!finalRecordsMap.has(key)) { finalRecordsMap.set(key, r); }
             }
 
             const finalRecords = Array.from(finalRecordsMap.values()); 
@@ -1489,9 +1484,34 @@ async function processAndSaveImport(assetsToImport, recordsToImport) {
         }
 
         await batch.commit(); 
+
+        // --- Restore groups ถ้ามีข้อมูลกลุ่มใน Excel ---
+        if (Object.keys(importedGroupMap).length > 0) {
+            try {
+                const groupDocRef = db.collection('site_asset_groups').doc(currentSiteKey);
+                const existingGroupSnap = await groupDocRef.get();
+                const existingGroups = (existingGroupSnap.exists && existingGroupSnap.data().groups) ? existingGroupSnap.data().groups : [];
+                // Merge: ถ้ากลุ่มชื่อนี้มีแล้วให้ merge deviceKeys, ถ้าไม่มีให้สร้างใหม่
+                const mergedGroups = [...existingGroups];
+                for (const [groupName, deviceKeys] of Object.entries(importedGroupMap)) {
+                    const existing = mergedGroups.find(g => g.name === groupName);
+                    if (existing) {
+                        // เพิ่มเฉพาะ key ที่ยังไม่มี
+                        for (const dk of deviceKeys) { if (!existing.deviceKeys.includes(dk)) existing.deviceKeys.push(dk); }
+                    } else {
+                        mergedGroups.push({ id: 'grp_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), name: groupName, deviceKeys });
+                    }
+                }
+                await groupDocRef.set({ groups: mergedGroups });
+                // อัปเดต registryGroups ในหน่วยความจำด้วย
+                registryGroups = mergedGroups;
+            } catch(e) { console.warn('Could not restore groups:', e); }
+        }
+
         window.updateDeviceSummary(); 
         window.updateDeviceStatusOverlays(currentSiteKey); 
-        Swal.fire({ title: 'นำเข้าสำเร็จ!', text: 'ข้อมูลใหม่ถูกเพิ่มแล้ว (รายการที่มี ID ซ้ำถูกข้ามอัตโนมัติ)', icon: 'success' });
+        const groupMsg = Object.keys(importedGroupMap).length > 0 ? ` · นำเข้ากลุ่ม ${Object.keys(importedGroupMap).length} กลุ่ม` : '';
+        Swal.fire({ title: 'นำเข้าสำเร็จ!', text: `ข้อมูลใหม่ถูกเพิ่มแล้ว (รายการที่มี ID ซ้ำถูกข้ามอัตโนมัติ)${groupMsg}`, icon: 'success' });
     } catch (error) { 
         Swal.fire('ผิดพลาด', error.message, 'error'); 
     }
@@ -1506,16 +1526,45 @@ window.importData = function(event) {
             const wsAssets = wb.Sheets["ข้อมูลทรัพย์สิน"]; const wsRecords = wb.Sheets["ประวัติการชำรุด"];
             const assetsToImport = []; const recordsToImport = [];
             const cleanDate = (val) => parseThaiDateToStandard(val);
+            // กลุ่มที่อ่านได้จาก Excel เพื่อ restore
+            const importedGroupMap = {}; // groupName -> [deviceNames]
             
             if (wsAssets) {
                 const assetRawData = XLSX.utils.sheet_to_json(wsAssets, { header: 1 });
                 if (assetRawData.length >= 2) { 
                     const headers = assetRawData[0];
-                    const headerMap = { 'ชื่ออุปกรณ์': headers.indexOf('ชื่ออุปกรณ์'), 'Serial Number': headers.indexOf('Serial Number'), 'Model': headers.indexOf('Model'), 'PEA No.': headers.indexOf('PEA No.'), 'ราคาซื้อ': headers.indexOf('ราคาซื้อ'), 'Manufacturer': headers.indexOf('Manufacturer'), 'วันที่เริ่มประกัน': headers.indexOf('วันที่เริ่มประกัน'), 'วันที่หมดประกัน': headers.indexOf('วันที่หมดประกัน') };
-                    if (headerMap['ชื่ออุปกรณ์'] !== -1) {
+                    // รองรับทั้งรูปแบบเก่า (ไม่มีคอลัมน์กลุ่ม) และใหม่ (มีคอลัมน์กลุ่ม)
+                    const colGroup        = headers.indexOf('กลุ่ม');
+                    const colDevice       = headers.indexOf('ชื่ออุปกรณ์');
+                    const colSerial       = headers.indexOf('Serial Number');
+                    const colModel        = headers.indexOf('Model');
+                    const colPea          = headers.indexOf('PEA No.');
+                    const colPrice        = headers.indexOf('ราคาซื้อ');
+                    const colManufacturer = headers.indexOf('Manufacturer');
+                    const colStart        = headers.indexOf('วันที่เริ่มประกัน');
+                    const colEnd          = headers.indexOf('วันที่หมดประกัน');
+
+                    if (colDevice !== -1) {
                         for (let i = 1; i < assetRawData.length; i++) {
-                            const row = assetRawData[i]; const deviceName = row[headerMap['ชื่ออุปกรณ์']]; if (!deviceName) continue;
-                            assetsToImport.push({ deviceName, assetInfo: { serial: row[headerMap['Serial Number']] || '', model: row[headerMap['Model']] || '', peaNo: (headerMap['PEA No.'] !== -1) ? (row[headerMap['PEA No.']] || '') : '', price: (headerMap['ราคาซื้อ'] !== -1) ? (row[headerMap['ราคาซื้อ']] || '') : '', manufacturer: row[headerMap['Manufacturer']] || '', warrantyStart: cleanDate(row[headerMap['วันที่เริ่มประกัน']]), warrantyEnd: cleanDate(row[headerMap['วันที่หมดประกัน']]) } });
+                            const row = assetRawData[i];
+                            const deviceName = row[colDevice];
+                            // ข้ามแถวหัวกลุ่ม (ขึ้นต้นด้วย ──)
+                            if (!deviceName || String(deviceName).startsWith('──')) continue;
+                            const groupName = (colGroup !== -1 && row[colGroup]) ? String(row[colGroup]).trim() : '';
+                            // เก็บข้อมูลกลุ่มสำหรับ restore
+                            if (groupName && groupName !== '(ยังไม่ได้จัดกลุ่ม)') {
+                                if (!importedGroupMap[groupName]) importedGroupMap[groupName] = [];
+                                importedGroupMap[groupName].push(String(deviceName).trim());
+                            }
+                            assetsToImport.push({ deviceName: String(deviceName).trim(), assetInfo: {
+                                serial:        colSerial       !== -1 ? (row[colSerial]       || '') : '',
+                                model:         colModel        !== -1 ? (row[colModel]        || '') : '',
+                                peaNo:         colPea          !== -1 ? (row[colPea]          || '') : '',
+                                price:         colPrice        !== -1 ? (row[colPrice]        || '') : '',
+                                manufacturer:  colManufacturer !== -1 ? (row[colManufacturer] || '') : '',
+                                warrantyStart: cleanDate(colStart !== -1 ? row[colStart] : null),
+                                warrantyEnd:   cleanDate(colEnd   !== -1 ? row[colEnd]   : null),
+                            }});
                         }
                     }
                 }
@@ -1572,7 +1621,9 @@ window.importData = function(event) {
                     } else { Swal.fire('ผิดพลาด', 'ไม่พบคอลัมน์ ชื่ออุปกรณ์ หรือ วันที่เกิดเหตุ ในไฟล์ Excel', 'error'); return; }
                 }
             }
-            if (assetsToImport.length > 0 || recordsToImport.length > 0) processAndSaveImport(assetsToImport, recordsToImport); else Swal.fire('ผิดพลาด', 'ไม่พบข้อมูล', 'error');
+            if (assetsToImport.length > 0 || recordsToImport.length > 0) {
+                processAndSaveImport(assetsToImport, recordsToImport, importedGroupMap);
+            } else { Swal.fire('ผิดพลาด', 'ไม่พบข้อมูล', 'error'); }
         } catch (error) { Swal.fire('ผิดพลาด', error.message, 'error'); }
     };
     reader.readAsArrayBuffer(file); event.target.value = null; 
@@ -1582,56 +1633,112 @@ window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData || siteData.devices.length === 0) return;
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
 
-  const recordsData = [[
+    // ---- โหลดกลุ่มจาก Firestore ----
+    let exportGroups = [];
+    try {
+        const snap = await db.collection('site_asset_groups').doc(currentSiteKey).get();
+        exportGroups = (snap.exists && snap.data().groups) ? snap.data().groups : [];
+    } catch(e) { exportGroups = []; }
+
+    // สร้าง map: deviceKey -> groupName
+    const deviceGroupMap = {};
+    for (const g of exportGroups) {
+        for (const dk of g.deviceKeys) { deviceGroupMap[dk] = g.name; }
+    }
+
+    // ---- ชีทประวัติชำรุด ----
+    const recordsData = [[
         'Timestamp', 'เลข ID อ้างอิง', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 
         'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'รายละเอียดปัญหา', 'ลิงก์รูปชำรุด', 
         'วิธีแก้ไข', 'ลิงก์รูปแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท', 'หนังสือ กฟภ.', 
         'ชื่อ-สกุล ผู้แจ้งเหตุ', 'ตำแหน่ง', 'สังกัด', 'ชื่อ-สกุล ผู้รับทราบ', 'วันที่-เวลารับทราบ', 'สถานะซ่อม', 'ชื่อ-สกุล ผู้แจ้งซ่อมแซม', 'ตำแหน่ง', 'สังกัด'
     ]];
-    const assetData = [['ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน']]; 
 
+    // ---- ชีทข้อมูลทรัพย์สิน (แยกตามกลุ่ม) ----
+    const ASSET_HEADER = ['กลุ่ม', 'ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
+    const assetData = [ASSET_HEADER];
+
+    // ฟังก์ชันเพิ่มแถวอุปกรณ์
+    const pushAssetRow = (devName, groupName) => {
+        const docData = dataMap[devName]; const assetInfo = docData?.assetInfo || {};
+        const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
+        let warrantyStatusText = 'N/A';
+        switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
+        assetData.push([ groupName, devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
+    };
+
+    // เพิ่มตามกลุ่มก่อน
+    const assignedDevices = new Set();
+    for (const group of exportGroups) {
+        if (group.deviceKeys.length === 0) continue;
+        // แถวหัวกลุ่ม (merge label)
+        assetData.push([`── ${group.name} (${group.deviceKeys.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '']);
+        for (const dk of group.deviceKeys) {
+            if (siteData.devices.includes(dk)) { pushAssetRow(dk, group.name); assignedDevices.add(dk); }
+        }
+    }
+    // อุปกรณ์ที่ยังไม่ได้จัดกลุ่ม
+    const ungrouped = siteData.devices.filter(d => d !== 'other' && !assignedDevices.has(d));
+    if (ungrouped.length > 0) {
+        assetData.push([`── ยังไม่ได้จัดกลุ่ม (${ungrouped.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '']);
+        for (const dk of ungrouped) { pushAssetRow(dk, '(ยังไม่ได้จัดกลุ่ม)'); }
+    }
+
+    // ---- records data (ทุกอุปกรณ์ตามลำดับ devices) ----
     for (const devName of siteData.devices) {
-        const docData = dataMap[devName]; const assetInfo = docData?.assetInfo || {}; const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
-        let warrantyStatusText = 'N/A'; switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
-        assetData.push([ devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
-
-        if (!docData) continue; const records = docData.records || []; records.sort((a, b) => a.ts - b.ts); let downCount = 0; 
+        const docData = dataMap[devName]; if (!docData) continue;
+        const records = docData.records || []; records.sort((a, b) => a.ts - b.ts); let downCount = 0; 
         records.forEach(r => {
             let duration = '-', sequenceNumber = '-'; if (r.counted) { downCount++; sequenceNumber = downCount; }
             if (r.brokenDate) { if (r.fixedDate) duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate)); else if (r.status === 'down' || r.status === 'abnormal') duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' (ยังไม่ซ่อม)'; }
             let statusTH = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
             const repairState = (r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : '-';
             let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
-            
             recordsData.push([ 
-                formatThaiDateTime(r.ts),r.customId || '-', devNameFinal, sequenceNumber, 
+                formatThaiDateTime(r.ts), r.customId || '-', devNameFinal, sequenceNumber, 
                 formatThaiDate(r.brokenDate), formatThaiDate(r.fixedDate), 
-                duration, statusTH, r.description || '-',r.brokenFileUrl || '-', r.solution || '-',r.fixedFileUrl || '-', 
+                duration, statusTH, r.description || '-', r.brokenFileUrl || '-', r.solution || '-', r.fixedFileUrl || '-', 
                 r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', 
-                r.brokenUser || r.user || '-', 
-                r.brokenUserPos || '-', 
-                r.brokenUserDept || '-', 
-                r.acknowledgedBy || '-',
-                r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-',
-                repairState,
-                r.fixedUser || '-',
-                r.fixedUserPos || '-',
-                r.fixedUserDept || '-'
+                r.brokenUser || r.user || '-', r.brokenUserPos || '-', r.brokenUserDept || '-', 
+                r.acknowledgedBy || '-', r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-',
+                repairState, r.fixedUser || '-', r.fixedUserPos || '-', r.fixedUserDept || '-'
             ]);
         });
     }
 
+    // ---- log ----
     const logData = [['วันที่-เวลา', 'ชื่อ-สกุล ผู้ใช้งาน', 'การกระทำ', 'รายละเอียด', 'ไซต์']];
     try {
         const logSnap = await db.collection("activity_logs").where("siteKey", "==", currentSiteKey).orderBy("timestamp", "desc").limit(1000).get();
         logSnap.forEach(doc => { const d = doc.data(); logData.push([ d.timestamp ? formatThaiDateTime(d.timestamp.toMillis()) : '-', d.userEmail || '-', d.action || '-', d.details || '-', d.siteKey || '-' ]); });
     } catch (error) {}
 
+    // ---- สร้าง Workbook + สไตล์ชีทแอสเซต ----
     const wb = XLSX.utils.book_new();
     if (recordsData.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(recordsData), "ประวัติการชำรุด");
-    if (assetData.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(assetData), "ข้อมูลทรัพย์สิน");
+
+    if (assetData.length > 1) {
+        const wsAsset = XLSX.utils.aoa_to_sheet(assetData);
+        // ทำให้แถวหัวกลุ่มโดดเด่น (ตั้ง cell comment / background ไม่ได้ใน xlsx.js แต่ mark ด้วย !กลุ่ม row)
+        // ตั้งความกว้างคอลัมน์
+        wsAsset['!cols'] = [
+            { wch: 24 }, // กลุ่ม
+            { wch: 28 }, // ชื่ออุปกรณ์
+            { wch: 20 }, // S/N
+            { wch: 20 }, // Model
+            { wch: 16 }, // PEA No.
+            { wch: 14 }, // ราคา
+            { wch: 20 }, // Manufacturer
+            { wch: 18 }, // วันเริ่ม
+            { wch: 18 }, // วันหมด
+            { wch: 16 }, // สถานะ
+        ];
+        XLSX.utils.book_append_sheet(wb, wsAsset, "ข้อมูลทรัพย์สิน");
+    }
     if (logData.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(logData), "ประวัติการใช้งาน");
-    XLSX.writeFile(wb, `Device_Export_${siteData.name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`); Swal.fire('ส่งออกสำเร็จ', `ไฟล์ถูกบันทึกแล้ว`, "success");
+
+    XLSX.writeFile(wb, `Device_Export_${siteData.name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    Swal.fire('ส่งออกสำเร็จ', 'ไฟล์ถูกบันทึกแล้ว', "success");
 };
 
 window.resetFilters = function() { document.getElementById('searchInput').value = ''; document.getElementById('sortOrder').value = 'desc'; document.getElementById('filterStatus').value = 'all'; document.getElementById('fromDate').value = ''; document.getElementById('toDate').value = ''; currentPage = 1; try { window.updateDeviceSummary(); } catch (e) {} }
