@@ -1794,28 +1794,45 @@ function getRegistryDocRef(siteKey) {
 }
 function renderRegistryStats(siteData) {
     const allDevices = siteData.devices.filter(d => d !== 'other');
-
     let totalFaults = 0;
     let unresolved = 0;
+    let registeredAssets = 0;
 
     for (const dev of allDevices) {
         const d = registryDataMap[dev];
         if (!d) continue;
 
+        if (d.assetInfo && d.assetInfo.serial) {
+            registeredAssets++;
+        }
+
         const records = d.records || [];
-
-        totalFaults += records.filter(r =>
-            r.counted ||
-            r.status === 'down' ||
-            r.status === 'abnormal'
-        ).length;
-
-        unresolved += records.filter(r =>
-            (r.status === 'down' || r.status === 'abnormal') &&
-            (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-')
-        ).length;
+        totalFaults += records.filter(r => r.counted || r.status === 'down' || r.status === 'abnormal').length;
+        unresolved += records.filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-')).length;
     }
 
+    // เขียน HTML ลงไปใน #registryStatsRow
+    const statsContainer = document.getElementById('registryStatsRow');
+    if (statsContainer) {
+        statsContainer.innerHTML = `
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                <span class="text-xs text-slate-500 font-bold uppercase mb-1">อุปกรณ์ทั้งหมด</span>
+                <span class="text-2xl font-black text-slate-800">${allDevices.length}</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                <span class="text-xs text-slate-500 font-bold uppercase mb-1">ลงทะเบียนแล้ว</span>
+                <span class="text-2xl font-black text-indigo-600">${registeredAssets}</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                <span class="text-xs text-slate-500 font-bold uppercase mb-1">ปัญหาที่พบ (รวม)</span>
+                <span class="text-2xl font-black text-amber-600">${totalFaults}</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                <span class="text-xs text-slate-500 font-bold uppercase mb-1">ค้างซ่อม</span>
+                <span class="text-2xl font-black text-red-600">${unresolved}</span>
+            </div>
+        `;
+    }
 }
 async function loadAssetRegistry() {
     const siteData = sites[currentSiteKey];
@@ -1826,20 +1843,24 @@ async function loadAssetRegistry() {
 
     try {
         const snap = await getRegistryDocRef(currentSiteKey).get();
-        registryGroups = (snap.exists && snap.data().groups)
-            ? snap.data().groups
-            : [];
+        registryGroups = (snap.exists && snap.data().groups) ? snap.data().groups : [];
     } catch (e) {
+        console.warn("Failed to load groups:", e);
         registryGroups = [];
     }
 
-    const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' });
-
-    registryDataMap = {};
-
-    docsSnap.forEach(d => {
-        registryDataMap[d.id] = d.data();
-    });
+    try {
+        const docsSnap = await getSiteCollection(currentSiteKey).get();
+        registryDataMap = {};
+        docsSnap.forEach(d => {
+            registryDataMap[d.id] = d.data();
+        });
+    } catch (e) {
+        console.error("Failed to load devices:", e);
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลอุปกรณ์ได้: ' + e.message, 'error');
+        document.getElementById('registryLoading').classList.add('hidden');
+        return; // หยุดการทำงานถ้าดึงข้อมูลล้มเหลว
+    }
 
     document.getElementById('registryLoading').classList.add('hidden');
     document.getElementById('registryContent').classList.remove('hidden');
@@ -1847,7 +1868,6 @@ async function loadAssetRegistry() {
     renderRegistryStats(siteData);
     renderRegistryContent(siteData);
 }
-
 
 function getDeviceStats(devKey) {
     const d = registryDataMap[devKey];
@@ -2031,126 +2051,60 @@ function buildGroupTable(deviceKeys, isInGroup, groupId) {
 }
 
 function renderRegistryContent(siteData) {
-
     const allDevices = siteData.devices.filter(d => d !== 'other');
 
+    // ป้องกัน Error หาก deviceKeys เป็น undefined
     const assignedDevices = new Set(
-        registryGroups.flatMap(g => g.deviceKeys)
+        registryGroups.flatMap(g => g.deviceKeys || [])
     );
 
     const ungrouped = allDevices.filter(d => !assignedDevices.has(d));
-
-    const canEdit =
-        currentUserRole === 'admin' ||
-        currentUserRole === 'editor';
-
+    const canEdit = currentUserRole === 'admin' || currentUserRole === 'editor';
     let html = '';
 
     registryGroups.forEach(group => {
-
-        const groupFaults = group.deviceKeys.reduce(
-            (s, dk) => s + getDeviceStats(dk).total,
-            0
-        );
-
-        const groupUnresolved = group.deviceKeys.reduce(
-            (s, dk) => s + getDeviceStats(dk).unresolved,
-            0
-        );
+        const keys = group.deviceKeys || []; // Fallback ป้องกัน Error 
+        
+        const groupFaults = keys.reduce((s, dk) => s + getDeviceStats(dk).total, 0);
+        const groupUnresolved = keys.reduce((s, dk) => s + getDeviceStats(dk).unresolved, 0);
 
         html += `
-        <div class="bg-white border border-slate-200 rounded-xl card-shadow overflow-hidden">
-
+        <div class="bg-white border border-slate-200 rounded-xl card-shadow overflow-hidden mb-4">
             <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-50 to-slate-50 border-b border-slate-200">
-
                 <div class="flex items-center gap-2 min-w-0">
-
                     <span class="text-indigo-500 text-lg">📁</span>
-
                     <div class="min-w-0">
-
-                        <h3 class="font-bold text-slate-800 text-base truncate">
-                            ${escapeHtml(group.name)}
-                        </h3>
-
+                        <h3 class="font-bold text-slate-800 text-base truncate">${escapeHtml(group.name)}</h3>
                         <div class="text-xs text-slate-500 mt-0.5">
-
-                            ${group.deviceKeys.length} อุปกรณ์
-
-                            · ชำรุด
-                            <b class="text-amber-600">
-                                ${groupFaults}
-                            </b>
-
-                            · ค้าง
-                            <b class="${groupUnresolved > 0 ? 'text-red-600' : 'text-green-600'}">
-                                ${groupUnresolved}
-                            </b>
-
+                            ${keys.length} อุปกรณ์
+                            · ชำรุด <b class="text-amber-600">${groupFaults}</b>
+                            · ค้าง <b class="${groupUnresolved > 0 ? 'text-red-600' : 'text-green-600'}">${groupUnresolved}</b>
                         </div>
-
                     </div>
-
                 </div>
-
                 ${canEdit ? `
                 <div class="flex gap-1 shrink-0">
-
-                    <button
-                        data-gid="${escapeHtml(group.id)}"
-                        data-gname="${escapeHtml(group.name)}"
-                        onclick="openRenameGroupModal(this.dataset.gid, this.dataset.gname)"
-                        class="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">
-
-                        ✏️ เปลี่ยนชื่อ
-
-                    </button>
-
-                    <button
-                        data-gid="${escapeHtml(group.id)}"
-                        onclick="deleteGroup(this.dataset.gid)"
-                        class="px-2.5 py-1 text-xs font-semibold text-red-500 bg-white border border-red-200 rounded-lg hover:bg-red-50">
-
-                        🗑️
-
-                    </button>
-
+                    <button data-gid="${escapeHtml(group.id)}" data-gname="${escapeHtml(group.name)}" onclick="openRenameGroupModal(this.dataset.gid, this.dataset.gname)" class="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">✏️ เปลี่ยนชื่อ</button>
+                    <button data-gid="${escapeHtml(group.id)}" onclick="deleteGroup(this.dataset.gid)" class="px-2.5 py-1 text-xs font-semibold text-red-500 bg-white border border-red-200 rounded-lg hover:bg-red-50">🗑️</button>
                 </div>
                 ` : ''}
-
             </div>
-
-            ${buildGroupTable(group.deviceKeys, true, group.id)}
-
+            ${buildGroupTable(keys, true, group.id)}
         </div>
         `;
     });
 
     if (ungrouped.length > 0) {
-
         html += `
-        <div class="bg-white border border-dashed border-slate-300 rounded-xl overflow-hidden">
-
+        <div class="bg-white border border-dashed border-slate-300 rounded-xl overflow-hidden mb-4">
             <div class="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
-
                 <span class="text-slate-400 text-lg">📂</span>
-
                 <div>
-
-                    <h3 class="font-bold text-slate-600">
-                        อุปกรณ์ที่ยังไม่ได้จัดกลุ่ม
-                    </h3>
-
-                    <div class="text-xs text-slate-400">
-                        ${ungrouped.length} อุปกรณ์
-                    </div>
-
+                    <h3 class="font-bold text-slate-600">อุปกรณ์ที่ยังไม่ได้จัดกลุ่ม</h3>
+                    <div class="text-xs text-slate-400">${ungrouped.length} อุปกรณ์</div>
                 </div>
-
             </div>
-
             ${buildGroupTable(ungrouped, false, null)}
-
         </div>
         `;
     }
