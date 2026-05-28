@@ -1685,7 +1685,62 @@ let groupModalTargetId = null;
 function getRegistryDocRef(siteKey) {
     return db.collection('site_asset_groups').doc(siteKey);
 }
+function renderRegistryStats(siteData) {
+    const allDevices = siteData.devices.filter(d => d !== 'other');
 
+    let totalFaults = 0;
+    let unresolved = 0;
+
+    for (const dev of allDevices) {
+        const d = registryDataMap[dev];
+        if (!d) continue;
+
+        const records = d.records || [];
+
+        totalFaults += records.filter(r =>
+            r.counted ||
+            r.status === 'down' ||
+            r.status === 'abnormal'
+        ).length;
+
+        unresolved += records.filter(r =>
+            (r.status === 'down' || r.status === 'abnormal') &&
+            (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-')
+        ).length;
+    }
+
+    const grouped = registryGroups.reduce((acc, g) => acc + g.deviceKeys.length, 0);
+
+    document.getElementById('registryStatsRow').innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 p-4 card-shadow">
+            <div class="text-2xl font-bold text-slate-800">${allDevices.length}</div>
+            <div class="text-xs font-semibold text-slate-500 mt-1">
+                อุปกรณ์ทั้งหมด
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 card-shadow">
+            <div class="text-2xl font-bold text-indigo-600">${registryGroups.length}</div>
+            <div class="text-xs font-semibold text-slate-500 mt-1">
+                กลุ่มที่สร้างแล้ว (${grouped} อุปกรณ์)
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 card-shadow">
+            <div class="text-2xl font-bold text-amber-600">${totalFaults}</div>
+            <div class="text-xs font-semibold text-slate-500 mt-1">
+                ชำรุดทั้งหมด
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 card-shadow">
+            <div class="text-2xl font-bold text-red-600">${unresolved}</div>
+            <div class="text-xs font-semibold text-slate-500 mt-1">
+                ค้างแก้ไข
+            </div>
+        </div>
+    `;
+}
 async function loadAssetRegistry() {
     const siteData = sites[currentSiteKey];
 
