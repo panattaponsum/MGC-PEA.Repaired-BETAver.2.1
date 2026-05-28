@@ -559,7 +559,33 @@
         <canvas id="avgRepairTimeChart"></canvas>
     </div>
 </div>
+        <!-- ====== ASSET REGISTRY PAGE ====== -->
+        <div id="assetRegistryPage" class="hidden">
+            <div class="bg-white rounded-xl card-shadow border border-slate-200 p-4 mb-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">🗂️</span>
+                            ทะเบียนทรัพย์สินทั้งหมด
+                            <span id="registrySiteName" class="text-sm font-medium text-slate-500"></span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">เลือกกลุ่มในช่อง "กลุ่ม" ของแต่ละแถวเพื่อจัดหมวดหมู่ · บันทึกอัตโนมัติใน Firestore</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="openAddGroupModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors">➕ เพิ่มกลุ่มใหม่</button>
+                        <button onclick="loadAssetRegistry()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">🔄 รีเฟรช</button>
+                    </div>
+                </div>
+            </div>
+            <div id="registryStatsRow" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+            <div id="registryLoading" class="text-center py-16 text-slate-400">
+                <div class="inline-block animate-spin text-4xl mb-3">⚙️</div>
+                <p class="font-medium">กำลังโหลดข้อมูลทรัพย์สิน...</p>
+            </div>
+            <div id="registryContent" class="hidden space-y-4"></div>
         </div>
+
+        </div><!-- end appContent -->
     </main>
 
     <div id="overlay" onclick="closeForm()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000]"></div>
@@ -755,43 +781,6 @@
             <button class="px-4 py-2 text-sm font-bold text-slate-500 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(false)">🔳 เอาออกทั้งหมด</button>
             <button class="px-6 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-md" onclick="generateSelectedReport()">📑 สร้าง PDF</button>
         </div>
-    </div>
-
-    <!-- ====== ASSET REGISTRY PAGE ====== -->
-    <div id="assetRegistryPage" class="hidden">
-        <!-- Header & Controls -->
-        <div class="bg-white rounded-xl card-shadow border border-slate-200 p-4 mb-4">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <span class="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">🗂️</span>
-                        ทะเบียนทรัพย์สินทั้งหมด
-                        <span id="registrySiteName" class="text-sm font-medium text-slate-500"></span>
-                    </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">เลือกกลุ่มในช่อง "กลุ่ม" ของแต่ละแถวเพื่อจัดหมวดหมู่ · บันทึกอัตโนมัติใน Firestore</p>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <button onclick="openAddGroupModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors">
-                        ➕ เพิ่มกลุ่มใหม่
-                    </button>
-                    <button onclick="loadAssetRegistry()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                        🔄 รีเฟรช
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Summary Stats Cards -->
-        <div id="registryStatsRow" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
-
-        <!-- Loading -->
-        <div id="registryLoading" class="text-center py-16 text-slate-400">
-            <div class="inline-block animate-spin text-4xl mb-3">⚙️</div>
-            <p class="font-medium">กำลังโหลดข้อมูลทรัพย์สิน...</p>
-        </div>
-
-        <!-- Main Content: Groups + Ungrouped (table layout) -->
-        <div id="registryContent" class="hidden space-y-4"></div>
     </div>
 
     <!-- Add/Rename Group Modal -->
