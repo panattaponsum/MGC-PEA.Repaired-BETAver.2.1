@@ -1792,8 +1792,33 @@ let groupModalTargetId = null;
 function getRegistryDocRef(siteKey) {
     return db.collection('site_asset_groups').doc(siteKey);
 }
+function getRegistryDeviceList(siteData) {
+    const configuredDevices = Array.isArray(siteData?.devices) ? siteData.devices : [];
+    const firestoreDevices = Object.keys(registryDataMap || {});
+
+    return [...new Set([...configuredDevices, ...firestoreDevices])].filter(d => d && d !== 'other');
+}
+
+function normalizeRegistryGroups(rawGroups) {
+    if (!Array.isArray(rawGroups)) return [];
+
+    return rawGroups
+        .filter(group => group && typeof group === 'object')
+        .map((group, index) => {
+            const deviceKeys = Array.isArray(group.deviceKeys)
+                ? [...new Set(group.deviceKeys.filter(Boolean).map(String))]
+                : [];
+
+            return {
+                id: String(group.id || `grp_${index}_${Date.now()}`),
+                name: String(group.name || `กลุ่ม ${index + 1}`),
+                deviceKeys
+            };
+        });
+}
+
 function renderRegistryStats(siteData) {
-    const allDevices = siteData.devices.filter(d => d !== 'other');
+   const allDevices = getRegistryDeviceList(siteData);
     let totalFaults = 0;
     let unresolved = 0;
     let registeredAssets = 0;
@@ -1836,34 +1861,43 @@ function renderRegistryStats(siteData) {
 }
 async function loadAssetRegistry() {
     const siteData = sites[currentSiteKey];
+    const siteNameEl = document.getElementById('registrySiteName');
+    const loadingEl = document.getElementById('registryLoading');
+    const contentEl = document.getElementById('registryContent');
 
-    document.getElementById('registrySiteName').textContent = `— ${siteData.name}`;
-    document.getElementById('registryLoading').classList.remove('hidden');
-    document.getElementById('registryContent').classList.add('hidden');
+    if (!siteData) {
+        if (siteNameEl) siteNameEl.textContent = '';
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (contentEl) {
+            contentEl.classList.remove('hidden');
+            contentEl.innerHTML = '<div class="bg-white border border-red-200 text-red-600 rounded-xl p-4 text-sm font-semibold">ไม่พบข้อมูลพื้นที่ที่เลือก</div>';
+        }
+        return;
+    }
+if (siteNameEl) siteNameEl.textContent = `— ${siteData.name}`;
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (contentEl) contentEl.classList.add('hidden');
 
     try {
         const snap = await getRegistryDocRef(currentSiteKey).get();
-        registryGroups = (snap.exists && snap.data().groups) ? snap.data().groups : [];
+        registryGroups = normalizeRegistryGroups(snap.exists ? snap.data().groups : []);
     } catch (e) {
         console.warn("Failed to load groups:", e);
         registryGroups = [];
     }
-
+    registryDataMap = {};
     try {
         const docsSnap = await getSiteCollection(currentSiteKey).get();
-        registryDataMap = {};
         docsSnap.forEach(d => {
             registryDataMap[d.id] = d.data();
         });
     } catch (e) {
-        console.error("Failed to load devices:", e);
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลอุปกรณ์ได้: ' + e.message, 'error');
-        document.getElementById('registryLoading').classList.add('hidden');
-        return; // หยุดการทำงานถ้าดึงข้อมูลล้มเหลว
+       console.error("Failed to load device asset data:", e);
+        Swal.fire('โหลดข้อมูลบางส่วน', 'ไม่สามารถโหลดรายละเอียดทรัพย์สินจาก Firestore ได้ แต่จะแสดงรายการอุปกรณ์พื้นฐานให้ก่อน: ' + e.message, 'warning');
     }
 
-    document.getElementById('registryLoading').classList.add('hidden');
-    document.getElementById('registryContent').classList.remove('hidden');
+     if (loadingEl) loadingEl.classList.add('hidden');
+    if (contentEl) contentEl.classList.remove('hidden');
 
     renderRegistryStats(siteData);
     renderRegistryContent(siteData);
@@ -2051,11 +2085,13 @@ function buildGroupTable(deviceKeys, isInGroup, groupId) {
 }
 
 function renderRegistryContent(siteData) {
-    const allDevices = siteData.devices.filter(d => d !== 'other');
+     const allDevices = getRegistryDeviceList(siteData);
+     const validDeviceSet = new Set(allDevices);
 
-    // ป้องกัน Error หาก deviceKeys เป็น undefined
+   // ป้องกัน Error หาก deviceKeys เป็น undefined หรือข้อมูลกลุ่มใน Firestore เสียรูปแบบ
+    registryGroups = normalizeRegistryGroups(registryGroups);
     const assignedDevices = new Set(
-        registryGroups.flatMap(g => g.deviceKeys || [])
+        registryGroups.flatMap(g => (g.deviceKeys || []).filter(dk => validDeviceSet.has(dk)))
     );
 
     const ungrouped = allDevices.filter(d => !assignedDevices.has(d));
@@ -2063,7 +2099,7 @@ function renderRegistryContent(siteData) {
     let html = '';
 
     registryGroups.forEach(group => {
-        const keys = group.deviceKeys || []; // Fallback ป้องกัน Error 
+       const keys = (group.deviceKeys || []).filter(dk => validDeviceSet.has(dk)); // Fallback ป้องกัน Error
         
         const groupFaults = keys.reduce((s, dk) => s + getDeviceStats(dk).total, 0);
         const groupUnresolved = keys.reduce((s, dk) => s + getDeviceStats(dk).unresolved, 0);
@@ -2109,10 +2145,21 @@ function renderRegistryContent(siteData) {
         `;
     }
 
-    document.getElementById('registryContent').innerHTML = html;
+   if (!html) {
+        html = `
+        <div class="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-400">
+            <div class="text-3xl mb-2">📭</div>
+            <p class="text-sm font-semibold">ไม่มีรายการอุปกรณ์สำหรับพื้นที่นี้</p>
+        </div>
+        `;
+    }
+
+    const contentEl = document.getElementById('registryContent');
+    if (contentEl) contentEl.innerHTML = html;
 }
 async function saveRegistryGroups() {
     try {
+        registryGroups = normalizeRegistryGroups(registryGroups);
         await getRegistryDocRef(currentSiteKey).set({ groups: registryGroups });
     } catch(e) {
         console.error('saveRegistryGroups error:', e);
@@ -2123,8 +2170,9 @@ async function saveRegistryGroups() {
 window.assignDeviceToGroup = async function(devKey, newGroupId, oldGroupId) {
     // Remove from old group
     if (oldGroupId) {
+        registryGroups = normalizeRegistryGroups(registryGroups);
         const oldG = registryGroups.find(g => g.id === oldGroupId);
-        if (oldG) oldG.deviceKeys = oldG.deviceKeys.filter(k => k !== devKey);
+        if (oldG) oldG.deviceKeys = (oldG.deviceKeys || []).filter(k => k !== devKey);
     }
     // Check remove command
     if (newGroupId === '__remove__' || newGroupId === '') {
@@ -2135,8 +2183,9 @@ window.assignDeviceToGroup = async function(devKey, newGroupId, oldGroupId) {
     }
     // Add to new group
     const newG = registryGroups.find(g => g.id === newGroupId);
-    if (newG && !newG.deviceKeys.includes(devKey)) {
-        newG.deviceKeys.push(devKey);
+     if (newG) {
+        newG.deviceKeys = newG.deviceKeys || [];
+        if (!newG.deviceKeys.includes(devKey)) newG.deviceKeys.push(devKey);
     }
     await saveRegistryGroups();
     renderRegistryContent(sites[currentSiteKey]);
