@@ -568,9 +568,8 @@
                         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                             <span class="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">🗂️</span>
                             ทะเบียนทรัพย์สินทั้งหมด
-                            <span id="registrySiteName" class="text-sm font-medium text-slate-500"></span>
                         </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">เลือกกลุ่มในช่อง "กลุ่ม" ของแต่ละแถวเพื่อจัดหมวดหมู่ · บันทึกอัตโนมัติใน Firestore</p>
+                        <p class="text-xs text-slate-400 mt-0.5">เลือกกลุ่มในช่อง "กลุ่ม" ของแต่ละแถวเพื่อจัดหมวดหมู่ </p>
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <button onclick="openAddGroupModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors">➕ เพิ่มกลุ่มใหม่</button>
@@ -639,7 +638,7 @@
                             <textarea id="description" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">ไฟล์แนบแจ้งเสีย (ไม่เกิน 5MB)</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">แนบรูปภาพ หรือ ไฟล์แจ้งเสีย (ไม่เกิน 5MB)</label>
                             <input type="file" id="brokenFile" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"/>
                             <div id="brokenFileLink" class="text-xs mt-1 text-brand-600 font-medium"></div>
                         </div>
@@ -672,7 +671,7 @@
                             <textarea id="solution" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">ไฟล์แนบหลังซ่อม (ไม่เกิน 5MB)</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">แนบรูปภาพ หรือ ไฟล์หลังซ่อม (ไม่เกิน 5MB)</label>
                             <input type="file" id="fixedFile" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"/>
                             <div id="fixedFileLink" class="text-xs mt-1 text-emerald-600 font-medium"></div>
                         </div>
