@@ -1836,7 +1836,6 @@ function renderRegistryStats(siteData) {
         unresolved += records.filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-')).length;
     }
 
-    }
 }
 async function loadAssetRegistry() {
     const siteData = sites[currentSiteKey];
