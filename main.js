@@ -1836,27 +1836,6 @@ function renderRegistryStats(siteData) {
         unresolved += records.filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-')).length;
     }
 
-    // เขียน HTML ลงไปใน #registryStatsRow
-    const statsContainer = document.getElementById('registryStatsRow');
-    if (statsContainer) {
-        statsContainer.innerHTML = `
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-                <span class="text-xs text-slate-500 font-bold uppercase mb-1">อุปกรณ์ทั้งหมด</span>
-                <span class="text-2xl font-black text-slate-800">${allDevices.length}</span>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-                <span class="text-xs text-slate-500 font-bold uppercase mb-1">ลงทะเบียนแล้ว</span>
-                <span class="text-2xl font-black text-indigo-600">${registeredAssets}</span>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-                <span class="text-xs text-slate-500 font-bold uppercase mb-1">ปัญหาที่พบ (รวม)</span>
-                <span class="text-2xl font-black text-amber-600">${totalFaults}</span>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-                <span class="text-xs text-slate-500 font-bold uppercase mb-1">ค้างซ่อม</span>
-                <span class="text-2xl font-black text-red-600">${unresolved}</span>
-            </div>
-        `;
     }
 }
 async function loadAssetRegistry() {
