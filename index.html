@@ -893,17 +893,36 @@
             </div>
             <button class="modal-close-btn" onclick="closeAssetModal()">✕</button>
         </div>
-        <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="form-field"><label>Serial Number (S/N)</label><input type="text" id="assetSerial"/></div>
-            <div class="form-field"><label>รุ่น (Model)</label><input type="text" id="assetModel"/></div>
-            <div class="form-field"><label>PEA No.</label><input type="text" id="assetPeaNo"/></div>
-            <div class="form-field"><label>ราคาซื้อ (Price)</label><input type="number" id="assetPrice"/></div>
-            <div class="sm:col-span-2 form-field"><label>ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer"/></div>
-            <div class="sm:col-span-2 h-px bg-slate-200 my-1"></div>
-            <div class="form-field"><label>วันที่เริ่มรับประกัน</label><input type="date" id="assetWarrantyStart"/></div>
-            <div class="form-field"><label>จำนวนปีรับประกัน</label><input type="number" id="assetWarrantyYears"/></div>
-            <div class="form-field"><label>วันที่หมดรับประกัน</label><input type="date" id="assetWarrantyEnd"/></div>
-            <div class="form-field"><label>สถานะประกัน</label><input type="text" id="assetWarrantyStatus" readOnly/></div>
+        <div class="p-6 space-y-5">
+            <!-- รูปภาพอุปกรณ์ด้านบนสุด -->
+            <div class="w-full">
+                <div id="assetImagePreviewWrap" class="w-full rounded-xl overflow-hidden bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center" style="min-height:160px; max-height:220px;">
+                    <img id="assetImagePreview" src="" alt="รูปภาพอุปกรณ์" class="hidden w-full object-contain" style="max-height:220px;" />
+                    <span id="assetImagePlaceholder" class="text-slate-400 text-sm font-medium flex flex-col items-center gap-2 py-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        ยังไม่มีรูปภาพอุปกรณ์
+                    </span>
+                </div>
+                <div class="form-field mt-2">
+                    <label>📷 อัปโหลดรูปภาพอุปกรณ์</label>
+                    <input type="file" id="assetImageFile" accept="image/*" onchange="previewAssetImage(this)"/>
+                    <div id="assetImageLink" class="text-xs mt-1.5 text-blue-600 font-medium"></div>
+                </div>
+            </div>
+            <!-- ข้อมูลทรัพย์สิน -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="form-field"><label>Serial Number (S/N)</label><input type="text" id="assetSerial"/></div>
+                <div class="form-field"><label>รุ่น (Model)</label><input type="text" id="assetModel"/></div>
+                <div class="form-field"><label>PEA No.</label><input type="text" id="assetPeaNo"/></div>
+                <div class="form-field"><label>ราคาซื้อ (Price)</label><input type="number" id="assetPrice"/></div>
+                <div class="form-field"><label>สถานที่ติดตั้ง (Location)</label><input type="text" id="assetLocation" placeholder="เช่น ห้องควบคุม, อาคาร A..."/></div>
+                <div class="form-field"><label>ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer"/></div>
+                <div class="sm:col-span-2 h-px bg-slate-200 my-1"></div>
+                <div class="form-field"><label>วันที่เริ่มรับประกัน</label><input type="date" id="assetWarrantyStart"/></div>
+                <div class="form-field"><label>จำนวนปีรับประกัน</label><input type="number" id="assetWarrantyYears"/></div>
+                <div class="form-field"><label>วันที่หมดรับประกัน</label><input type="date" id="assetWarrantyEnd"/></div>
+                <div class="form-field"><label>สถานะประกัน</label><input type="text" id="assetWarrantyStatus" readOnly/></div>
+            </div>
         </div>
         <div class="modal-footer-official">
             <div></div>
