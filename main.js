@@ -1027,7 +1027,7 @@ document.getElementById('assetModal').style.display = 'none'; if (showMainModal 
 
 async function loadAssetData() {
     const docRef = getSiteCollection(currentSiteKey).doc(currentDevice); const snap = await docRef.get(); let assetInfo = {}; if (snap.exists && snap.data().assetInfo) assetInfo = snap.data().assetInfo;
-    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetPrice', 'assetManufacturer', 'assetWarrantyStart', 'assetWarrantyEnd'];
+    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
     const isAdmin = (currentUserRole === 'admin');
 
     inputIds.forEach(id => {
@@ -1036,15 +1036,53 @@ async function loadAssetData() {
     });
 
     const saveBtn = document.getElementById('saveAssetButton'); if (saveBtn) saveBtn.style.display = isAdmin ? 'inline-block' : 'none';
-    document.getElementById('assetSerial').value = assetInfo.serial || ''; document.getElementById('assetModel').value = assetInfo.model || ''; document.getElementById('assetPeaNo').value = assetInfo.peaNo || ''; document.getElementById('assetPrice').value = assetInfo.price || ''; document.getElementById('assetManufacturer').value = assetInfo.manufacturer || ''; document.getElementById('assetWarrantyStart').value = assetInfo.warrantyStart || ''; document.getElementById('assetWarrantyEnd').value = assetInfo.warrantyEnd || '';
+    document.getElementById('assetSerial').value = assetInfo.serial || '';
+    document.getElementById('assetModel').value = assetInfo.model || '';
+    document.getElementById('assetPeaNo').value = assetInfo.peaNo || '';
+    document.getElementById('assetPrice').value = assetInfo.price || '';
+    document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
+    document.getElementById('assetLocation').value = assetInfo.location || '';
+    document.getElementById('assetWarrantyStart').value = assetInfo.warrantyStart || '';
+    document.getElementById('assetWarrantyEnd').value = assetInfo.warrantyEnd || '';
     if (assetInfo.warrantyStart && assetInfo.warrantyEnd) document.getElementById('assetWarrantyYears').value = Math.round(((new Date(assetInfo.warrantyEnd)) - (new Date(assetInfo.warrantyStart))) / (1000 * 60 * 60 * 24 * 365.25) * 10) / 10; else document.getElementById('assetWarrantyYears').value = '';
     updateAssetWarrantyStatusField();
+
+    // แสดงรูปภาพอุปกรณ์ (ถ้ามี)
+    const preview = document.getElementById('assetImagePreview');
+    const placeholder = document.getElementById('assetImagePlaceholder');
+    const imageLink = document.getElementById('assetImageLink');
+    document.getElementById('assetImageFile').value = '';
+    if (assetInfo.imageUrl) {
+        preview.src = assetInfo.imageUrl;
+        preview.classList.remove('hidden');
+        if (placeholder) placeholder.classList.add('hidden');
+        if (imageLink) imageLink.innerHTML = `<a href="${assetInfo.imageUrl}" target="_blank" class="hover:underline">มีรูปภาพเดิม (คลิกดู) — อัปโหลดใหม่เพื่อเปลี่ยน</a>`;
+    } else {
+        preview.src = '';
+        preview.classList.add('hidden');
+        if (placeholder) placeholder.classList.remove('hidden');
+        if (imageLink) imageLink.innerHTML = '';
+    }
 }
 
 window.saveAssetData = async function() {
     if (currentUserRole !== 'admin') { Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์เข้าถึง', text: `เฉพาะ Admin เท่านั้น` }); return; }
     if (!currentDevice) return;
-    const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    let imageUrl = null;
+    try {
+        const snap2 = await getSiteCollection(currentSiteKey).doc(currentDevice).get();
+        const existingAsset = snap2.exists ? (snap2.data().assetInfo || {}) : {};
+        imageUrl = existingAsset.imageUrl || null;
+        const imageFile = document.getElementById('assetImageFile').files[0];
+        if (imageFile) {
+            const ref = storage.ref().child(`assetImages/${currentSiteKey}/${currentDevice}/${Date.now()}_${imageFile.name}`);
+            await ref.put(imageFile);
+            imageUrl = await ref.getDownloadURL();
+        }
+    } catch(e) { Swal.fire('อัปโหลดรูปภาพล้มเหลว', e.message, 'error'); return; }
+    const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
+    if (imageUrl) assetInfo.imageUrl = imageUrl;
     try { await getSiteCollection(currentSiteKey).doc(currentDevice).set({ assetInfo }, { merge: true }); Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success'); updateAssetDisplays(assetInfo); window.updateDeviceSummary(); closeAssetModal(true); } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
     await createLog("EDIT_ASSET", "แก้ไขรายละเอียดทรัพย์สินของ " + currentDevice);
 }
@@ -1053,6 +1091,20 @@ function updateAssetWarrantyStatusField() {
 const status = getWarrantyStatus(document.getElementById('assetWarrantyEnd').value); const field = document.getElementById('assetWarrantyStatus');
 switch (status) { case 'ok': field.value = 'รับประกัน'; break; case 'warn': field.value = 'ใกล้หมดประกัน'; break; case 'bad': field.value = 'หมดประกัน'; break; default: field.value = 'N/A'; }
 }
+
+window.previewAssetImage = function(input) {
+    const preview = document.getElementById('assetImagePreview');
+    const placeholder = document.getElementById('assetImagePlaceholder');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            preview.src = e.target.result;
+            preview.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
 
 function setupWarrantyCalculators() {
 const startEl = document.getElementById('assetWarrantyStart'); const yearsEl = document.getElementById('assetWarrantyYears'); const endEl = document.getElementById('assetWarrantyEnd');
@@ -1935,6 +1987,10 @@ const TABLE_HEADER = `
         </th>
 
         <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            สถานที่
+        </th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
             ประกัน
         </th>
 
@@ -2022,6 +2078,10 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
 
     <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.manufacturer)}
+    </td>
+
+    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+        ${v(a.location)}
     </td>
 
     <td class="px-3 py-2.5 text-center">
