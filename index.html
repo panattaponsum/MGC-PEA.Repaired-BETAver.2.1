@@ -882,7 +882,7 @@
         </div>
     </div>
 
-    <div id="assetModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex-col z-[1002]">
+    <div id="assetModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex-col z-[1002] max-h-[95vh]">
         <div class="modal-header-official">
             <div class="flex items-center gap-3">
                 <div class="bg-amber-400/20 border border-amber-400/40 rounded-lg p-2">📋</div>
@@ -893,7 +893,7 @@
             </div>
             <button class="modal-close-btn" onclick="closeAssetModal()">✕</button>
         </div>
-        <div class="p-6 space-y-5">
+        <div class="p-6 space-y-5 overflow-y-auto flex-1">
             <!-- รูปภาพอุปกรณ์ด้านบนสุด -->
             <div class="w-full">
                 <div id="assetImagePreviewWrap" class="w-full rounded-xl overflow-hidden bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center" style="min-height:160px; max-height:220px;">
