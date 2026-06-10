@@ -1036,15 +1036,22 @@ async function loadAssetData() {
     });
 
     const saveBtn = document.getElementById('saveAssetButton'); if (saveBtn) saveBtn.style.display = isAdmin ? 'inline-block' : 'none';
+    // safeDate: คืน string ที่ input[type=date] รับได้ (YYYY-MM-DD) หรือ '' ถ้าข้อมูลเสีย
+    const safeDate = (val) => {
+        if (!val || val === '-' || val === 'null') return '';
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+    };
     document.getElementById('assetSerial').value = assetInfo.serial || '';
     document.getElementById('assetModel').value = assetInfo.model || '';
     document.getElementById('assetPeaNo').value = assetInfo.peaNo || '';
     document.getElementById('assetPrice').value = assetInfo.price || '';
     document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
     document.getElementById('assetLocation').value = assetInfo.location || '';
-    document.getElementById('assetWarrantyStart').value = assetInfo.warrantyStart || '';
-    document.getElementById('assetWarrantyEnd').value = assetInfo.warrantyEnd || '';
-    if (assetInfo.warrantyStart && assetInfo.warrantyEnd) document.getElementById('assetWarrantyYears').value = Math.round(((new Date(assetInfo.warrantyEnd)) - (new Date(assetInfo.warrantyStart))) / (1000 * 60 * 60 * 24 * 365.25) * 10) / 10; else document.getElementById('assetWarrantyYears').value = '';
+    document.getElementById('assetWarrantyStart').value = safeDate(assetInfo.warrantyStart);
+    document.getElementById('assetWarrantyEnd').value = safeDate(assetInfo.warrantyEnd);
+    const ws = safeDate(assetInfo.warrantyStart), we = safeDate(assetInfo.warrantyEnd);
+    if (ws && we) document.getElementById('assetWarrantyYears').value = Math.round(((new Date(we)) - (new Date(ws))) / (1000 * 60 * 60 * 24 * 365.25) * 10) / 10; else document.getElementById('assetWarrantyYears').value = '';
     updateAssetWarrantyStatusField();
 
     // แสดงรูปภาพอุปกรณ์ (ถ้ามี)
@@ -1593,6 +1600,7 @@ window.importData = function(event) {
                     const colPea          = headers.indexOf('PEA No.');
                     const colPrice        = headers.indexOf('ราคาซื้อ');
                     const colManufacturer = headers.indexOf('Manufacturer');
+                    const colLocation     = headers.indexOf('สถานที่ติดตั้ง');
                     const colStart        = headers.indexOf('วันที่เริ่มประกัน');
                     const colEnd          = headers.indexOf('วันที่หมดประกัน');
 
@@ -1614,6 +1622,7 @@ window.importData = function(event) {
                                 peaNo:         colPea          !== -1 ? (row[colPea]          || '') : '',
                                 price:         colPrice        !== -1 ? (row[colPrice]        || '') : '',
                                 manufacturer:  colManufacturer !== -1 ? (row[colManufacturer] || '') : '',
+                                location:      colLocation     !== -1 ? (row[colLocation]     || '') : '',
                                 warrantyStart: cleanDate(colStart !== -1 ? row[colStart] : null),
                                 warrantyEnd:   cleanDate(colEnd   !== -1 ? row[colEnd]   : null),
                             }});
@@ -1707,7 +1716,7 @@ window.exportAllDataExcel = async function() {
     ]];
 
     // ---- ชีทข้อมูลทรัพย์สิน (แยกตามกลุ่ม) ----
-    const ASSET_HEADER = ['กลุ่ม', 'ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
+    const ASSET_HEADER = ['กลุ่ม', 'ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'สถานที่ติดตั้ง', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
     const assetData = [ASSET_HEADER];
 
     // ฟังก์ชันเพิ่มแถวอุปกรณ์
@@ -1716,7 +1725,7 @@ window.exportAllDataExcel = async function() {
         const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
         let warrantyStatusText = 'N/A';
         switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
-        assetData.push([ groupName, devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
+        assetData.push([ groupName, devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
     };
 
     // เพิ่มตามกลุ่มก่อน
@@ -1724,7 +1733,7 @@ window.exportAllDataExcel = async function() {
     for (const group of exportGroups) {
         if (group.deviceKeys.length === 0) continue;
         // แถวหัวกลุ่ม (merge label)
-        assetData.push([`── ${group.name} (${group.deviceKeys.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '']);
+        assetData.push([`── ${group.name} (${group.deviceKeys.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '', '']);
         for (const dk of group.deviceKeys) {
             if (siteData.devices.includes(dk)) { pushAssetRow(dk, group.name); assignedDevices.add(dk); }
         }
@@ -1732,7 +1741,7 @@ window.exportAllDataExcel = async function() {
     // อุปกรณ์ที่ยังไม่ได้จัดกลุ่ม
     const ungrouped = siteData.devices.filter(d => d !== 'other' && !assignedDevices.has(d));
     if (ungrouped.length > 0) {
-        assetData.push([`── ยังไม่ได้จัดกลุ่ม (${ungrouped.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '']);
+        assetData.push([`── ยังไม่ได้จัดกลุ่ม (${ungrouped.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '', '']);
         for (const dk of ungrouped) { pushAssetRow(dk, '(ยังไม่ได้จัดกลุ่ม)'); }
     }
 
@@ -1781,6 +1790,7 @@ window.exportAllDataExcel = async function() {
             { wch: 16 }, // PEA No.
             { wch: 14 }, // ราคา
             { wch: 20 }, // Manufacturer
+            { wch: 22 }, // สถานที่ติดตั้ง
             { wch: 18 }, // วันเริ่ม
             { wch: 18 }, // วันหมด
             { wch: 16 }, // สถานะ
