@@ -1083,7 +1083,7 @@ window.saveAssetData = async function() {
         imageUrl = existingAsset.imageUrl || null;
         const imageFile = document.getElementById('assetImageFile').files[0];
         if (imageFile) {
-            const ref = storage.ref().child(`assetImages/${currentSiteKey}/${currentDevice}/${Date.now()}_${imageFile.name}`);
+            const ref = storage.ref().child(`attachments/${currentSiteKey}/${currentDevice}/assetImage/${Date.now()}_${imageFile.name}`);
             await ref.put(imageFile);
             imageUrl = await ref.getDownloadURL();
         }
