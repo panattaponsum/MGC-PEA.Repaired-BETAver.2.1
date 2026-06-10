@@ -24,9 +24,146 @@
     </script>
 
     <style>
-        body { background-color: #f8fafc; }
-        .glass-header { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid #e2e8f0; }
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+        body { background-color: #f1f5f9; }
+        
+        /* === HEADER === */
+        .glass-header { 
+            background: linear-gradient(135deg, #0f2044 0%, #1d3a6e 60%, #1e4d8c 100%);
+            border-bottom: 3px solid #f59e0b;
+            box-shadow: 0 4px 20px rgba(15,32,68,0.35);
+        }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04); }
+
+        /* === FORM MODAL IMPROVEMENTS === */
+        .form-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .form-section-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+        .form-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+        .form-field label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 5px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .form-field input, .form-field select, .form-field textarea {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13.5px;
+            color: #1e293b;
+            background: #fff;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            outline: none;
+        }
+        .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+        }
+        .form-field input[readonly], .form-field input[readOnly] {
+            background: #f8fafc;
+            color: #94a3b8;
+            cursor: not-allowed;
+            border-style: dashed;
+        }
+        .form-field input[type="file"] {
+            padding: 7px 10px;
+            font-size: 12px;
+            background: #f8fafc;
+        }
+        .modal-header-official {
+            background: linear-gradient(135deg, #0f2044 0%, #1d3a6e 100%);
+            border-radius: 16px 16px 0 0;
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #f59e0b;
+        }
+        .modal-close-btn {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-size: 16px;
+        }
+        .modal-close-btn:hover { background: rgba(239,68,68,0.7); }
+        .modal-footer-official {
+            background: #f8fafc;
+            border-top: 1.5px solid #e2e8f0;
+            border-radius: 0 0 16px 16px;
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 13.5px;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .btn-primary:hover { 
+            background: linear-gradient(135deg, #1d4ed8, #1e3a8a); 
+            box-shadow: 0 6px 16px rgba(37,99,235,0.45);
+            transform: translateY(-1px);
+        }
+        .warranty-badge {
+            display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border: 1.5px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+        .tab-group-styled {
+            display: flex; background: #e8edf5; padding: 4px; border-radius: 10px;
+        }
+        .tab-group-styled button {
+            padding: 7px 16px; font-size: 12px; font-weight: 600; 
+            border-radius: 7px; border: none; cursor: pointer;
+            transition: all 0.15s; color: #64748b; background: transparent;
+            white-space: nowrap;
+        }
+        .tab-group-styled button.active-tab {
+            background: #fff; color: #2563eb; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .sidebar-history-panel {
+            background: #f8fafc;
+            border-left: 1.5px solid #e2e8f0;
+            border-radius: 0 0 16px 0;
+        }
 
         .viewer-mode .device-img, 
     .viewer-mode .map-container img,
@@ -142,34 +279,39 @@
     <header class="glass-header sticky top-0 z-[100] px-4 py-3">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
             
-            <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-br from-brand-500 to-brand-700 p-2.5 rounded-xl shadow-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <div class="flex items-center gap-4">
+                <div class="relative flex-shrink-0">
+                    <div class="bg-amber-400 p-0.5 rounded-xl shadow-lg">
+                        <div class="bg-gradient-to-br from-blue-700 to-blue-900 p-2.5 rounded-[10px]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-slate-900 leading-none">Microgrid <span class="text-brand-600">Asset Management</span></h1>
-                    <p class="text-[11px] font-medium text-slate-500 mt-1 uppercase tracking-wider">แผนกจัดการอุปกรณ์ควบคุมโครงข่ายไฟฟ้า กองเทคโนโลยีโครงข่ายไฟฟ้า</p>
+                <div class="border-l border-white/20 pl-4">
+                    <p class="text-[10px] font-bold text-amber-300 uppercase tracking-[0.12em] leading-none mb-1">กองเทคโนโลยีโครงข่ายไฟฟ้า · การไฟฟ้าส่วนภูมิภาค</p>
+                    <h1 class="text-lg font-bold tracking-tight text-white leading-tight">Microgrid <span class="text-amber-300">Asset Management</span></h1>
+                    <p class="text-[10px] font-medium text-blue-200 mt-0.5 tracking-wide">ระบบบริหารจัดการทรัพย์สินโครงข่ายไฟฟ้าขนาดเล็ก</p>
                 </div>
             </div>
  <div id="authContainer" class="flex items-center gap-4">
-                <button id="loginButton" class="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-all shadow-sm">
+                <button id="loginButton" class="flex items-center gap-2 bg-amber-400 text-blue-900 px-5 py-2 rounded-lg text-sm font-bold hover:bg-amber-300 transition-all shadow-md">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>
-                    เข้าสู่ระบบ (Login)
+                    เข้าสู่ระบบ
                 </button>
             </div>
             
-            <div id="userInfo" class="hidden flex items-center gap-4 border-t md:border-t-0 md:border-l border-slate-200 pt-3 md:pt-0 md:pl-4">
-                <div id="logoutTimerDisplay" class="flex items-center gap-1.5 bg-red-50 text-red-600 px-3 py-1 rounded-full border border-red-100 text-xs font-mono font-bold">
-                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span></span>
+            <div id="userInfo" class="hidden flex items-center gap-3 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-4">
+                <div id="logoutTimerDisplay" class="flex items-center gap-1.5 bg-red-500/20 text-red-200 px-3 py-1 rounded-full border border-red-400/30 text-xs font-mono font-bold">
+                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-400"></span></span>
                     <span id="timerMinutes">60</span>:<span id="timerSeconds">00</span>
                 </div>
                 
                 <div class="text-right hidden sm:block">
-                    <div id="userNameDisplay" class="text-sm font-bold text-slate-800 leading-none"></div>
-                    <div id="userRoleDisplay" class="text-[10px] mt-1 font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 inline-block">Viewer</div>
+                    <div id="userNameDisplay" class="text-sm font-bold text-white leading-none"></div>
+                    <div id="userRoleDisplay" class="text-[10px] mt-1 font-bold uppercase px-2 py-0.5 rounded bg-white/15 text-amber-300 inline-block border border-white/20">Viewer</div>
                 </div>
                 
-                <button id="logoutButton" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="ออกจากระบบ">
+                <button id="logoutButton" class="p-2 text-white/50 hover:text-red-300 hover:bg-white/10 rounded-lg transition-colors" title="ออกจากระบบ">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
             </div>
@@ -592,141 +734,196 @@
 
     <div id="formModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-6xl max-h-[95vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001] overflow-hidden">
         
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-            <h3 id="formTitle" class="text-xl font-bold text-slate-800 flex items-center gap-2">บันทึกข้อมูล</h3>
-            <button class="text-slate-400 hover:text-red-500 transition-colors p-1" onclick="closeForm()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+        <!-- Modal Header (official style) -->
+        <div class="modal-header-official">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-400/20 border border-amber-400/40 rounded-lg p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                </div>
+                <div>
+                    <h3 id="formTitle" class="text-base font-bold text-white leading-none">บันทึกข้อมูลเหตุการณ์</h3>
+                    <p class="text-[11px] text-blue-200 mt-0.5">Microgrid Asset Management System</p>
+                </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeForm()">✕</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="flex-1 overflow-hidden bg-slate-50" style="display:flex; flex-direction:row; min-height:0;">
+            <!-- LEFT COLUMN: Form Fields -->
+            <div class="flex-1 overflow-y-auto p-7" style="min-width:0;">
                 
-                <div class="flex flex-col gap-4">
-                    
-                    <div class="bg-brand-50 border border-brand-100 p-3 rounded-lg flex justify-between items-center">
-                        <div>
-                            <div id="warrantyStatusDisplay" class="text-sm font-bold text-brand-800">-</div>
-                            <div id="assetInfoDisplay" class="text-xs text-brand-600 mt-0.5">-</div>
-                        </div>
-                        <button class="text-xs font-semibold px-3 py-1.5 bg-white border border-brand-200 text-brand-600 rounded shadow-sm hover:bg-brand-100" onclick="openAssetModal()">📋 ทะเบียนทรัพย์สิน</button>
+                <!-- Warranty/Asset Banner -->
+                <div class="warranty-badge mb-6">
+                    <div class="bg-blue-100 rounded-lg p-2 flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
                     </div>
+                    <div class="flex-1 min-w-0">
+                        <div id="warrantyStatusDisplay" class="text-sm font-bold text-blue-900">-</div>
+                        <div id="assetInfoDisplay" class="text-xs text-blue-600 mt-0.5">-</div>
+                    </div>
+                    <button class="text-xs font-bold px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors whitespace-nowrap flex-shrink-0" onclick="openAssetModal()">📋 ทะเบียนทรัพย์สิน</button>
+                </div>
 
+                <!-- SECTION 1: Incident Info -->
+                <div class="mb-6">
+                    <div class="form-section-header">
+                        <div class="form-section-icon bg-red-50">⚠️</div>
+                        <span class="form-section-title text-slate-500">ส่วนที่ 1 — ข้อมูลการเกิดเหตุ</span>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div id="othersDeviceContainer" class="hidden sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">ระบุอุปกรณ์ย่อย (Other)</label>
-                            <select id="othersDeviceSelect" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"></select>
+                        <div id="othersDeviceContainer" class="hidden sm:col-span-2 form-field">
+                            <label>ระบุอุปกรณ์ย่อย (Other)</label>
+                            <select id="othersDeviceSelect"></select>
                         </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">ชื่อ-สกุล ผู้บันทึก</label>
-                            <input type="text" id="userName" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 text-slate-500 cursor-not-allowed" readOnly/>
+                        <div class="sm:col-span-2 form-field">
+                            <label>ชื่อ-สกุล ผู้บันทึก</label>
+                            <input type="text" id="userName" readOnly/>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">สถานะ</label>
-                            <select id="status" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                        <div class="form-field">
+                            <label>สถานะ</label>
+                            <select id="status">
                                 <option value="down" id="opt-down">❎ ชำรุด</option>
                                 <option value="abnormal" id="opt-abnormal">⚠️ ผิดปกติ</option>
                                 <option value="ok" id="opt-ok" style="display:none;">✅ ใช้งานได้</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">วันที่เกิดเหตุ</label>
-                            <input type="date" id="brokenDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"/>
+                        <div class="form-field">
+                            <label>วันที่เกิดเหตุ</label>
+                            <input type="date" id="brokenDate"/>
                         </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">รายละเอียดปัญหา</label>
-                            <textarea id="description" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+                        <div class="sm:col-span-2 form-field">
+                            <label>รายละเอียดปัญหา</label>
+                            <textarea id="description" rows="3" style="resize:vertical;"></textarea>
                         </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">แนบรูปภาพ หรือ ไฟล์แจ้งเสีย (ไม่เกิน 5MB)</label>
-                            <input type="file" id="brokenFile" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"/>
-                            <div id="brokenFileLink" class="text-xs mt-1 text-brand-600 font-medium"></div>
+                        <div class="sm:col-span-2 form-field">
+                            <label>แนบรูปภาพ หรือ ไฟล์แจ้งเสีย (ไม่เกิน 5MB)</label>
+                            <input type="file" id="brokenFile" accept="image/*,.pdf"/>
+                            <div id="brokenFileLink" class="text-xs mt-1.5 text-blue-600 font-medium"></div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="sm:col-span-2 h-px bg-slate-200 my-2"></div>
+                <!-- Section Divider -->
+                <div class="flex items-center gap-3 my-5">
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 bg-slate-50">ข้อมูลการซ่อมแซม</span>
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                </div>
 
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">วันที่ซ่อมแซมเสร็จ</label>
-                            <input type="date" id="fixedDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"/>
+                <!-- SECTION 2: Repair Info -->
+                <div class="mb-4">
+                    <div class="form-section-header">
+                        <div class="form-section-icon bg-emerald-50">🔧</div>
+                        <span class="form-section-title text-slate-500">ส่วนที่ 2 — ข้อมูลการซ่อมแซม</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="form-field">
+                            <label>วันที่ซ่อมแซมเสร็จ</label>
+                            <input type="date" id="fixedDate"/>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">ราคาซ่อมแซม (บาท)</label>
-                            <input type="number" id="repairCost" placeholder="0.00" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"/>
+                        <div class="form-field">
+                            <label>ราคาซ่อมแซม (บาท)</label>
+                            <input type="number" id="repairCost" placeholder="0.00"/>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">เลขที่ใบสั่ง / Ticket No.</label>
-                            <input type="text" id="orderNumber" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"/>
+                        <div class="form-field">
+                            <label>เลขที่ใบสั่ง / Ticket No.</label>
+                            <input type="text" id="orderNumber"/>
                         </div>
                         <div></div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">เลขที่หนังสือ มท</label>
-                            <input type="text" id="docMinistry" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"/>
+                        <div class="form-field">
+                            <label>เลขที่หนังสือ มท</label>
+                            <input type="text" id="docMinistry"/>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">เลขที่หนังสือ กฟภ.</label>
-                            <input type="text" id="docPEA" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"/>
+                        <div class="form-field">
+                            <label>เลขที่หนังสือ กฟภ.</label>
+                            <input type="text" id="docPEA"/>
                         </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">รายละเอียดวิธีแก้ไข</label>
-                            <textarea id="solution" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+                        <div class="sm:col-span-2 form-field">
+                            <label>รายละเอียดวิธีแก้ไข</label>
+                            <textarea id="solution" rows="3" style="resize:vertical;"></textarea>
                         </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">แนบรูปภาพ หรือ ไฟล์หลังซ่อม (ไม่เกิน 5MB)</label>
-                            <input type="file" id="fixedFile" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"/>
-                            <div id="fixedFileLink" class="text-xs mt-1 text-emerald-600 font-medium"></div>
+                        <div class="sm:col-span-2 form-field">
+                            <label>แนบรูปภาพ หรือ ไฟล์หลังซ่อม (ไม่เกิน 5MB)</label>
+                            <input type="file" id="fixedFile" accept="image/*,.pdf"/>
+                            <div id="fixedFileLink" class="text-xs mt-1.5 text-emerald-600 font-medium"></div>
                         </div>
                     </div>
-
-                    <div class="mt-4 flex items-center justify-between">
-                        <div id="editHint" class="text-sm font-semibold text-orange-600 hidden flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg> โหมดแก้ไขรายการเดิม</div>
-                        <button class="ml-auto bg-brand-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-md hover:bg-brand-700 transition-colors" onclick="saveData()" id="saveDataButton">💾 บันทึกข้อมูล</button>
-                    </div>
-                </div>
-
-                <div class="flex flex-col border-t lg:border-t-0 lg:border-l border-slate-200 pt-6 lg:pt-0 lg:pl-8 h-full max-h-[600px]">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-slate-800">📜 ประวัติการเกิดเหตุ</h3>
-                        <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer bg-slate-50 px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 transition-colors">
-                            <input type="checkbox" id="filterBrokenHistory" onchange="loadHistory()" class="rounded text-brand-600 focus:ring-brand-500">
-                            <span class="font-medium">ดูเฉพาะรายการที่คงค้าง</span>
-                        </label>
-                    </div>
-                    <div id="historySection" class="flex-1 overflow-y-auto pr-2 space-y-4 pb-4">
-                        </div>
                 </div>
             </div>
+
+            <!-- RIGHT COLUMN: History Panel -->
+            <div class="sidebar-history-panel flex flex-col p-5 overflow-hidden" style="width:320px; flex-shrink:0;">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-5 bg-blue-600 rounded-full"></div>
+                        <h3 class="text-sm font-bold text-slate-700">ประวัติการเกิดเหตุ</h3>
+                    </div>
+                    <label class="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">
+                        <input type="checkbox" id="filterBrokenHistory" onchange="loadHistory()" class="rounded text-brand-600 focus:ring-brand-500 w-3 h-3">
+                        <span class="font-semibold whitespace-nowrap">เฉพาะที่คงค้าง</span>
+                    </label>
+                </div>
+                <div id="historySection" class="flex-1 overflow-y-auto space-y-3 pr-1 pb-4">
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer-official">
+            <div id="editHint" class="text-sm font-semibold text-orange-600 hidden flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
+                โหมดแก้ไขรายการเดิม
+            </div>
+            <div class="flex-1"></div>
+            <button class="btn-primary" onclick="saveData()" id="saveDataButton">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                บันทึกข้อมูล
+            </button>
         </div>
     </div>
 
     <div id="assetModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex-col z-[1002]">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-            <h3 id="assetFormTitle" class="text-lg font-bold text-slate-800">📋 ข้อมูลทะเบียนทรัพย์สิน</h3>
-            <button class="text-slate-400 hover:text-red-500 p-1" onclick="closeAssetModal()">✖</button>
+        <div class="modal-header-official">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-400/20 border border-amber-400/40 rounded-lg p-2">📋</div>
+                <div>
+                    <h3 id="assetFormTitle" class="text-base font-bold text-white leading-none">ข้อมูลทะเบียนทรัพย์สิน</h3>
+                    <p class="text-[11px] text-blue-200 mt-0.5">Asset Registry Information</p>
+                </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeAssetModal()">✕</button>
         </div>
         <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div><label class="block text-xs font-bold text-slate-500 mb-1">Serial Number (S/N)</label><input type="text" id="assetSerial" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"/></div>
-            <div><label class="block text-xs font-bold text-slate-500 mb-1">รุ่น (Model)</label><input type="text" id="assetModel" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"/></div>
-            <div><label class="block text-xs font-bold text-slate-500 mb-1">PEA No.</label><input type="text" id="assetPeaNo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"/></div>
-            <div><label class="block text-xs font-bold text-slate-500 mb-1">ราคาซื้อ (Price)</label><input type="number" id="assetPrice" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"/></div>
-            <div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"/></div>
-            <div class="sm:col-span-2 h-px bg-slate-200 my-2"></div>
-            <div><label class="block text-xs font-bold text-slate-500 mb-1">วันที่เริ่มรับประกัน</label><input type="date" id="assetWarrantyStart" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"/></div>
-            <div><label class="block text-xs font-bold text-slate-500 mb-1">จำนวนปีรับประกัน</label><input type="number" id="assetWarrantyYears" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"/></div>
-            <div><label class="block text-xs font-bold text-slate-500 mb-1">วันที่หมดรับประกัน</label><input type="date" id="assetWarrantyEnd" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"/></div>
-            <div><label class="block text-xs font-bold text-slate-500 mb-1">สถานะประกัน</label><input type="text" id="assetWarrantyStatus" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-100 text-slate-600 font-bold" readOnly/></div>
+            <div class="form-field"><label>Serial Number (S/N)</label><input type="text" id="assetSerial"/></div>
+            <div class="form-field"><label>รุ่น (Model)</label><input type="text" id="assetModel"/></div>
+            <div class="form-field"><label>PEA No.</label><input type="text" id="assetPeaNo"/></div>
+            <div class="form-field"><label>ราคาซื้อ (Price)</label><input type="number" id="assetPrice"/></div>
+            <div class="sm:col-span-2 form-field"><label>ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer"/></div>
+            <div class="sm:col-span-2 h-px bg-slate-200 my-1"></div>
+            <div class="form-field"><label>วันที่เริ่มรับประกัน</label><input type="date" id="assetWarrantyStart"/></div>
+            <div class="form-field"><label>จำนวนปีรับประกัน</label><input type="number" id="assetWarrantyYears"/></div>
+            <div class="form-field"><label>วันที่หมดรับประกัน</label><input type="date" id="assetWarrantyEnd"/></div>
+            <div class="form-field"><label>สถานะประกัน</label><input type="text" id="assetWarrantyStatus" readOnly/></div>
         </div>
-        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 text-right rounded-b-2xl">
-            <button class="bg-brand-600 text-white px-5 py-2 rounded-lg font-bold shadow-md hover:bg-brand-700 transition-colors" onclick="saveAssetData()" id="saveAssetButton">💾 บันทึกทรัพย์สิน</button>
+        <div class="modal-footer-official">
+            <div></div>
+            <button class="btn-primary" onclick="saveAssetData()" id="saveAssetButton">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                บันทึกทรัพย์สิน
+            </button>
         </div>
     </div>
 
  <div id="userModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001]">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-            <div>
-                <h3 class="text-lg font-bold text-slate-800">⚙️ จัดการสิทธิ์ผู้ใช้งาน (User Management)</h3>
-                <p class="text-xs text-slate-500 mt-1">ตั้งค่า ชื่อ, ตำแหน่ง, สังกัด และระดับสิทธิ์ของผู้ใช้งานในระบบ</p>
+        <div class="modal-header-official">
+            <div class="flex items-center gap-3">
+                <div class="bg-purple-400/20 border border-purple-400/40 rounded-lg p-2">⚙️</div>
+                <div>
+                    <h3 class="text-base font-bold text-white leading-none">จัดการสิทธิ์ผู้ใช้งาน</h3>
+                    <p class="text-[11px] text-blue-200 mt-0.5">User Management · ตั้งค่า ชื่อ, ตำแหน่ง, สังกัด และระดับสิทธิ์</p>
+                </div>
             </div>
-            <button class="text-slate-400 hover:text-red-500 p-1" onclick="closeUserManagement()">✖</button>
+            <button class="modal-close-btn" onclick="closeUserManagement()">✕</button>
         </div>
         <div class="p-6 flex-1 overflow-auto bg-slate-50">
             <div id="userListContainer" class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -736,18 +933,22 @@
 
     <div id="logModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col z-[1001]">
 
-        <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap justify-between items-center bg-slate-50 rounded-t-2xl gap-4">
-            <div>
-                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2"><span class="p-1.5 bg-indigo-100 text-indigo-600 rounded-lg">📜</span> System Activity Logs</h3>
+        <div class="modal-header-official flex-wrap gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-400/20 border border-indigo-400/40 rounded-lg p-2">📜</div>
+                <div>
+                    <h3 class="text-base font-bold text-white leading-none">System Activity Logs</h3>
+                    <p class="text-[11px] text-blue-200 mt-0.5">บันทึกการใช้งานระบบ</p>
+                </div>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <select id="logSiteFilter" class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white" onchange="showActivityLogs('first')">
+                <select id="logSiteFilter" class="px-3 py-1.5 border border-white/20 rounded-lg text-sm bg-white/10 text-white" onchange="showActivityLogs('first')">
                     <option value="all">All Sites (Global)</option><option value="ko-phaluay">KO-PHALUAY</option><option value="mae-sariang">MAE-SARIANG</option><option value="betong">BETONG</option><option value="phrao">PHRAO</option>
                 </select>
-                <select id="logActionFilter" class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white" onchange="showActivityLogs('first')">
+                <select id="logActionFilter" class="px-3 py-1.5 border border-white/20 rounded-lg text-sm bg-white/10 text-white" onchange="showActivityLogs('first')">
                     <option value="all">All Actions</option><option value="AUTH">🔐 Access</option><option value="UPDATE_STATUS">🔄 Status</option><option value="ADD_RECORD">➕ Add</option><option value="EDIT_RECORD">✏️ Edit</option><option value="DELETE_RECORD">❌ Delete</option>
                 </select>
-                <button class="text-slate-400 hover:text-red-500 p-1" onclick="closeLogModal()">✖</button>
+                <button class="modal-close-btn" onclick="closeLogModal()">✕</button>
             </div>
         </div>
         <div class="flex-1 overflow-auto p-4 bg-white">
@@ -771,15 +972,26 @@
 
     <div id="reportModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col z-[1001]">
 
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-            <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><span class="p-1.5 bg-blue-100 text-blue-600 rounded-lg">🖨️</span> เลือกรายการเพื่อออกรายงาน PDF</h3>
-            <button onclick="closeReportModal()" class="text-slate-400 hover:text-red-500 p-1">✖</button>
+        <div class="modal-header-official">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-400/20 border border-blue-400/40 rounded-lg p-2">🖨️</div>
+                <div>
+                    <h3 class="text-base font-bold text-white leading-none">เลือกรายการเพื่อออกรายงาน PDF</h3>
+                    <p class="text-[11px] text-blue-200 mt-0.5">Report Generator</p>
+                </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeReportModal()">✕</button>
         </div>
         <div class="p-6 flex-1 overflow-auto bg-white" id="reportSelectionContainer"></div>
-        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-            <button class="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(true)">✅ เลือกทั้งหมด</button>
-            <button class="px-4 py-2 text-sm font-bold text-slate-500 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(false)">🔳 เอาออกทั้งหมด</button>
-            <button class="px-6 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-md" onclick="generateSelectedReport()">📑 สร้าง PDF</button>
+        <div class="modal-footer-official">
+            <div class="flex gap-2">
+                <button class="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(true)">✅ เลือกทั้งหมด</button>
+                <button class="px-4 py-2 text-sm font-bold text-slate-500 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(false)">🔳 เอาออกทั้งหมด</button>
+            </div>
+            <button class="btn-primary" onclick="generateSelectedReport()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                สร้าง PDF
+            </button>
         </div>
     </div>
 
