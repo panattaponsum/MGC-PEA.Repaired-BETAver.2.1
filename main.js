@@ -1505,17 +1505,6 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
             overlay.setAttribute('title', deviceName);
             mapContainer.appendChild(overlay);
 
-            // เพิ่มใหม่: สัญลักษณ์กากบาทแดง+ขอบส้ม แสดงเมื่อมีรายการชำรุด/ผิดปกติที่ยังไม่กดรับทราบ
-            const alertCount = devicesAlerts[deviceName];
-            if (alertCount > 0) {
-                const badge = document.createElement('div');
-                badge.className = 'device-alert-badge';
-                badge.innerHTML = '✕';
-                badge.style.left = `${x + width - 12}px`;
-                badge.style.top = `${y - 10}px`;
-                badge.setAttribute('title', `มีรายการชำรุด/ผิดปกติที่ยังไม่รับทราบ ${alertCount} รายการ`);
-                mapContainer.appendChild(badge);
-            }
         });
     });
 };
