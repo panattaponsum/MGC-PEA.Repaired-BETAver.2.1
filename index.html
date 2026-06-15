@@ -264,6 +264,49 @@
         box-shadow: 0 0 16px rgba(245, 158, 11, 1);
     }
 }
+
+/* === UNACKNOWLEDGED ISSUE ALERT BADGE (เพิ่มใหม่: ไม่ทับฟังก์ชันเดิม) === */
+.device-alert-badge {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    color: #ef4444;
+    z-index: 70;
+    cursor: default;
+    line-height: 1;
+    animation: alert-badge-pulse 1.4s infinite ease-in-out;
+    pointer-events: none;
+}
+@keyframes alert-badge-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(245, 158, 11, 0.7); }
+    50% { transform: scale(1.15); box-shadow: 0 0 12px rgba(245, 158, 11, 1); }
+}
+.history-alert-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #f59e0b;
+    box-shadow: 0 0 5px rgba(245, 158, 11, 0.6);
+    color: #ef4444;
+    font-size: 11px;
+    font-weight: 900;
+    margin-right: 6px;
+    flex-shrink: 0;
+    animation: alert-badge-pulse 1.4s infinite ease-in-out;
+}
  
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
@@ -962,10 +1005,10 @@
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <select id="logSiteFilter" class="px-3 py-1.5 border border-white/20 rounded-lg text-sm bg-white/10 text-white" onchange="showActivityLogs('first')">
-                    <option value="all">All Sites (Global)</option><option value="ko-phaluay">KO-PHALUAY</option><option value="mae-sariang">MAE-SARIANG</option><option value="betong">BETONG</option><option value="phrao">PHRAO</option>
+                    <option value="all" class="text-slate-800">All Sites (Global)</option><option value="ko-phaluay" class="text-slate-800">KO-PHALUAY</option><option value="mae-sariang" class="text-slate-800">MAE-SARIANG</option><option value="betong" class="text-slate-800">BETONG</option><option value="phrao" class="text-slate-800">PHRAO</option>
                 </select>
                 <select id="logActionFilter" class="px-3 py-1.5 border border-white/20 rounded-lg text-sm bg-white/10 text-white" onchange="showActivityLogs('first')">
-                    <option value="all">All Actions</option><option value="AUTH">🔐 Access</option><option value="UPDATE_STATUS">🔄 Status</option><option value="ADD_RECORD">➕ Add</option><option value="EDIT_RECORD">✏️ Edit</option><option value="DELETE_RECORD">❌ Delete</option>
+                    <option value="all" class="text-slate-800">All Actions</option><option value="AUTH" class="text-slate-800">🔐 Access</option><option value="UPDATE_STATUS" class="text-slate-800">🔄 Status</option><option value="ADD_RECORD" class="text-slate-800">➕ Add</option><option value="EDIT_RECORD" class="text-slate-800">✏️ Edit</option><option value="DELETE_RECORD" class="text-slate-800">❌ Delete</option><option value="IMPORT_DATA" class="text-slate-800">📥 Import</option><option value="EXPORT_DATA" class="text-slate-800">📤 Export</option><option value="ACKNOWLEDGE_ISSUE" class="text-slate-800">🛠️ Acknowledge</option>
                 </select>
                 <button class="modal-close-btn" onclick="closeLogModal()">✕</button>
             </div>
