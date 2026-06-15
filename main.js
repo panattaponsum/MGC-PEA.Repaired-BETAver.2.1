@@ -1612,7 +1612,7 @@ window.importData = function(event) {
                             if (!deviceName || String(deviceName).startsWith('──')) continue;
                             const groupName = (colGroup !== -1 && row[colGroup]) ? String(row[colGroup]).trim() : '';
                             // เก็บข้อมูลกลุ่มสำหรับ restore
-                            if (groupName && groupName !== '(ยังไม่ได้จัดกลุ่ม)') {
+                            if (groupName && groupName !== '(อื่นๆ)') {
                                 if (!importedGroupMap[groupName]) importedGroupMap[groupName] = [];
                                 importedGroupMap[groupName].push(String(deviceName).trim());
                             }
@@ -1738,11 +1738,11 @@ window.exportAllDataExcel = async function() {
             if (siteData.devices.includes(dk)) { pushAssetRow(dk, group.name); assignedDevices.add(dk); }
         }
     }
-    // อุปกรณ์ที่ยังไม่ได้จัดกลุ่ม
+    // อุปกรณ์อื่นๆ
     const ungrouped = siteData.devices.filter(d => d !== 'other' && !assignedDevices.has(d));
     if (ungrouped.length > 0) {
-        assetData.push([`── ยังไม่ได้จัดกลุ่ม (${ungrouped.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '', '']);
-        for (const dk of ungrouped) { pushAssetRow(dk, '(ยังไม่ได้จัดกลุ่ม)'); }
+        assetData.push([`── อื่นๆ (${ungrouped.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '', '']);
+        for (const dk of ungrouped) { pushAssetRow(dk, '(อื่นๆ)'); }
     }
 
     // ---- records data (ทุกอุปกรณ์ตามลำดับ devices) ----
@@ -2184,7 +2184,7 @@ function renderRegistryContent(siteData) {
             <div class="flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
                 <span class="text-slate-400 text-lg">📂</span>
                 <div>
-                    <h3 class="font-bold text-slate-600">อุปกรณ์ที่ยังไม่ได้จัดกลุ่ม</h3>
+                    <h3 class="font-bold text-slate-600">อื่นๆ</h3>
                     <div class="text-xs text-slate-400">${ungrouped.length} อุปกรณ์</div>
                 </div>
             </div>
@@ -2287,7 +2287,7 @@ window.confirmGroupAction = async function() {
 
 window.deleteGroup = async function(groupId) {
     if (currentUserRole !== 'admin' && currentUserRole !== 'editor') return;
-    const result = await Swal.fire({ title: 'ลบกลุ่มนี้?', text: 'อุปกรณ์ในกลุ่มจะกลับไปอยู่ในส่วน "ยังไม่ได้จัดกลุ่ม"', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก' });
+    const result = await Swal.fire({ title: 'ลบกลุ่มนี้?', text: 'อุปกรณ์ในกลุ่มจะกลับไปอยู่ในส่วน "อื่นๆ"', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก' });
     if (!result.isConfirmed) return;
     registryGroups = registryGroups.filter(g => g.id !== groupId);
     await saveRegistryGroups();
