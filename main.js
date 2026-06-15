@@ -16,6 +16,7 @@ const storage = firebase.storage();
 const devicesCol = db.collection("devices"); 
 
 let cachedDeviceStatus = {}; 
+let cachedDeviceAlerts = {}; // เพิ่มใหม่: เก็บข้อมูล "อุปกรณ์ที่มีปัญหายังไม่รับทราบ" ต่อไซต์
 
 function formatThaiDate(dateVal) {
     if (!dateVal || dateVal === '-' || dateVal.toString().trim() === '') return '-';
@@ -433,7 +434,7 @@ window.showActivityLogs = async function(direction = 'first') {
             const d = doc.data(); const time = d.timestamp ? formatThaiDateTime(d.timestamp.toMillis()) : '-';
             let siteDisplay = d.siteKey === "SYSTEM" ? `<span class="text-slate-400 font-medium italic">SYSTEM</span>` : `<span class="font-mono text-blue-600 font-bold">${(d.siteKey||'').toUpperCase()}</span>`;
             let badgeClass = 'bg-slate-100 text-slate-600';
-            if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700'; else if (d.action.includes("UPDATE")) badgeClass = 'bg-blue-100 text-blue-700'; else if (d.action.includes("DELETE")) badgeClass = 'bg-red-100 text-red-700'; else if (d.action.includes("ADD") || d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
+            if (d.action.includes("AUTH")) badgeClass = 'bg-green-100 text-green-700'; else if (d.action.includes("IMPORT")) badgeClass = 'bg-purple-100 text-purple-700'; else if (d.action.includes("EXPORT")) badgeClass = 'bg-cyan-100 text-cyan-700'; else if (d.action.includes("ACKNOWLEDGE")) badgeClass = 'bg-amber-100 text-amber-700'; else if (d.action.includes("UPDATE")) badgeClass = 'bg-blue-100 text-blue-700'; else if (d.action.includes("DELETE")) badgeClass = 'bg-red-100 text-red-700'; else if (d.action.includes("ADD") || d.action.includes("EDIT")) badgeClass = 'bg-yellow-100 text-yellow-700';
             html += `<tr class="hover:bg-slate-50 border-b border-slate-100 text-center"><td class="p-2 border text-[10px] font-mono">${time}</td><td class="p-2 border text-[11px]">${d.userEmail || 'System'}</td><td class="p-2 border text-[11px]">${siteDisplay}</td><td class="p-2 border"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${d.action}</span></td><td class="p-2 border text-left text-[11px] text-slate-600">${d.details}</td></tr>`;
         });
         tableBody.innerHTML = html;
@@ -1318,7 +1319,8 @@ window.updateDeviceSummary = async function() {
             const deviceLabel = subDeviceName ? `${dev} / ${subDeviceName}` : dev;
             if (search && !deviceLabel.toLowerCase().includes(search)) continue;
 
-            summary.push({ device: deviceLabel, count: downCount, remaining: remainingCount, brokenDate: earliestBrokenDate, fixedDate: latestFixedDate, status: currentStatusDisplay, latestDescription: latestRecord?.description || '-', latestSolution: latestRecord?.solution || '-', latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays });
+            const unacknowledgedCount = remainingIssues.filter(r => !r.acknowledgedAt).length; // เพิ่มใหม่
+            summary.push({ device: deviceLabel, count: downCount, remaining: remainingCount, brokenDate: earliestBrokenDate, fixedDate: latestFixedDate, status: currentStatusDisplay, latestDescription: latestRecord?.description || '-', latestSolution: latestRecord?.solution || '-', latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays, unacknowledgedCount: unacknowledgedCount });
         }
     }
 
@@ -1336,8 +1338,9 @@ window.updateDeviceSummary = async function() {
             else if (s.status === 'ผิดปกติ') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-100"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>ผิดปกติ</span>`;
             else statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-100"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>ปกติ</span>`;
 
+            const alertBadgeHtml = s.unacknowledgedCount > 0 ? `<span class="history-alert-badge" title="มีรายการชำรุด/ผิดปกติที่ยังไม่รับทราบ ${s.unacknowledgedCount} รายการ">✕</span>` : '';
             const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer'; 
-            tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${escapeHtml(s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
+            tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">${alertBadgeHtml}${escapeHtml(s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
             tr.onclick = () => window.openForm(s.device); tbody.appendChild(tr);
         });
     }
@@ -1451,9 +1454,22 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
     if (!useCache) {
         const docsSnap = await getAllDevicesDocs(siteKey); 
         cachedDeviceStatus[siteKey] = {};
-        docsSnap.forEach(d => { if (d.data() && d.data().currentStatus) cachedDeviceStatus[siteKey][d.id] = d.data().currentStatus; });
+        cachedDeviceAlerts[siteKey] = {};
+        docsSnap.forEach(d => { 
+            const data = d.data();
+            if (data && data.currentStatus) cachedDeviceStatus[siteKey][d.id] = data.currentStatus; 
+            // เพิ่มใหม่: ตรวจสอบว่ามีรายการชำรุด/ผิดปกติที่ "ยังไม่กดรับทราบ" หรือไม่
+            const records = (data && data.records) || [];
+            const unacknowledged = records.filter(r => 
+                (r.status === 'down' || r.status === 'abnormal') && 
+                (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null') &&
+                !r.acknowledgedAt
+            );
+            if (unacknowledged.length > 0) cachedDeviceAlerts[siteKey][d.id] = unacknowledged.length;
+        });
     }
     const devicesStatus = cachedDeviceStatus[siteKey] || {};
+    const devicesAlerts = cachedDeviceAlerts[siteKey] || {};
 
     let mapElements = [];
     if (siteKey === 'betong') {
@@ -1488,6 +1504,18 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
             overlay.style.width = `${width}px`; overlay.style.height = `${height}px`; 
             overlay.setAttribute('title', deviceName);
             mapContainer.appendChild(overlay);
+
+            // เพิ่มใหม่: สัญลักษณ์กากบาทแดง+ขอบส้ม แสดงเมื่อมีรายการชำรุด/ผิดปกติที่ยังไม่กดรับทราบ
+            const alertCount = devicesAlerts[deviceName];
+            if (alertCount > 0) {
+                const badge = document.createElement('div');
+                badge.className = 'device-alert-badge';
+                badge.innerHTML = '✕';
+                badge.style.left = `${x + width - 12}px`;
+                badge.style.top = `${y - 10}px`;
+                badge.setAttribute('title', `มีรายการชำรุด/ผิดปกติที่ยังไม่รับทราบ ${alertCount} รายการ`);
+                mapContainer.appendChild(badge);
+            }
         });
     });
 };
@@ -1570,6 +1598,8 @@ async function processAndSaveImport(assetsToImport, recordsToImport, importedGro
         window.updateDeviceSummary(); 
         window.updateDeviceStatusOverlays(currentSiteKey); 
         const groupMsg = Object.keys(importedGroupMap).length > 0 ? ` · นำเข้ากลุ่ม ${Object.keys(importedGroupMap).length} กลุ่ม` : '';
+        const siteNameForLog = (sites[currentSiteKey] && sites[currentSiteKey].name) ? sites[currentSiteKey].name : currentSiteKey;
+        await createLog("IMPORT_DATA", `นำเข้าข้อมูล Excel ของไซต์ ${siteNameForLog} (อุปกรณ์ ${assetsToImport.length} รายการ, ประวัติ ${recordsToImport.length} รายการ)${groupMsg}`);
         Swal.fire({ title: 'นำเข้าสำเร็จ!', text: `ข้อมูลใหม่ถูกเพิ่มแล้ว (รายการที่มี ID ซ้ำถูกข้ามอัตโนมัติ)${groupMsg}`, icon: 'success' });
     } catch (error) { 
         Swal.fire('ผิดพลาด', error.message, 'error'); 
@@ -1800,6 +1830,7 @@ window.exportAllDataExcel = async function() {
     if (logData.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(logData), "ประวัติการใช้งาน");
 
     XLSX.writeFile(wb, `Device_Export_${siteData.name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    await createLog("EXPORT_DATA", `ส่งออกข้อมูล Excel ของไซต์ ${siteData.name} (อุปกรณ์ ${assetData.length - 1} รายการ, ประวัติ ${recordsData.length - 1} รายการ)`);
     Swal.fire('ส่งออกสำเร็จ', 'ไฟล์ถูกบันทึกแล้ว', "success");
 };
 
