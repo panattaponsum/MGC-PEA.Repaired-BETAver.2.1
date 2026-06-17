@@ -2762,10 +2762,27 @@ window.generateSelectedReport = async function () {
     }
 
     closeReportModal();
-    const w = window.open('', '', 'width=1200,height=900');
-    w.document.write(`
-<html><head><title>PEA_REPORT_${siteData.name}</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+   const reportHtml = buildReportDocumentHtml(siteData, bodyHtml);
+    const fileName = `รายงานบำรุงรักษา_${siteData.name.replace(/[\\/:*?"<>|]/g, '_')}_${new Date().toISOString().slice(0, 10)}.doc`;
+    const blob = new Blob(['\ufeff', reportHtml], { type: 'application/msword;charset=utf-8' });
+    saveAs(blob, fileName);
+};
+
+function buildReportDocumentHtml(siteData, bodyHtml) {
+    return `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<title>PEA_REPORT_${siteData.name}</title>
+<!--[if gte mso 9]>
+<xml>
+    <w:WordDocument>
+        <w:View>Print</w:View>
+        <w:Zoom>100</w:Zoom>
+        <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+</xml>
+<![endif]-->
 <style>
     @page { size: A4 portrait; margin: 18mm; }
     @media print {
@@ -2809,6 +2826,5 @@ window.generateSelectedReport = async function () {
         <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
     </div>
 </body>
-</html>`);
-    w.document.close();
-};
+</html>`;
+}
