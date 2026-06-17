@@ -2808,7 +2808,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     tr { page-break-inside: avoid; }
     thead { display: table-header-group; }
     .header-table { width: 100%; border-bottom: 3px solid #6a1b9a; margin-bottom: 12pt; }
-    .logo { width: 105pt; height: auto; }
+   .logo { width: 54pt; height: 54pt; max-width: 54pt; max-height: 54pt; border-radius: 50%; object-fit: contain; }
     .title { text-align: center; }
     .title-main { font-size: 14pt; font-weight: 700; color: #6a1b9a; }
    .title-sub { font-size: 11pt; }
@@ -2833,18 +2833,17 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     .pending { color: red; font-weight: bold; }
     .sub-device { color: #2563eb; font-weight: bold; }
     .footer-title { text-align: left; font-weight: 700; font-size: 11pt; margin-bottom: 4pt; }
-   .word-header-footer { page-break-inside: avoid; }
-    @media screen { .word-header-footer { display: none; } }
-    .signature { width: 100%; margin-top: 0; page-break-inside: avoid; table-layout: fixed; }
-    .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; }
-    .sig-line { border-bottom: 1px solid #000; width: 125pt; height: 20pt; margin: 0 auto 4pt auto; }
+   .word-header-footer { display: none; mso-hide: all; page-break-inside: avoid; }
+     .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; line-height: 1.35; }
+    .sig-line { margin-bottom: 3pt; white-space: nowrap; }
+    .sig-name { margin-bottom: 2pt; }
 </style>
 </head>
 <body><div class="WordSection1">
     <div class="word-header-footer" style="mso-element:header" id="h1">
         <table class="header-table">
             <tr>
-                <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="40" alt="PEA"></td>
+                <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="72" height="72" alt="PEA"></td>
                 <td class="title" style="width:50%;"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
                 <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
             </tr>
@@ -2853,9 +2852,9 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     <div class="word-header-footer" style="mso-element:footer" id="f1">
         <table class="signature">
             <tr>
-                <td class="sig-box"><div class="sig-line"></div><b>${escapeReportHtml(currentUserFullName || '')}</b><br>ผู้จัดทำรายงาน</td>
-                <td class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</td>
-                <td class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</td>
+                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name">(........................................)</div><div>ผู้จัดทำรายงาน</div></td>
+                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name">(........................................)</div><div>ผู้ตรวจสอบ</div></td>
+                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name">(........................................)</div><div>ผู้อนุมัติ</div></td>
             </tr>
         </table>
     </div>
