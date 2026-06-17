@@ -2833,13 +2833,15 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     .pending { color: red; font-weight: bold; }
     .sub-device { color: #2563eb; font-weight: bold; }
     .footer-title { text-align: left; font-weight: 700; font-size: 11pt; margin-bottom: 4pt; }
-    .signature { width: 100%; margin-top: 0; page-break-inside: avoid; }
-    .sig-box { width: 33%; text-align: center; font-size: 11pt; }
-    .sig-line { border-bottom: 1px solid #000; width: 135pt; height: 24pt; margin: 0 auto 5pt auto; }
+   .word-header-footer { page-break-inside: avoid; }
+    @media screen { .word-header-footer { display: none; } }
+    .signature { width: 100%; margin-top: 0; page-break-inside: avoid; table-layout: fixed; }
+    .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; }
+    .sig-line { border-bottom: 1px solid #000; width: 125pt; height: 20pt; margin: 0 auto 4pt auto; }
 </style>
 </head>
 <body><div class="WordSection1">
-    <div style="mso-element:header" id="h1">
+    <div class="word-header-footer" style="mso-element:header" id="h1">
         <table class="header-table">
             <tr>
                 <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="40" alt="PEA"></td>
@@ -2848,12 +2850,14 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
             </tr>
         </table>
     </div>
-    <div style="mso-element:footer" id="f1">
-        <table class="signature"><tr>
-             <div class="sig-box"><div class="sig-line"></div><b>${currentUserFullName || ''}</b><br>ผู้จัดทำรายงาน</div>
-        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</div>
-        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
-        </tr></table>
+    <div class="word-header-footer" style="mso-element:footer" id="f1">
+        <table class="signature">
+            <tr>
+                <td class="sig-box"><div class="sig-line"></div><b>${escapeReportHtml(currentUserFullName || '')}</b><br>ผู้จัดทำรายงาน</td>
+                <td class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</td>
+                <td class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</td>
+            </tr>
+        </table>
     </div>
     ${bodyHtml}
     
