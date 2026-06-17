@@ -2842,18 +2842,17 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     <div style="mso-element:header" id="h1">
         <table class="header-table">
             <tr>
-                <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="140" alt="PEA"></td>
+                <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="40" alt="PEA"></td>
                 <td class="title" style="width:50%;"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
                 <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
             </tr>
         </table>
     </div>
     <div style="mso-element:footer" id="f1">
-        <div class="footer-title">รายชื่อผู้จัดทำรายงาน</div>
         <table class="signature"><tr>
-            <td class="sig-box"><div class="sig-line"></div>ผู้จัดทำรายงาน</td>
-            <td class="sig-box"><div class="sig-line"></div>ผู้ตรวจสอบ</td>
-            <td class="sig-box"><div class="sig-line"></div>ผู้อนุมัติ</td>
+             <div class="sig-box"><div class="sig-line"></div><b>${currentUserFullName || ''}</b><br>ผู้จัดทำรายงาน</div>
+        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</div>
+        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
         </tr></table>
     </div>
     ${bodyHtml}
