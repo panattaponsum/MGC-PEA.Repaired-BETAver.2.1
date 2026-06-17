@@ -2656,6 +2656,22 @@ function closeReportModal() {
 }
 window.selectAllReport = function(isChecked) { document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked); };
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
+function escapeReportHtml(value) {
+    if (value === null || value === undefined || value === '') return '-';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function buildReportImageHtml(url) {
+    if (!url) return '';
+    const safeUrl = escapeReportHtml(url);
+    return `<div class="img"><img src="${safeUrl}" width="150" height="90" alt="รูปประกอบ"></div>`;
+}
+
 window.generateSelectedReport = async function () {
     const siteData = sites[currentSiteKey];
     const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
@@ -2710,51 +2726,50 @@ window.generateSelectedReport = async function () {
 
         bodyHtml += `
         <div class="device-section">
-            <div class="device-header">
-                <div class="device-title">${deviceNo++}. ${group.title}</div>
+            <div class="device-header"><div class="device-title">${deviceNo++}. ${escapeReportHtml(group.title)}</div><div class="device-title">${deviceNo++}. ${group.title}</div>
                 <div class="device-spec">
-                    S/N : ${asset.serial || '-'} | Model : ${asset.model || '-'} | 
-                    PEA No. : ${asset.peaNo || '-'} | Price : ${asset.price || '-'} | 
-                    Warranty : ${formatThaiDate(asset.warrantyStart)} → ${formatThaiDate(asset.warrantyEnd)}
+                     S/N : ${escapeReportHtml(asset.serial)} | Model : ${escapeReportHtml(asset.model)} | 
+                    PEA No. : ${escapeReportHtml(asset.peaNo)} | Price : ${escapeReportHtml(asset.price)} | 
+                    Warranty : ${escapeReportHtml(formatThaiDate(asset.warrantyStart))} → ${escapeReportHtml(formatThaiDate(asset.warrantyEnd))}
                 </div>
             </div>
             <table class="device-table">
                 <thead>
                     <tr>
-                        <th style="width:3%">No.</th>
-                        <th style="width:8%">Down Date</th>
-                        <th style="width:8%">Fixed Date</th>
-                        <th style="width:24%">Description</th>
-                        <th style="width:24%">Solution</th>
-                        <th style="width:17%">Details</th>
-                        <th style="width:16%">User</th>
+                       <th class="col-no">No.</th>
+                        <th class="col-date">Down Date</th>
+                        <th class="col-date">Fixed Date</th>
+                        <th class="col-text">Description</th>
+                        <th class="col-text">Solution</th>
+                        <th class="col-details">Details</th>
+                        <th class="col-user">User</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
         group.items.forEach((r, idx) => {
-            let imgBroken = r.brokenFileUrl ? `<div class="img"><img src="${r.brokenFileUrl}"></div>` : '';
-            let imgFixed = r.fixedFileUrl ? `<div class="img"><img src="${r.fixedFileUrl}"></div>` : '';
-             let subDeviceStm = r.subDevice ? ` <span class="text-blue-600 font-bold">[${r.subDevice}]</span>` : '';
+            let imgBroken = buildReportImageHtml(r.brokenFileUrl);
+            let imgFixed = buildReportImageHtml(r.fixedFileUrl);
+            let subDeviceStm = r.subDevice ? ` <span class="sub-device">[${escapeReportHtml(r.subDevice)}]</span>` : '';
             bodyHtml += `
             <tr>
                 <td class="center">${idx + 1}</td>
-                <td class="center">${formatThaiDate(r.brokenDate)}</td>
-                <td class="center">${r.fixedDate ? formatThaiDate(r.fixedDate) : '<span class="pending">PENDING</span>'}</td>
-                <td>${r.description || '-' } <br>${subDeviceStm} ${imgBroken}</td>
-                <td>${r.solution || '-'} ${imgFixed}</td>
+                <td class="center">${escapeReportHtml(formatThaiDate(r.brokenDate))}</td>
+                <td class="center">${r.fixedDate ? escapeReportHtml(formatThaiDate(r.fixedDate)) : '<span class="pending">PENDING</span>'}</td>
+                <td>${escapeReportHtml(r.description)} <br>${subDeviceStm} ${imgBroken}</td>
+                <td>${escapeReportHtml(r.solution)} ${imgFixed}</td>
                 <td class="details">
-                    <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? Number(r.repairCost).toLocaleString() : '-'}</div>
-                    <div><b>เลขที่ใบสั่ง:</b> ${r.orderNumber || '-'}</div>
-                    <div class="doc-line"><b>หนังสือ มท</b> ${r.docMinistry || '-'}</div>
-                    <div><b>หนังสือ กฟภ.</b> ${r.docPEA || '-'}</div>
+                    <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? escapeReportHtml(Number(r.repairCost).toLocaleString()) : '-'}</div>
+                    <div><b>เลขที่ใบสั่ง:</b> ${escapeReportHtml(r.orderNumber)}</div>
+                    <div class="doc-line"><b>หนังสือ มท</b> ${escapeReportHtml(r.docMinistry)}</div>
+                    <div><b>หนังสือ กฟภ.</b> ${escapeReportHtml(r.docPEA)}</div>
                     <div><b>สถานะซ่อม:</b> ${r.fixedDate ? 'ซ่อมแล้ว' : ((r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : 'รอดำเนินการ')}</div>
-                    <div><b>ชื่อ-สกุล ผู้รับทราบ :</b> ${r.acknowledgedBy || '-'}</div>
-                    <div><b>วันที่-เวลา :</b> ${r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-'}</div>
+                    <div><b>ชื่อ-สกุล ผู้รับทราบ :</b> ${escapeReportHtml(r.acknowledgedBy)}</div>
+                    <div><b>วันที่-เวลา :</b> ${r.acknowledgedAt ? escapeReportHtml(formatThaiDateTime(r.acknowledgedAt)) : '-'}</div>
                 </td>
                 <td class="center">
-                    <div class="user-block"><b>ชื่อ-สกุล ผู้แจ้งเหตุ</b><br>${r.brokenUser || '-'}<div class="user-sub">(${r.brokenUserPos || ''} ${r.brokenUserDept || ''})</div></div>
-                    <div class="user-block"><b>ชื่อ-สกุล ผู้แจ้งซ่อมแซม</b><br>${r.fixedUser || '-'}<div class="user-sub">(${r.fixedUserPos || ''} ${r.fixedUserDept || ''})</div></div>
+                    <div class="user-block"><b>ชื่อ-สกุล ผู้แจ้งเหตุ</b><br>${escapeReportHtml(r.brokenUser)}<div class="user-sub">(${escapeReportHtml(`${r.brokenUserPos || ''} ${r.brokenUserDept || ''}`.trim())})</div></div>
+                    <div class="user-block"><b>ชื่อ-สกุล ผู้แจ้งซ่อมแซม</b><br>${escapeReportHtml(r.fixedUser)}<div class="user-sub">(${escapeReportHtml(`${r.fixedUserPos || ''} ${r.fixedUserDept || ''}`.trim())})</div></div>
                 </td>
             </tr>`;
         });
@@ -2769,11 +2784,14 @@ window.generateSelectedReport = async function () {
 };
 
 function buildReportDocumentHtml(siteData, bodyHtml) {
+     const reportDate = formatThaiDate(new Date());
+    const reportTime = new Date().toLocaleTimeString('th-TH');
+    return `
     return `
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 <meta charset="UTF-8">
-<title>PEA_REPORT_${siteData.name}</title>
+<title>PEA_REPORT_${escapeReportHtml(siteData.name)}</title>
 <!--[if gte mso 9]>
 <xml>
     <w:WordDocument>
@@ -2784,47 +2802,55 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </xml>
 <![endif]-->
 <style>
-    @page { size: A4 portrait; margin: 18mm; }
-    @media print {
-        thead { display: table-header-group; } 
-        tr { page-break-inside: avoid; }
-        .device-section { page-break-inside: auto; }
-    }
-    body { font-family: 'Sarabun', sans-serif; font-size: 11px; margin: 0; color: #333; }
-    .header { display: flex; align-items: center; border-bottom: 3px solid #6a1b9a; padding-bottom: 8px; margin-bottom: 15px; }
-    .logo { width: 150px; margin-right: 15px; }
-    .title { flex: 1; text-align: center; } 
-    .title-main { font-size: 16px; font-weight: 700; color: #6a1b9a; } 
-    .header-right { font-size: 10px; text-align: right; }
-    .device-section { margin-bottom: 25px; }
-    .device-header { background: #f3f0ff; border-left: 5px solid #6a1b9a; padding: 8px; border-top: 1px solid #ddd; border-right: 1px solid #ddd; }
-    .device-title { font-weight: 700; font-size: 12px; } 
-    .device-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 5px; font-size: 9px; }
-    .device-table td { border: 1px solid #000; padding: 5px; font-size: 9px; vertical-align: top; word-break: break-word; }
-    .center { text-align: center; } 
-    .img img { width: 100%; height: 120px; object-fit: cover; margin-top: 3px; border: 1px solid #eee; }
+    @page WordSection1 { size: 21cm 29.7cm; margin: 1.4cm 1.2cm 1.4cm 1.2cm; }
+    div.WordSection1 { page: WordSection1; }
+    body { font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif; font-size: 9pt; margin: 0; color: #222; }
+    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    tr { page-break-inside: avoid; }
+    thead { display: table-header-group; }
+    .header-table { width: 100%; border-bottom: 3px solid #6a1b9a; margin-bottom: 12pt; }
+    .logo { width: 105pt; height: auto; }
+    .title { text-align: center; }
+    .title-main { font-size: 14pt; font-weight: 700; color: #6a1b9a; }
+    .title-sub { font-size: 9pt; }
+    .header-right { font-size: 8pt; text-align: right; }
+    .device-section { margin-bottom: 18pt; }
+    .device-header { background: #f3f0ff; border-left: 4pt solid #6a1b9a; border-top: 1px solid #ddd; border-right: 1px solid #ddd; padding: 6pt; }
+    .device-title { font-weight: 700; font-size: 10pt; }
+    .device-spec { font-size: 8pt; }
+    .device-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 3pt; font-size: 7.5pt; line-height: 1.2; }
+    .device-table td { border: 1px solid #000; padding: 3pt; font-size: 7.5pt; line-height: 1.25; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
+    .col-no { width: 4%; }
+    .col-date { width: 9%; }
+    .col-text { width: 23%; }
+    .col-details { width: 16%; }
+    .col-user { width: 16%; }
+    .center { text-align: center; }
+    .details div, .user-block { margin-bottom: 3pt; }
+    .img { margin-top: 3pt; text-align: center; }
+    .img img { width: 150pt; height: 90pt; max-width: 150pt; max-height: 90pt; object-fit: contain; border: 1px solid #bbb; }
     .pending { color: red; font-weight: bold; }
-    .signature { margin-top: 50px; display: flex; justify-content: space-around; page-break-inside: avoid; }
-    .sig-box { text-align: center; } 
-    .sig-line { border-bottom: 1px solid #000; width: 180px; height: 35px; margin-bottom: 6px; }
+    .sub-device { color: #2563eb; font-weight: bold; }
+    .signature { width: 100%; margin-top: 36pt; page-break-inside: avoid; }
+    .sig-box { width: 33%; text-align: center; font-size: 9pt; }
+    .sig-line { border-bottom: 1px solid #000; width: 135pt; height: 24pt; margin: 0 auto 5pt auto; }
 </style>
 </head>
-<body>
-    <div class="header">
-        <img class="logo" src="provincial-electricity-authority.png">
-        <div class="title">
-            <div class="title-main">ASSET MAINTENANCE REPORT</div>
-            <div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
-        </div>
-        <div class="header-right">SITE : ${siteData.name}<br>DATE : ${formatThaiDate(new Date())}<br>TIME : ${new Date().toLocaleTimeString('th-TH')}</div>
-    </div>
+<body><div class="WordSection1">
+    <table class="header-table">
+        <tr>
+            <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="140" alt="PEA"></td>
+            <td class="title" style="width:50%;"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
+            <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
+        </tr>
+    </table>
     ${bodyHtml}
-    <div class="signature">
-        <div class="sig-box"><div class="sig-line"></div><b>${currentUserFullName || ''}</b><br>ผู้จัดทำรายงาน</div>
-        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</div>
-        <div class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</div>
-    </div>
-</body>
+    <table class="signature"><tr>
+        <td class="sig-box"><div class="sig-line"></div><b>${escapeReportHtml(currentUserFullName || '')}</b><br>ผู้จัดทำรายงาน</td>
+        <td class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</td>
+        <td class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</td>
+    </tr></table>
+</div></body>
 </html>`;
 }
