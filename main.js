@@ -2726,7 +2726,7 @@ window.generateSelectedReport = async function () {
 
         bodyHtml += `
         <div class="device-section">
-            <div class="device-header"><div class="device-title">${deviceNo++}. ${escapeReportHtml(group.title)}</div><div class="device-title">${deviceNo++}. ${group.title}</div>
+           <div class="device-header"><div class="device-title">${deviceNo++}. ${escapeReportHtml(group.title)}</div>
                 <div class="device-spec">
                      S/N : ${escapeReportHtml(asset.serial)} | Model : ${escapeReportHtml(asset.model)} | 
                     PEA No. : ${escapeReportHtml(asset.peaNo)} | Price : ${escapeReportHtml(asset.price)} | 
@@ -2756,8 +2756,8 @@ window.generateSelectedReport = async function () {
                 <td class="center">${idx + 1}</td>
                 <td class="center">${escapeReportHtml(formatThaiDate(r.brokenDate))}</td>
                 <td class="center">${r.fixedDate ? escapeReportHtml(formatThaiDate(r.fixedDate)) : '<span class="pending">PENDING</span>'}</td>
-                <td>${escapeReportHtml(r.description)} <br>${subDeviceStm} ${imgBroken}</td>
-                <td>${escapeReportHtml(r.solution)} ${imgFixed}</td>
+                <td class="thai-distributed">${escapeReportHtml(r.description)} <br>${subDeviceStm} ${imgBroken}</td>
+                <td class="thai-distributed">${escapeReportHtml(r.solution)} ${imgFixed}</td>
                 <td class="details">
                     <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? escapeReportHtml(Number(r.repairCost).toLocaleString()) : '-'}</div>
                     <div><b>เลขที่ใบสั่ง:</b> ${escapeReportHtml(r.orderNumber)}</div>
@@ -2801,9 +2801,9 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </xml>
 <![endif]-->
 <style>
-    @page WordSection1 { size: 21cm 29.7cm; margin: 1.4cm 1.2cm 1.4cm 1.2cm; }
+   @page WordSection1 { size: 21cm 29.7cm; margin: 3.2cm 1.2cm 2.8cm 1.2cm; mso-header: h1; mso-footer: f1; }
     div.WordSection1 { page: WordSection1; }
-    body { font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif; font-size: 9pt; margin: 0; color: #222; }
+    body { font-family: 'TH SarabunPSK', 'TH Sarabun New', 'Sarabun', Arial, sans-serif; font-size: 11pt; margin: 0; color: #222; }
     table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     tr { page-break-inside: avoid; }
     thead { display: table-header-group; }
@@ -2811,15 +2811,16 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     .logo { width: 105pt; height: auto; }
     .title { text-align: center; }
     .title-main { font-size: 14pt; font-weight: 700; color: #6a1b9a; }
-    .title-sub { font-size: 9pt; }
-    .header-right { font-size: 8pt; text-align: right; }
+   .title-sub { font-size: 11pt; }
+    .header-right { font-size: 11pt; text-align: right; }
     .device-section { margin-bottom: 18pt; }
     .device-header { background: #f3f0ff; border-left: 4pt solid #6a1b9a; border-top: 1px solid #ddd; border-right: 1px solid #ddd; padding: 6pt; }
-    .device-title { font-weight: 700; font-size: 10pt; }
-    .device-spec { font-size: 8pt; }
+    .device-title { font-weight: 700; font-size: 11pt; }
+    .device-spec { font-size: 11pt; }
     .device-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 3pt; font-size: 7.5pt; line-height: 1.2; }
-    .device-table td { border: 1px solid #000; padding: 3pt; font-size: 7.5pt; line-height: 1.25; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
+     .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 3pt; font-size: 11pt; line-height: 1.2; }
+    .device-table td { border: 1px solid #000; padding: 3pt; font-size: 11pt; line-height: 1.25; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
+    .thai-distributed { text-align: justify; text-justify: distribute; mso-text-justify: distribute-all-lines; }
     .col-no { width: 4%; }
     .col-date { width: 9%; }
     .col-text { width: 23%; }
@@ -2831,25 +2832,32 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     .img img { width: 150pt; height: 90pt; max-width: 150pt; max-height: 90pt; object-fit: contain; border: 1px solid #bbb; }
     .pending { color: red; font-weight: bold; }
     .sub-device { color: #2563eb; font-weight: bold; }
-    .signature { width: 100%; margin-top: 36pt; page-break-inside: avoid; }
-    .sig-box { width: 33%; text-align: center; font-size: 9pt; }
+    .footer-title { text-align: left; font-weight: 700; font-size: 11pt; margin-bottom: 4pt; }
+    .signature { width: 100%; margin-top: 0; page-break-inside: avoid; }
+    .sig-box { width: 33%; text-align: center; font-size: 11pt; }
     .sig-line { border-bottom: 1px solid #000; width: 135pt; height: 24pt; margin: 0 auto 5pt auto; }
 </style>
 </head>
 <body><div class="WordSection1">
-    <table class="header-table">
-        <tr>
-            <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="140" alt="PEA"></td>
-            <td class="title" style="width:50%;"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
-            <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
-        </tr>
-    </table>
+    <div style="mso-element:header" id="h1">
+        <table class="header-table">
+            <tr>
+                <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="140" alt="PEA"></td>
+                <td class="title" style="width:50%;"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
+                <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
+            </tr>
+        </table>
+    </div>
+    <div style="mso-element:footer" id="f1">
+        <div class="footer-title">รายชื่อผู้จัดทำรายงาน</div>
+        <table class="signature"><tr>
+            <td class="sig-box"><div class="sig-line"></div>ผู้จัดทำรายงาน</td>
+            <td class="sig-box"><div class="sig-line"></div>ผู้ตรวจสอบ</td>
+            <td class="sig-box"><div class="sig-line"></div>ผู้อนุมัติ</td>
+        </tr></table>
+    </div>
     ${bodyHtml}
-    <table class="signature"><tr>
-        <td class="sig-box"><div class="sig-line"></div><b>${escapeReportHtml(currentUserFullName || '')}</b><br>ผู้จัดทำรายงาน</td>
-        <td class="sig-box"><div class="sig-line"></div>........................................<br>ผู้ตรวจสอบ</td>
-        <td class="sig-box"><div class="sig-line"></div>........................................<br>ผู้อนุมัติ</td>
-    </tr></table>
+    
 </div></body>
 </html>`;
 }
