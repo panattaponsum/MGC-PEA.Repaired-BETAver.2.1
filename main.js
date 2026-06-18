@@ -2841,7 +2841,6 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </style>
 </head>
 <body>
-<div class="WordSection1">
 <!--[if gte mso 9]>
 <div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
     <table class="header-table">
@@ -2862,6 +2861,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     </table>
 </div>
 <![endif]-->
+<div class="WordSection1">
   ${bodyHtml}  
 </div>
 </body>
