@@ -2852,9 +2852,9 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     <div class="word-header-footer" style="mso-element:footer" id="f1">
         <table class="signature">
             <tr>
-                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name">(........................................)</div><div>ผู้จัดทำรายงาน</div></td>
-                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name">(........................................)</div><div>ผู้ตรวจสอบ</div></td>
-                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name">(........................................)</div><div>ผู้อนุมัติ</div></td>
+                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name"><b>${currentUserFullName || ''}</b><</div><div>ผู้จัดทำรายงาน</div></td>
+                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name">(..............................................)</div><div>ผู้ตรวจสอบ</div></td>
+                <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name">(..............................................)</div><div>ผู้อนุมัติ</div></td>
             </tr>
         </table>
     </div>
