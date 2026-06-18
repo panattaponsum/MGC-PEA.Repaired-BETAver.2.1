@@ -2801,7 +2801,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </xml>
 <![endif]-->
 <style>
-   @page WordSection1 { size: 21cm 29.7cm; margin: 3.2cm 1.2cm 2.8cm 1.2cm; mso-header: h1; mso-footer: f1; }
+   @page WordSection1 { size: 21cm 29.7cm; margin: 3.2cm 1.2cm 2.8cm 1.2cm; mso-header: h1; mso-footer: f1; mso-header-margin: 0.8cm; mso-footer-margin: 0.8cm; }
     div.WordSection1 { page: WordSection1; }
     body { font-family: 'TH SarabunPSK', 'TH Sarabun New', 'Sarabun', Arial, sans-serif; font-size: 11pt; margin: 0; color: #222; }
     table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
@@ -2833,7 +2833,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     .pending { color: red; font-weight: bold; }
     .sub-device { color: #2563eb; font-weight: bold; }
     .footer-title { text-align: left; font-weight: 700; font-size: 11pt; margin-bottom: 4pt; }
-   .word-header-footer { page-break-inside: avoid; }
+    .word-header-footer { display: none; mso-hide: all; page-break-inside: avoid; }
     .signature { width: 100%; table-layout: fixed; border-collapse: collapse; }
      .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; line-height: 1.35; }
     .sig-line { margin-bottom: 3pt; white-space: nowrap; }
@@ -2842,7 +2842,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </head>
 <body>
 <!--[if gte mso 9]>
-<div class="word-header-footer" style="mso-element:header" id="h1">
+<div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
     <table class="header-table">
         <tr>
             <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="72" height="72" alt="PEA"></td>
@@ -2851,7 +2851,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
         </tr>
     </table>
 </div>
-<div class="word-header-footer" style="mso-element:footer" id="f1">
+<div class="word-header-footer" style="mso-element:footer; display:none;" id="f1">
     <table class="signature">
         <tr>
             <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name"><b>${currentUserFullName || ''}</b></div><div>ผู้จัดทำรายงาน</div></td>
