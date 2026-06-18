@@ -2842,7 +2842,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </head>
 <body>
 <!--[if gte mso 9]>
-<div style="mso-element:header" id="h1">
+<div class="word-header-footer" style="mso-element:header" id="h1">
     <table class="header-table">
         <tr>
             <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="72" height="72" alt="PEA"></td>
@@ -2851,7 +2851,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
         </tr>
     </table>
 </div>
-<div style="mso-element:footer" id="f1">
+<div class="word-header-footer" style="mso-element:footer" id="f1">
     <table class="signature">
         <tr>
             <td class="sig-box"><div class="sig-line">ลงชื่อ ........................................</div><div class="sig-name"><b>${currentUserFullName || ''}</b></div><div>ผู้จัดทำรายงาน</div></td>
