@@ -2833,7 +2833,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     .pending { color: red; font-weight: bold; }
     .sub-device { color: #2563eb; font-weight: bold; }
     .footer-title { text-align: left; font-weight: 700; font-size: 11pt; margin-bottom: 4pt; }
-   .word-header-footer { display: none; mso-hide: all; page-break-inside: avoid; }
+   .word-header-footer { page-break-inside: avoid; }
     .signature { width: 100%; table-layout: fixed; border-collapse: collapse; }
      .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; line-height: 1.35; }
     .sig-line { margin-bottom: 3pt; white-space: nowrap; }
