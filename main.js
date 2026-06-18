@@ -2834,6 +2834,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     .sub-device { color: #2563eb; font-weight: bold; }
     .footer-title { text-align: left; font-weight: 700; font-size: 11pt; margin-bottom: 4pt; }
     .word-header-footer { display: none; mso-hide: all; page-break-inside: avoid; }
+    table#hrdftrtbl { margin: 0cm 0cm 0cm 25cm; mso-hide: all; }
     .signature { width: 100%; table-layout: fixed; border-collapse: collapse; }
      .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; line-height: 1.35; }
     .sig-line { margin-bottom: 3pt; white-space: nowrap; }
@@ -2841,7 +2842,11 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </style>
 </head>
 <body>
+<div class="WordSection1">
 <!--[if gte mso 9]>
+<table id="hrdftrtbl" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td>
 <div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
     <table class="header-table">
         <tr>
@@ -2851,6 +2856,10 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
         </tr>
     </table>
 </div>
+</td>
+</tr>
+<tr>
+<td>
 <div class="word-header-footer" style="mso-element:footer; display:none;" id="f1">
     <table class="signature">
         <tr>
@@ -2860,8 +2869,10 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
         </tr>
     </table>
 </div>
+</td>
+</tr>
+</table>
 <![endif]-->
-<div class="WordSection1">
   ${bodyHtml}  
 </div>
 </body>
