@@ -2801,7 +2801,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </xml>
 <![endif]-->
 <style>
-   @page WordSection1 { size: 21cm 29.7cm; margin: 3.2cm 1.2cm 2.8cm 1.2cm; mso-header: h1; mso-footer: f1; mso-header-margin: 0.8cm; mso-footer-margin: 0.8cm; }
+    @page WordSection1 { size: 21cm 29.7cm; margin: 3.2cm 1.2cm 2.8cm 1.2cm; mso-header: h1; mso-footer: f1; mso-header-margin: 0.8cm; mso-footer-margin: 0.8cm; }
     div.WordSection1 { page: WordSection1; }
     body { font-family: 'TH SarabunPSK', 'TH Sarabun New', 'Sarabun', Arial, sans-serif; font-size: 11pt; margin: 0; color: #222; }
     table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
@@ -2841,6 +2841,9 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 </style>
 </head>
 <body>
+<div class="WordSection1">
+    ${bodyHtml}  
+</div>
 <!--[if gte mso 9]>
 <div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
     <table class="header-table">
@@ -2861,9 +2864,7 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
     </table>
 </div>
 <![endif]-->
-<div class="WordSection1">
-    ${bodyHtml}  
-</div>
+
 </body>
 </html>`;
 }
