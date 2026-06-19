@@ -2503,72 +2503,74 @@ window.stopAutoLogoutTimer = function() {
 };
 
 window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, count) {
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyBgdIuxjOajJ10HZuJrskQGVxExt5j_DXcJMFcRrieo8WYktSnQT6xNCbIg7py6no-yg/exec"; 
-    
-    let title = (type === 'down') ? `🚨 แจ้งเตือนอุปกรณ์มีปัญหา (ครั้งที่ ${count})` : `✅ แจ้งเตือนซ่อมแซมเสร็จสิ้น `;
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyBgdIuxjOajJ10HZuJrskQGVxExt5j_DXcJMFcRrieo8WYktSnQT6xNCbIg7py6no-yg/exec";
+
+    let title = (type === 'down') ? `รายงานแจ้งเหตุอุปกรณ์ชำรุด (ครั้งที่ ${count})` : `รายงานแจ้งซ่อมแซมอุปกรณ์แล้วเสร็จ`;
     const siteName = sites[currentSiteKey].name;
     const firebaseImageUrl = (type === 'down') ? (baseRec.brokenFileUrl || "") : (baseRec.fixedFileUrl || "");
 
     let subDeviceText = baseRec.subDevice ? ` (${baseRec.subDevice})` : '';
-    let assetText = assetInfo ? `\n📦 ข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'}` : '';
-    
-    
-    let docText = `\n📄 เลขที่ใบสั่ง: ${baseRec.orderNumber || '-'} | เลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'} | เลขที่หนังสือ มท : ${baseRec.docMinistry || '-'}`;
-    let costText = type === 'fixed' ? `\n💰 งบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
-    
+    let assetText = assetInfo ? `\nข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'}` : '';
+    let docText = `\nเลขที่ใบสั่ง: ${baseRec.orderNumber || '-'}\nเลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'}\nเลขที่หนังสือ มท.: ${baseRec.docMinistry || '-'}`;
+    let costText = type === 'fixed' ? `\nงบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
 
-    let userDetail = `(${currentUserPosition || '-'} ${currentUserDept || '-'})`;
-    
-   
-    let brokenDateStr = formatThaiDate(baseRec.brokenDate); 
+    const formatReporter = (name, position, department) => {
+        const reporterName = name || '-';
+        const details = [position, department].filter(Boolean).join(' ');
+        return details ? `${reporterName} (${details})` : reporterName;
+    };
+
+    let brokenDateStr = formatThaiDate(baseRec.brokenDate);
     let fixedDateStr = formatThaiDate(baseRec.fixedDate);
+    let brokenUserDisplay = formatReporter(baseRec.brokenUser || baseRec.user, baseRec.brokenUserPos, baseRec.brokenUserDept);
+    let fixedUserDisplay = type === 'fixed'
+        ? formatReporter(baseRec.fixedUser || baseRec.user, baseRec.fixedUserPos, baseRec.fixedUserDept)
+        : '-';
+    let reportTypeText = (type === 'down') ? 'แจ้งเหตุอุปกรณ์ชำรุด/ผิดปกติ' : 'แจ้งซ่อมแซมอุปกรณ์แล้วเสร็จ';
 
-   
-    let brokenUserDisplay = "";
-    let fixedUserDisplay = "";
+    let message = `${title}
 
-    if (type === 'down') {
-     
-        brokenUserDisplay = `${baseRec.user} ${userDetail}`;
-        fixedUserDisplay = "-";
-    } else {
-       
-        brokenUserDisplay = `${baseRec.user} ${userDetail}`;
-       
-        fixedUserDisplay = `${baseRec.user} ${userDetail}`;
-    }
+เรียน ผู้ที่มีส่วนเกี่ยวข้อง
 
-    let message = ` ${title}
+ขอแจ้งรายงานจากระบบบริหารจัดการอุปกรณ์ Microgrid โดยมีรายละเอียดดังนี้
 
-🆔 เลขที่รายการ: ${baseRec.customId || '-'}
-📍 สถานที่: ${siteName}
-🛠️ อุปกรณ์: ${deviceName}${subDeviceText}${assetText}
-📝 รายละเอียดปัญหา: ${baseRec.description || '-'}
-📅 วันที่เกิดเหตุ: ${brokenDateStr}
-👤 ชื่อ-สกุล ผู้แจ้งเหตุ: ${brokenUserDisplay}
+ประเภทการแจ้ง: ${reportTypeText}
+เลขที่รายการ: ${baseRec.customId || '-'}
+สถานที่: ${siteName}
+อุปกรณ์: ${deviceName}${subDeviceText}${assetText}
 
-💡 วิธีแก้ไข: ${baseRec.solution || '-'}${docText}${costText}
-📅 วันที่ซ่อมแซม: ${fixedDateStr}
-👤 ชื่อ-สกุล ผู้แจ้งซ่อมแซม: ${fixedUserDisplay}
+รายละเอียดการแจ้งเหตุ
+- วันที่เกิดเหตุ: ${brokenDateStr}
+- ชื่อ-สกุล ผู้แจ้งเหตุ: ${brokenUserDisplay}
+- รายละเอียดปัญหา: ${baseRec.description || '-'}
+
+รายละเอียดการซ่อมแซม
+- วันที่ซ่อมแซม: ${fixedDateStr}
+- ชื่อ-สกุล ผู้แจ้งซ่อมแซม: ${fixedUserDisplay}
+- วิธีแก้ไข: ${baseRec.solution || '-'}${costText}
+
+ข้อมูลเอกสารอ้างอิง${docText}
+
+จึงเรียนมาเพื่อโปรดทราบ
+ระบบบริหารจัดการอุปกรณ์ Microgrid
 ------------------------------------------`;
 
-    try { 
-        await fetch(GAS_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            cache: 'no-cache', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ 
-                site: siteName, 
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            cache: 'no-cache',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                site: siteName,
                 message: message,
-                firebaseImageUrl: firebaseImageUrl 
-            }) 
-        }); 
+                firebaseImageUrl: firebaseImageUrl
+            })
+        });
     } catch (err) {
         console.error("ส่งแจ้งเตือนล้มเหลว:", err);
     }
 };
-
 window.onload = function() { try { imageMapResize(); } catch (e) {} };
 
 
