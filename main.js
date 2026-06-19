@@ -2780,7 +2780,7 @@ window.generateSelectedReport = async function () {
 
     closeReportModal();
    const reportHtml = buildReportDocumentHtml(siteData, bodyHtml);
-    const fileName = `รายงานบำรุงรักษา_${siteData.name.replace(/[\\/:*?"<>|]/g, '_')}_${new Date().toISOString().slice(0, 10)}.doc`;
+    const fileName = `รายงานสรุปการแจ้งปัญหา_${siteData.name.replace(/[\\/:*?"<>|]/g, '_')}_${new Date().toISOString().slice(0, 10)}.doc`;
     const blob = new Blob(['\ufeff', reportHtml], { type: 'application/msword;charset=utf-8' });
     saveAs(blob, fileName);
 };
