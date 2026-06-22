@@ -17,6 +17,7 @@ const devicesCol = db.collection("devices");
 
 let cachedDeviceStatus = {}; 
 let cachedDeviceAlerts = {}; // เพิ่มใหม่: เก็บข้อมูล "อุปกรณ์ที่มีปัญหายังไม่รับทราบ" ต่อไซต์
+let deviceAliasMap = {}; // siteKey -> { deviceKey: displayName } สำหรับเปลี่ยนชื่อแสดงผลโดยไม่ย้ายข้อมูลเดิม
 
 function formatThaiDate(dateVal) {
     if (!dateVal || dateVal === '-' || dateVal.toString().trim() === '') return '-';
@@ -260,6 +261,28 @@ async function generateAutoId(siteKey) {
 }
 function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>'); }
 function getSiteCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`devices`); }
+function getDeviceAliasDocRef(siteKey) { return db.collection('site_device_aliases').doc(siteKey); }
+function getDisplayDeviceName(deviceKey, siteKey = currentSiteKey) {
+    return deviceAliasMap[siteKey]?.[deviceKey] || deviceKey;
+}
+async function loadDeviceAliases(siteKey = currentSiteKey) {
+    try {
+        const snap = await getDeviceAliasDocRef(siteKey).get();
+        deviceAliasMap[siteKey] = snap.exists && snap.data().aliases ? snap.data().aliases : {};
+    } catch (e) {
+        console.warn('Failed to load device aliases:', e);
+        deviceAliasMap[siteKey] = deviceAliasMap[siteKey] || {};
+    }
+    return deviceAliasMap[siteKey];
+}
+async function saveDeviceAlias(siteKey, deviceKey, displayName) {
+    const aliases = { ...(deviceAliasMap[siteKey] || {}) };
+    const cleanName = String(displayName || '').trim();
+    if (!cleanName || cleanName === deviceKey) delete aliases[deviceKey];
+    else aliases[deviceKey] = cleanName;
+    await getDeviceAliasDocRef(siteKey).set({ aliases }, { merge: true });
+    deviceAliasMap[siteKey] = aliases;
+}
 
 async function getDeviceRecords(siteKey, device) {
 const docRef = getSiteCollection(siteKey).doc(device); 
@@ -521,7 +544,7 @@ function parseDeviceSelection(deviceName) {
 window.openForm = async function(deviceName) {
     const { mainDevice, subDevice } = parseDeviceSelection(deviceName);
     currentDevice = mainDevice; editIndex = -1;
-    document.getElementById('formTitle').textContent = `บันทึกข้อมูล: ${deviceName}`;
+    document.getElementById('formTitle').textContent = `บันทึกข้อมูล: ${getDisplayDeviceName(mainDevice)}${subDevice ? ' / ' + subDevice : ''}`;
     const othersContainer = document.getElementById('othersDeviceContainer');
     const othersSelect = document.getElementById('othersDeviceSelect');
     
@@ -1284,6 +1307,7 @@ window.deleteUser = async function(email) {
 
 window.updateDeviceSummary = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData) return;
+    await loadDeviceAliases(currentSiteKey);
     const search = document.getElementById('searchInput').value.toLowerCase(); const sortOrder = document.getElementById('sortOrder').value; const filterStatus = document.getElementById('filterStatus').value; const from = document.getElementById('fromDate').value; const to = document.getElementById('toDate').value;
     const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' }); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
     let summary = []; let totalDevices = 0; let currentBrokenCount = 0; let currentNormalCount = 0;
@@ -1316,11 +1340,13 @@ window.updateDeviceSummary = async function() {
             if (filterStatus === 'down' && (scopedRecords.length === 0 || remainingCount > 0)) continue;
             if (filterStatus === 'clean' && scopedRecords.length > 0) continue;
 
-            const deviceLabel = subDeviceName ? `${dev} / ${subDeviceName}` : dev;
+            const baseDeviceLabel = getDisplayDeviceName(dev);
+            const deviceLabel = subDeviceName ? `${baseDeviceLabel} / ${subDeviceName}` : baseDeviceLabel;
+            const openDeviceKey = subDeviceName ? `${dev} / ${subDeviceName}` : dev;
             if (search && !deviceLabel.toLowerCase().includes(search)) continue;
 
             const unacknowledgedCount = remainingIssues.filter(r => !r.acknowledgedAt).length; // เพิ่มใหม่
-            summary.push({ device: deviceLabel, count: downCount, remaining: remainingCount, brokenDate: earliestBrokenDate, fixedDate: latestFixedDate, status: currentStatusDisplay, latestDescription: latestRecord?.description || '-', latestSolution: latestRecord?.solution || '-', latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays, unacknowledgedCount: unacknowledgedCount });
+            summary.push({ device: deviceLabel, deviceKey: openDeviceKey, count: downCount, remaining: remainingCount, brokenDate: earliestBrokenDate, fixedDate: latestFixedDate, status: currentStatusDisplay, latestDescription: latestRecord?.description || '-', latestSolution: latestRecord?.solution || '-', latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays, unacknowledgedCount: unacknowledgedCount });
         }
     }
 
@@ -1341,7 +1367,7 @@ window.updateDeviceSummary = async function() {
             const alertBadgeHtml = s.unacknowledgedCount > 0 ? `<span class="history-alert-badge" title="มีรายการชำรุด/ผิดปกติที่ยังไม่รับทราบ ${s.unacknowledgedCount} รายการ">✕</span>` : '';
             const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer'; 
             tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">${alertBadgeHtml}${escapeHtml(s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
-            tr.onclick = () => window.openForm(s.device); tbody.appendChild(tr);
+            tr.onclick = () => window.openForm(s.deviceKey || s.device); tbody.appendChild(tr);
         });
     }
 
@@ -1920,6 +1946,7 @@ function renderRegistryStats(siteData) {
 
 }
 async function loadAssetRegistry() {
+    await loadDeviceAliases(currentSiteKey);
     const siteData = sites[currentSiteKey];
     const siteNameEl = document.getElementById('registrySiteName');
     const loadingEl = document.getElementById('registryLoading');
@@ -2028,6 +2055,10 @@ const TABLE_HEADER = `
             กลุ่ม
         </th>
 
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            จัดการชื่อ
+        </th>
+
     </tr>
 </thead>`;
 
@@ -2091,7 +2122,7 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
 <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
 
     <td class="px-3 py-2.5 text-sm font-semibold text-slate-800 whitespace-nowrap text-center">
-        ${escapeHtml(devKey)}
+        <div class="flex items-center justify-center gap-2"><span>${escapeHtml(getDisplayDeviceName(devKey))}</span>${getDisplayDeviceName(devKey) !== devKey ? `<span class="text-[10px] text-slate-400 font-normal">(${escapeHtml(devKey)})</span>` : ''}</div>
     </td>
 
     <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
@@ -2120,6 +2151,10 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
 
     <td class="px-3 py-2.5 min-w-[130px] text-center">
         ${moveSelect}
+    </td>
+
+    <td class="px-3 py-2.5 text-center">
+        ${(currentUserRole === 'admin' || currentUserRole === 'editor') ? `<button onclick="renameDeviceAlias('${safeDevKey}')" class="px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100">✏️ เปลี่ยนชื่อ</button>` : '<span class="text-slate-300">—</span>'}
     </td>
 
 </tr>
@@ -2305,6 +2340,30 @@ window.confirmGroupAction = async function() {
     renderRegistryStats(sites[currentSiteKey]);
 };
 
+window.renameDeviceAlias = async function(devKey) {
+    if (currentUserRole !== 'admin' && currentUserRole !== 'editor') {
+        Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin หรือ Editor เท่านั้น', 'warning');
+        return;
+    }
+    const currentName = getDisplayDeviceName(devKey);
+    const result = await Swal.fire({
+        title: 'เปลี่ยนชื่ออุปกรณ์',
+        html: `<div class="text-left text-sm text-slate-600 mb-2">ระบบจะเปลี่ยนเฉพาะชื่อที่แสดงบนหน้าเว็บ ข้อมูลประวัติเดิมยังอ้างอิงรหัสเดิม <b>${escapeHtml(devKey)}</b> จึงไม่หาย</div>`,
+        input: 'text',
+        inputValue: currentName,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึกชื่อ',
+        cancelButtonText: 'ยกเลิก',
+        inputValidator: (value) => !value || !value.trim() ? 'กรุณากรอกชื่ออุปกรณ์' : null
+    });
+    if (!result.isConfirmed) return;
+    await saveDeviceAlias(currentSiteKey, devKey, result.value);
+    await createLog('RENAME_DEVICE_ALIAS', `เปลี่ยนชื่อแสดงผลอุปกรณ์ ${devKey} เป็น ${result.value}`);
+    renderRegistryContent(sites[currentSiteKey]);
+    window.updateDeviceSummary();
+    Swal.fire('บันทึกแล้ว', 'ข้อมูลเดิมยังอยู่ครบภายใต้อุปกรณ์เดิม', 'success');
+};
+
 window.deleteGroup = async function(groupId) {
     if (currentUserRole !== 'admin' && currentUserRole !== 'editor') return;
     const result = await Swal.fire({ title: 'ลบกลุ่มนี้?', text: 'อุปกรณ์ในกลุ่มจะกลับไปอยู่ในส่วน "อื่นๆ"', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก' });
@@ -2322,8 +2381,9 @@ function scheduleOverlayRefresh(siteKey = currentSiteKey, useCache = false) {
         window.updateDeviceStatusOverlays(siteKey, useCache);
     }, 100);
 }
-function switchSite(siteKey) { 
+async function switchSite(siteKey) { 
     const siteData = sites[siteKey]; if (!siteData) return; currentSiteKey = siteKey; 
+    await loadDeviceAliases(siteKey); 
     document.getElementById('locationTitle').textContent = `🔎 ${siteData.name}`; 
     document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden')); 
     document.getElementById(`map-${siteKey}`).classList.remove('hidden'); 
