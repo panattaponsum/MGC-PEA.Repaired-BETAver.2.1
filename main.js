@@ -262,26 +262,53 @@ async function generateAutoId(siteKey) {
 function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>'); }
 function getSiteCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`devices`); }
 function getDeviceAliasDocRef(siteKey) { return db.collection('site_device_aliases').doc(siteKey); }
+function getDeviceAliasStorageKey(siteKey) { return `device_aliases_${siteKey}`; }
+function getStoredDeviceAliases(siteKey) {
+    try {
+        return JSON.parse(localStorage.getItem(getDeviceAliasStorageKey(siteKey)) || '{}') || {};
+    } catch (e) {
+        return {};
+    }
+}
+function storeDeviceAliases(siteKey, aliases) {
+    try {
+        localStorage.setItem(getDeviceAliasStorageKey(siteKey), JSON.stringify(aliases || {}));
+    } catch (e) {}
+}
 function getDisplayDeviceName(deviceKey, siteKey = currentSiteKey) {
     return deviceAliasMap[siteKey]?.[deviceKey] || deviceKey;
 }
 async function loadDeviceAliases(siteKey = currentSiteKey) {
+   const cachedAliases = deviceAliasMap[siteKey] || getStoredDeviceAliases(siteKey);
+    deviceAliasMap[siteKey] = cachedAliases;
+
+    if (!auth.currentUser) return deviceAliasMap[siteKey];
     try {
         const snap = await getDeviceAliasDocRef(siteKey).get();
         deviceAliasMap[siteKey] = snap.exists && snap.data().aliases ? snap.data().aliases : {};
+           storeDeviceAliases(siteKey, deviceAliasMap[siteKey]);
     } catch (e) {
-        console.warn('Failed to load device aliases:', e);
-        deviceAliasMap[siteKey] = deviceAliasMap[siteKey] || {};
+        if (e?.code && e.code !== 'permission-denied') console.warn('Failed to load device aliases:', e);
     }
     return deviceAliasMap[siteKey];
 }
 async function saveDeviceAlias(siteKey, deviceKey, displayName) {
-    const aliases = { ...(deviceAliasMap[siteKey] || {}) };
+     const aliases = { ...(deviceAliasMap[siteKey] || getStoredDeviceAliases(siteKey)) };
     const cleanName = String(displayName || '').trim();
     if (!cleanName || cleanName === deviceKey) delete aliases[deviceKey];
     else aliases[deviceKey] = cleanName;
-    await getDeviceAliasDocRef(siteKey).set({ aliases }, { merge: true });
     deviceAliasMap[siteKey] = aliases;
+    storeDeviceAliases(siteKey, aliases);
+
+    try {
+        await getDeviceAliasDocRef(siteKey).set({ aliases }, { merge: true });
+    } catch (e) {
+        if (e?.code === 'permission-denied') {
+            console.info('Device alias saved locally because Firestore permissions do not allow site_device_aliases writes.');
+            return;
+        }
+        throw e;
+    }
 }
 
 async function getDeviceRecords(siteKey, device) {
