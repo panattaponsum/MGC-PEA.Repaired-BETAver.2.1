@@ -2,7 +2,7 @@
 window.AppConfig = window.AppConfig || {};
 
 window.AppConfig.defaultSites = {
-"ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1",
+"ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 12",
 "HMI Server 2","EWS","Printer","Time Server","MGC","ETH Switch 1","ETH Switch 2","ETH Switch 3","ETH Switch 4",
 "ETH Switch 5 (REC No.1)","REC No.1","ETH Switch 6 (REC No.2)","REC No.2","ETH Switch 7 (RCS No.1)","RCS No.1",
 "ETH Switch 8 (RCS No.2)","RCS No.2","COV 1 (Mosbus to IEC104)","COV 2 (Mosbus to IEC104)","BCP","PCS",
