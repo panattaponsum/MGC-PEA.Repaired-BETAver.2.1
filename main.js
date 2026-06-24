@@ -1,3 +1,4 @@
+/* หัวข้อ: Firebase - ตั้งค่าการเชื่อมต่อบริการ Auth, Firestore และ Storage */
 const firebaseConfig = {
 apiKey: "AIzaSyCe-qS_uKPYASKJHHL0JuV4eCCzajbpzRY",
 authDomain: "microgrid-th.firebaseapp.com",
@@ -17,7 +18,7 @@ const devicesCol = db.collection("devices");
 
 let cachedDeviceStatus = {}; 
 let cachedDeviceAlerts = {}; // เพิ่มใหม่: เก็บข้อมูล "อุปกรณ์ที่มีปัญหายังไม่รับทราบ" ต่อไซต์
-
+/* หัวข้อ: Date Utils - แปลงวันที่ไทย/สากลให้ใช้ร่วมกับฟอร์มและรายงาน */
 function formatThaiDate(dateVal) {
     if (!dateVal || dateVal === '-' || dateVal.toString().trim() === '') return '-';
     let d;
@@ -117,7 +118,7 @@ function parseThaiDateTimeToTS(val) {
     return null;
 }
 
-
+/* หัวข้อ: App State - เก็บสถานะผู้ใช้ หน้า และอุปกรณ์ที่กำลังทำงาน */
 let currentSiteKey = "ko-phaluay";
 let currentDevice = null, editIndex = -1, chartInstance = null;
 let currentPage = 1;
@@ -130,7 +131,7 @@ let currentUserPosition = '';
 let currentUserDept = '';
 let currentUserPhone = ''; 
 const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
-
+/* หัวข้อ: Auth/Permissions - ตรวจสิทธิ์การดูแลไซต์ การรับทราบ และการปิดงานซ่อม */
 function hasWriteAccess(siteKey = currentSiteKey) {
     if (currentUserRole === 'admin') return true;
     if (currentUserRole === 'editor') {
@@ -147,91 +148,36 @@ function canAcknowledgeIssue(siteKey = currentSiteKey) {
 function canMarkFixed(siteKey = currentSiteKey) {
     return currentUserRole === 'admin' || hasEngineerSiteAccess(siteKey);
 }
+/* หัวข้อ: Config - โหลดค่ารายชื่อไซต์/อุปกรณ์จากไฟล์ config.js และรองรับ override จาก Firestore */
+let sites = window.AppConfig?.defaultSites || {};
+const OTHER_SUBDEVICES = window.AppConfig?.otherSubdevices || {};
+const sitePrefixes = window.AppConfig?.sitePrefixes || {};
 
-const sites = {
-"ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: [ "HMI Server 1",
-"HMI Server 2",
-"EWS",
-"Printer",
-"Time Server",
-"MGC",
-"ETH Switch 1",
-"ETH Switch 2",
-"ETH Switch 3",
-"ETH Switch 4",
-"ETH Switch 5 (REC No.1)",
-"REC No.1",
-"ETH Switch 6 (REC No.2)",
-"REC No.2",
-"ETH Switch 7 (RCS No.1)",
-"RCS No.1",
-"ETH Switch 8 (RCS No.2)",
-"RCS No.2",
-"COV 1 (Mosbus to IEC104)",
-"COV 2 (Mosbus to IEC104)",
-"BCP",
-"PCS",
-"Inverter 1",
-"Inverter 2",
-"Inverter 3",
-"Inverter 4",
-"Inverter 5",
-"Inverter 6",
-"Inverter 7",
-"Inverter 8",
-"Inverter 9",
-"Inverter 10",
-"Diesel Generator 1",
-"Diesel Generator 2",
-"Diesel Generator Master",
-"Gateway 1 (IEC104 to DNP3)",
-"Gateway 2 (IEC104 to DNP3)",
-"Firewall 1",
-"Firewall 2",
-"Firewall 3",
-"GPS",
-"Weather",
-"Jump Server",
-"CCTV",
-"4G Router 1",
-"4G Router 2",
-"4G Router 3",
-"33 Switchgear Panal",
-"Meter", "other" ] },
-"mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: [ "FireWall 1","Web Server", "PCS-9893 (Web Server B)", "HMI Display 1", "HMI Display 2", "HMI Main 1", "(PCS-9895 Cyber Security Manager)", "Scada 1", "Scada 2", "Switch 1", "Switch 2", "Switch 3", "Switch 4", "Switch 5", "Switch 6", "Switch 7", "ETH Switch 1", "ETH Switch 2", "PCS-9892 (Cyber Security Gateway)", "PCS-9893 (Web Server A)", "PCS-9799 (Gateway A)", "PCS-9799 (Gateway B)", "PCS-9617 (MGC 1)", "PCS-9617 (MGC 2)", "PCS-9651 (ATS)", "PCS-9794 (Protocol Converter A)", "PCS-9617 (Diesel Generator Controller)", "PCS-9794 (Protocol Converter B)", "PCS-9726 (Transformer Protection)", "PCS-9567C (BESS Controller)", "PCS-9567 (PCS 1)", "PCS-9567 (PCS 2)", "PCS-9567 (PCS 3)", "PCS-9567 (PCS 4)", "PCS-9567 (PCS 5)", "PCS-9567 (PCS 6)", "ETH Switch 3", "BMS 1", "BMS 2", "BMS 3", "BMS 4", "BMS 5", "BMS 6", "FRTU 1-15", "other" ] },
-"betong": { name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา", devices: [ "Operator HMI 24", "Operator HMI 27", "ETH Switch 1", "ETH Switch 2", "ETH Switch 3", "ETH Switch 4", "ETH Switch 5", "ETH Switch 6", "ETH Switch 7", "eMC-N-Controller INC1", "eMC-N-Controller BAAN3", "eMC-N-Controller BAAN4", "RTU SVG", "RTU Substation", "eMC-G-Controller", "ADMS-1", "ADMS-2", "Firewall 1", "Firewall 2", "Firewall 3", "RTU Gateway -1", "RTU Gateway -2", "Security HMI", "GPS", "emC-Scada","emC-P-Controller","emC-E-Controller", "emC-LUC-1-Controller", "emC-LUC-2-Controller", "emC-LUC-3-Controller", "emC-LUC-4-Controller", "Battery System", "Diesel Generator System","Inverter System",
-    "Recloser-1", "Recloser-2", "Recloser-3", "Recloser-4", "Recloser-5", "Recloser-6", "Recloser-7", "Recloser-8", "Recloser-9", "Recloser-10",
-    "Recloser-11", "Recloser-12", "Recloser-13", "Recloser-14", "Recloser-15", "Recloser-16", "Recloser-17", "Recloser-18", "Recloser-19", "Recloser-20",
-    "Recloser-21", "Recloser-22", "Recloser-23", "Recloser-24", "Recloser-25", "Recloser-26", "Recloser-27", "Recloser-28", "Recloser-29", "Recloser-30",
-    "Recloser-31", "Recloser-32", "Recloser-33", "Recloser-34", "Recloser-35", "other" ] },
-"phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: [ "GPS Antenna", "work station", "Insight server", "Network Switch 1", "Clock server", "Network Switch 2", "Back start controller", "Firewall 1", "EMS Controller", "ETH Switch 1 (LC1000-1) ", "ETH Switch 2 (LC1000-1) ", "Local Controller 200-1", "Local Controller 200-2", "Local Controller 200-3", "ETH Switch 1 (LC1000-2) ", "ETH Switch 2 (LC1000-2) ", "PCS-1", "PCS-2", "PCS-3","Sync. Relay (RCS)", "RCS","ETH Switch (RCS) ", "Recloser","ETH Switch (Recloser)", "BATT-1", "BATT-2", "other" ] }
-};
-const OTHER_SUBDEVICES = {
-    phrao: ["Office","Current Transformer","Voltage Transformer","Step-up Transformer 5 MVA","Service Transformer 160 KVA","Disconnecting Switch","Fire Alarm","PQ Meter","Power Meter","The Other"],
-    betong: ["Office","SVG","Fire Alarm System","The Other"],
-    "ko-phaluay": ["ระบบควบคุมอาคาร",
-"เครื่องปรับอากาศ",
-"Cable",
-"Riser Pole",
-"Recloser",
-"ไฟฉุกเฉิน",
-"ถังดับเพลิง",
-"PQM",
-"Generator",
-"PV",
-"Battery",
-"โทรศัพท์",
-"วิทยุสื่อสาร",
-"Breaker",
-"The Other"]
-};
-const sitePrefixes = {
-    "ko-phaluay": "KPL",
-    "betong": "BTG",
-    "mae-sariang": "MSR",
-    "phrao": "PRA"
-};
+async function loadSitesConfig() {
+    try {
+        const snap = await db.collection('app_config').doc('sites').get();
+        if (snap.exists && snap.data().sites && typeof snap.data().sites === 'object') {
+            sites = snap.data().sites;
+        }
+    } catch (error) {
+        console.warn('ใช้ config จากไฟล์ เนื่องจากโหลด app_config/sites ไม่สำเร็จ:', error);
+    }
+    return sites;
+}
 
+window.saveSitesConfig = async function(updatedSites) {
+    if (currentUserRole !== 'admin') {
+        Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin เท่านั้นที่แก้ไขรายชื่อไซต์/อุปกรณ์ได้', 'error');
+        return false;
+    }
+    if (!window.AppValidation?.validateSitesConfig(updatedSites)) {
+        Swal.fire('ข้อมูลไม่ถูกต้อง', 'รูปแบบ config ไซต์ไม่ถูกต้อง', 'warning');
+        return false;
+    }
+    await db.collection('app_config').doc('sites').set({ sites: updatedSites, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    sites = updatedSites;
+    return true;
+};
 async function generateAutoId(siteKey) {
     const prefixes = { "ko-phaluay": "KPL", "betong": "BTG", "mae-sariang": "MSR", "phrao": "PRA" };
     const prefix = prefixes[siteKey] || "gen";
@@ -651,8 +597,8 @@ async function uploadFileToStorage(file, folderName) {
 }
 
 window.saveData = async function() {
-    if (!canAcknowledgeIssue(currentSiteKey)) { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์บันทึกข้อมูลในสถานที่นี้', 'error'); return false; }
-    if (!currentUser || !currentDevice) return false;
+    const saveValidation = window.AppValidation?.validateSavePermission({ currentUser, currentDevice, currentSiteKey, canAcknowledgeIssue });
+    if (saveValidation && !saveValidation.ok) { Swal.fire('ไม่สามารถบันทึกได้', saveValidation.message, 'error'); return false; }
 
     let statusVal = document.getElementById('status').value;
     const brokenDate = document.getElementById('brokenDate').value;
@@ -1559,11 +1505,12 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
 };
 
 let unsubscribe = null; 
+/* หัวข้อ: Realtime Firestore - ฟังการเปลี่ยนแปลงเพื่ออัปเดต summary/overlay */
 function setupRealtimeListener(siteKey) {
   if (unsubscribe) unsubscribe(); if (!firebase.auth().currentUser) return; 
   unsubscribe = db.collection(`sites`).doc(siteKey).collection(`devices`).onSnapshot(snapshot => { window.updateDeviceSummary(); window.updateDeviceStatusOverlays(siteKey); }, (error) => { if (error.code !== 'permission-denied') console.error("Listener Error:", error); });
 }
-
+/* หัวข้อ: Excel Import - รวมข้อมูลจากไฟล์ Excel ตรวจซ้ำ และบันทึกเข้า Firestore */
 async function processAndSaveImport(assetsToImport, recordsToImport, importedGroupMap = {}) {
     Swal.fire({ title: 'กำลังนำเข้า...', didOpen: () => { Swal.showLoading(); } }); const batch = db.batch(); const assetMap = new Map();
     for (const item of assetsToImport) assetMap.set(item.deviceName, item.assetInfo);
@@ -1711,7 +1658,10 @@ window.importData = function(event) {
                                         'ชื่อ-สกุล ผู้แจ้งเหตุ': headers.indexOf('ชื่อ-สกุล ผู้แจ้งเหตุ') !== -1 ? headers.indexOf('ชื่อ-สกุล ผู้แจ้งเหตุ') : headers.indexOf('ผู้บันทึก'),
                                         'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
                                         'ชื่อ-สกุล ผู้แจ้งซ่อมแซม': headers.indexOf('ชื่อ-สกุล ผู้แจ้งซ่อมแซม'), 'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
-                                        'ชื่อ-สกุล ผู้รับทราบ': headers.indexOf('ผู้รับทราบ'), 'วันที่-เวลา': headers.indexOf('วันที่-เวลา') };
+                                        'ชื่อ-สกุล ผู้รับทราบ': headers.indexOf('ชื่อ-สกุล ผู้รับทราบ') !== -1 ? headers.indexOf('ชื่อ-สกุล ผู้รับทราบ') : headers.indexOf('ผู้รับทราบ'),
+                                        'วันที่-เวลารับทราบ': headers.indexOf('วันที่-เวลารับทราบ') !== -1 ? headers.indexOf('วันที่-เวลารับทราบ') : headers.indexOf('วันที่-เวลา'),
+                                        'ผู้บันทึก': headers.indexOf('ผู้บันทึก'),
+                                        'รายละเอียดปัญหา': headers.indexOf('รายละเอียดปัญหา') !== -1 ? headers.indexOf('รายละเอียดปัญหา') : headers.indexOf('คำอธิบาย') };
                     
                     if (headerMap['ชื่ออุปกรณ์'] !== -1 && headerMap['วันที่เกิดเหตุ'] !== -1) {
                         for (let i = 1; i < recordRawData.length; i++) {
@@ -1729,7 +1679,7 @@ window.importData = function(event) {
                            recordsToImport.push({ deviceName, record: {
                                     ts: timestampToSave, customId: customId,brokenDate: importedBrokenDate || '', 
                                     fixedDate: importedFixedDate || null,  status: finalStatus, 
-                                    description: (row[headerMap['รายละเอียดปัญหา']] || '').toString() || 'นำเข้าจาก Excel', 
+                                   description: (headerMap['รายละเอียดปัญหา'] !== -1 ? (row[headerMap['รายละเอียดปัญหา']] || '') : '').toString() || 'นำเข้าจาก Excel',  
                                     brokenFileUrl: row[headerMap['ลิงก์รูปชำรุด']] || null,
                                     solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
                                     fixedFileUrl: row[headerMap['ลิงก์รูปแก้ไข']] || null, 
@@ -1743,12 +1693,22 @@ window.importData = function(event) {
                                     fixedUser: (headerMap['ชื่อ-สกุล ผู้แจ้งซ่อมแซม'] !== -1) ? (row[headerMap['ชื่อ-สกุล ผู้แจ้งซ่อมแซม']] || '').toString() : '',
                                     acknowledgedBy: (headerMap['ชื่อ-สกุล ผู้รับทราบ'] !== -1) ? (row[headerMap['ชื่อ-สกุล ผู้รับทราบ']] || '').toString() : '',
                                     acknowledgedAt: (headerMap['วันที่-เวลารับทราบ'] !== -1) ? parseThaiDateTimeToTS(row[headerMap['วันที่-เวลารับทราบ']]) : null,
-                                    user: (row[headerMap['ผู้บันทึก']] || '').toString() || (currentUserFullName || currentUser.email), 
+                                    user: (headerMap['ผู้บันทึก'] !== -1 ? (row[headerMap['ผู้บันทึก']] || '') : '').toString() || (currentUserFullName || currentUser.email),
                                     counted: !!importedBrokenDate
                             } });
                         }
                     } else { Swal.fire('ผิดพลาด', 'ไม่พบคอลัมน์ ชื่ออุปกรณ์ หรือ วันที่เกิดเหตุ ในไฟล์ Excel', 'error'); return; }
                 }
+            }
+            const importValidation = window.AppValidation?.validateExcelWorkbook({
+                workbook: wb,
+                assetsToImport,
+                recordsToImport,
+                allowedDevices: sites[currentSiteKey]?.devices || []
+            });
+            if (importValidation && !importValidation.ok) {
+                Swal.fire('ตรวจสอบไฟล์ Excel ไม่ผ่าน', importValidation.errors.slice(0, 10).join('<br>'), 'warning');
+                return;
             }
             if (assetsToImport.length > 0 || recordsToImport.length > 0) {
                 processAndSaveImport(assetsToImport, recordsToImport, importedGroupMap);
@@ -1757,7 +1717,7 @@ window.importData = function(event) {
     };
     reader.readAsArrayBuffer(file); event.target.value = null; 
 };
-
+/* หัวข้อ: Excel Export - ส่งออกประวัติ ทรัพย์สิน และ log เป็น workbook */
 window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData || siteData.devices.length === 0) return;
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
@@ -1947,7 +1907,7 @@ function normalizeRegistryGroups(rawGroups) {
             };
         });
 }
-
+/* หัวข้อ: Asset Registry - แสดงทะเบียนอุปกรณ์และจัดกลุ่มรายการทรัพย์สิน */
 function renderRegistryStats(siteData) {
    const allDevices = getRegistryDeviceList(siteData);
     let totalFaults = 0;
@@ -2417,7 +2377,10 @@ function applyRoleRestrictions() {
         toggleWriteAccess(true);
     }
 }
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
+    // หัวข้อ: Bootstrap - โหลด config ก่อนผูก auth และเริ่มหน้าจอหลัก
+    await loadSitesConfig();
+
     auth.onAuthStateChanged(async user => {
         
         const appContent = document.getElementById('appContent');
@@ -2726,7 +2689,7 @@ function buildReportImageHtml(url) {
     const safeUrl = escapeReportHtml(url);
     return `<div class="img"><img src="${safeUrl}" width="150" height="90" alt="รูปประกอบ"></div>`;
 }
-
+/* หัวข้อ: Reports - สร้างรายงาน Word จากรายการที่เลือก */
 window.generateSelectedReport = async function () {
     const siteData = sites[currentSiteKey];
     const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
