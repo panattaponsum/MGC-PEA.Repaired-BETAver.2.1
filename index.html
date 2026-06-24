@@ -25,7 +25,13 @@
 
     <style>
         body { background-color: #f1f5f9; }
-        
+        body.modal-blur-active header,
+        body.modal-blur-active main {
+            filter: blur(5px);
+            transition: filter 0.18s ease;
+            pointer-events: none;
+            user-select: none;
+        }
         /* === HEADER === */
         .glass-header { 
             background: #74045f;
