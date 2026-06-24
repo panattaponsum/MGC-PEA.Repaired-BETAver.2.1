@@ -318,7 +318,10 @@ if (diffDays < 0) return 'bad'; else if (diffDays <= 30) return 'warn'; else ret
 }
 
 function getWarrantyStatusHTML(status) {
-switch (status) { case 'ok': return '<span class="tag tag-warranty-ok">🛡️ รับประกัน</span>'; case 'warn': return '<span class="tag tag-warranty-warn">⚠️ ใกล้หมดประกัน</span>'; case 'bad': return '<span class="tag tag-warranty-bad">🚫 หมดประกัน</span>'; default: return '<span>-</span>'; }
+switch (status) { case 'ok': return '<span class="tag tag-warranty-ok">🛡️ รับประกัน</span>'; 
+    case 'warn': return '<span class="tag tag-warranty-warn">⚠️ ใกล้หมดประกัน</span>'; 
+    case 'bad': return '<span class="tag tag-warranty-bad">🚫 หมดประกัน</span>'; 
+    default: return '<span>-</span>'; }
 }
 
 function toggleWriteAccess(isLoggedIn) {
@@ -328,13 +331,13 @@ function toggleWriteAccess(isLoggedIn) {
 
     ['saveDataButton', 'clearDeviceButton', 'clearAllButton'].forEach(id => {
         const btn = document.getElementById(id);
-        if (btn) { btn.disabled = !isEditor; btn.title = isEditor ? '' : 'สิทธิ์ไม่เพียงพอ'; if (!isLoggedIn) btn.title = 'กรุณาลงชื่อเข้าใช้ก่อน'; }
+        if (btn) { btn.disabled = !isEditor; btn.title = isEditor ? '' : 'สิทธิ์ไม่เพียงพอ'; 
+        if (!isLoggedIn) btn.title = 'กรุณาลงชื่อเข้าใช้ก่อน'; }
     });
 
     const assetBtn = document.getElementById('saveAssetButton'); if (assetBtn) assetBtn.style.display = isAdmin ? 'inline-block' : 'none';
     const importLabel = document.getElementById('importButtonLabel'); if (importLabel) importLabel.style.display = isEditor ? 'inline-block' : 'none';
     const manageUsersBtn = document.getElementById('manageUsersBtn'); if (manageUsersBtn) manageUsersBtn.classList.toggle('hidden', !isAdmin);
-    
     const roleDisplay = document.getElementById('userRoleDisplay');
     if (roleDisplay) {
         if (!isLoggedIn) roleDisplay.style.display = 'none';
@@ -349,7 +352,6 @@ function toggleWriteAccess(isLoggedIn) {
     const userNameInput = document.getElementById('userName');
     if (isLoggedIn && currentUser) { userNameInput.value = currentUserFullName || currentUser.email; userNameInput.readOnly = true; } 
     else { userNameInput.value = 'ผู้เยี่ยมชม (อ่านอย่างเดียว)'; userNameInput.readOnly = true; }
-    
     if (document.getElementById('formModal').style.display === 'flex') loadHistory(); 
 }
 
@@ -387,6 +389,7 @@ window.showActivityLogs = async function(direction = 'first') {
     if (!modal || !tableBody) return;
     modal.classList.remove('hidden'); 
     modal.classList.add('flex');
+    setPageBlur(true);
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-bold">กำลังโหลดข้อมูล...</td></tr>';
 
     if (direction === 'first') {
@@ -459,7 +462,7 @@ window.openLogModal = function() {
         modal.classList.add('flex');
     }
 
-    document.body.classList.add('overflow-hidden');
+    setPageBlur(true);
 };
 
 window.closeLogModal = function() {
@@ -468,7 +471,7 @@ window.closeLogModal = function() {
         modal.classList.add('hidden');
     }
 
-    document.body.classList.remove('overflow-hidden');
+    refreshPageBlurState();
     
     const siteFilter = document.getElementById('logSiteFilter');
     const actionFilter = document.getElementById('logActionFilter');
@@ -508,6 +511,35 @@ window.toggleBetongView = function(viewType) {
     if (typeof imageMapResize === 'function') { imageMapResize(); }
     window.updateDeviceStatusOverlays('betong');
 };
+function setPageBlur(active) {
+    document.body.classList.toggle('modal-blur-active', !!active);
+    document.body.classList.toggle('overflow-hidden', !!active);
+}
+
+function isModalVisible(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return false;
+    const display = modal.style.display;
+    return display !== 'none' && (!modal.classList.contains('hidden') || display === 'flex' || display === 'block');
+}
+
+function refreshPageBlurState() {
+    const modalIds = ['formModal', 'assetModal', 'userModal', 'logModal', 'reportModal', 'groupModal'];
+    setPageBlur(modalIds.some(isModalVisible));
+}
+
+function showSharedOverlay() {
+    const overlay = document.getElementById('overlay');
+    if (overlay) overlay.style.display = 'block';
+    setPageBlur(true);
+}
+
+function hideSharedOverlayIfNoModal() {
+    const overlay = document.getElementById('overlay');
+    const sharedModalOpen = ['formModal', 'assetModal', 'userModal'].some(isModalVisible);
+    if (overlay && !sharedModalOpen) overlay.style.display = 'none';
+    refreshPageBlurState();
+}
 
 function parseDeviceSelection(deviceName) {
     if (typeof deviceName !== 'string') return { mainDevice: deviceName, subDevice: null };
@@ -575,12 +607,17 @@ window.openForm = async function(deviceName) {
         othersContainer.classList.add('hidden'); 
     }
 
-    document.getElementById('overlay').style.display = 'block'; document.getElementById('formModal').style.display = 'flex';
-    document.getElementById('editHint').classList.add('hidden'); document.getElementById('warrantyStatusDisplay').innerHTML = 'กำลังโหลด...'; document.getElementById('assetInfoDisplay').innerHTML = '';
+     showSharedOverlay();
+    document.getElementById('formModal').style.display = 'flex';
+    document.getElementById('editHint').classList.add('hidden'); 
+    document.getElementById('warrantyStatusDisplay').innerHTML = 'กำลังโหลด...'; 
+    document.getElementById('assetInfoDisplay').innerHTML = '';
     clearForm(); await loadHistory(); 
 }
 
-window.closeForm = function() { document.getElementById('overlay').style.display = 'none'; document.getElementById('formModal').style.display = 'none'; document.getElementById('assetModal').style.display = 'none'; }
+window.closeForm = function() {
+    document.getElementById('formModal').style.display = 'none';
+    document.getElementById('assetModal').style.display = 'none'; hideSharedOverlayIfNoModal(); }
 
 function clearForm() {
     if (!currentUser) document.getElementById('userName').value = 'ผู้เยี่ยมชม (อ่านอย่างเดียว)';
@@ -1018,8 +1055,12 @@ window.editRecord = async function(ts) {
 };
 
 window.openAssetModal = async function() {
-if (!currentDevice) return; document.getElementById('assetFormTitle').textContent = `📋 ข้อมูลทรัพย์สิน: ${currentDevice}`;
-document.getElementById('formModal').style.display = 'none'; document.getElementById('assetModal').style.display = 'flex'; await loadAssetData();
+if (!currentDevice) return;
+    document.getElementById('assetFormTitle').textContent = `📋 ข้อมูลทรัพย์สิน: ${currentDevice}`;
+    document.getElementById('formModal').style.display = 'none'; 
+    document.getElementById('assetModal').style.display = 'flex'; 
+    setPageBlur(true); 
+    await loadAssetData();
 }
 
 window.closeAssetModal = function(showMainModal = true) {
@@ -1121,8 +1162,16 @@ function calculateYears() { if (startEl.value && endEl.value) { const startDate 
 startEl.addEventListener('change', calculateEnd); yearsEl.addEventListener('change', calculateEnd); endEl.addEventListener('change', calculateYears); endEl.addEventListener('change', updateAssetWarrantyStatusField);
 }
 
-window.openUserManagement = async function() { if (currentUserRole !== 'admin') return; document.getElementById('overlay').style.display = 'block'; document.getElementById('userModal').style.display = 'flex'; await loadUsers(); }
-window.closeUserManagement = function() { document.getElementById('overlay').style.display = 'none'; document.getElementById('userModal').style.display = 'none'; }
+window.openUserManagement = async function() { 
+    if (currentUserRole !== 'admin') return; 
+    showSharedOverlay();
+    document.getElementById('userModal').style.display = 'flex';
+    await loadUsers(); }
+window.closeUserManagement = function() { 
+    document.getElementById('userModal').style.display = 'none'; 
+    hideSharedOverlayIfNoModal(); 
+}
+
 
 window.loadUsers = async function() {
     const listContainer = document.getElementById('userListContainer'); 
@@ -2268,6 +2317,7 @@ window.openAddGroupModal = function() {
     document.getElementById('groupModalTitle').textContent = '➕ เพิ่มกลุ่มใหม่';
     document.getElementById('groupNameInput').value = '';
     document.getElementById('groupModal').classList.remove('hidden');
+    setPageBlur(true);
     setTimeout(() => document.getElementById('groupNameInput').focus(), 100);
 };
 
@@ -2281,11 +2331,13 @@ window.openRenameGroupModal = function(groupId, currentName) {
     document.getElementById('groupModalTitle').textContent = '✏️ เปลี่ยนชื่อกลุ่ม';
     document.getElementById('groupNameInput').value = decoded;
     document.getElementById('groupModal').classList.remove('hidden');
+    setPageBlur(true);
     setTimeout(() => document.getElementById('groupNameInput').focus(), 100);
 };
 
 window.closeGroupModal = function() {
     document.getElementById('groupModal').classList.add('hidden');
+    refreshPageBlurState();
 };
 
 window.confirmGroupAction = async function() {
@@ -2640,6 +2692,7 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     const reportModal = document.getElementById('reportModal');
     reportModal.classList.remove('hidden');
     reportModal.classList.add('flex');
+    setPageBlur(true);
     window.tempReportDataMap = dataMap;
 };
 
@@ -2648,13 +2701,13 @@ function openReportModal() {
   const modal = document.getElementById('reportModal');
   modal.classList.remove('hidden');
   modal.classList.add('flex');
-  document.body.classList.add('overflow-hidden');
+  setPageBlur(true);
 }
 function closeReportModal() {
   const modal = document.getElementById('reportModal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');
-  document.body.classList.remove('overflow-hidden');
+  refreshPageBlurState();
 }
 window.selectAllReport = function(isChecked) { document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked); };
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
