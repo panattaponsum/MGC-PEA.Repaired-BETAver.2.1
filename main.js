@@ -154,13 +154,18 @@ const OTHER_SUBDEVICES = window.AppConfig?.otherSubdevices || {};
 const sitePrefixes = window.AppConfig?.sitePrefixes || {};
 
 async function loadSitesConfig() {
+     if (!auth.currentUser) {
+        return sites;
+    }
     try {
         const snap = await db.collection('app_config').doc('sites').get();
         if (snap.exists && snap.data().sites && typeof snap.data().sites === 'object') {
             sites = snap.data().sites;
         }
     } catch (error) {
-        console.warn('ใช้ config จากไฟล์ เนื่องจากโหลด app_config/sites ไม่สำเร็จ:', error);
+         if (error?.code !== 'permission-denied') {
+            console.warn('ใช้ config จากไฟล์ เนื่องจากโหลด app_config/sites ไม่สำเร็จ:', error);
+        }
     }
     return sites;
 }
@@ -2378,8 +2383,8 @@ function applyRoleRestrictions() {
     }
 }
 document.addEventListener("DOMContentLoaded", async function() {
-    // หัวข้อ: Bootstrap - โหลด config ก่อนผูก auth และเริ่มหน้าจอหลัก
-    await loadSitesConfig();
+    // หัวข้อ: Bootstrap - ใช้ config จากไฟล์ก่อน แล้วค่อยโหลด override เมื่อมีผู้ใช้ที่ผ่าน auth
+   
 
     auth.onAuthStateChanged(async user => {
         
@@ -2422,8 +2427,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 }
 
                 if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
-                
-               
+                 await loadSitesConfig();
                 if (currentUserRole === 'viewer') {
                     document.body.classList.add('viewer-mode'); 
                     toggleWriteAccess(false); 
