@@ -39,7 +39,12 @@
             box-shadow: 0 4px 20px rgba(15,32,68,0.35);
         }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04); }
-
+        .header-logo {
+            width: clamp(4rem, 6vw, 5.5rem);
+            height: clamp(4rem, 6vw, 5.5rem);
+            max-height: 5.5rem;
+            object-fit: contain;
+        }
         /* === FORM MODAL IMPROVEMENTS === */
         .form-section-header {
             display: flex;
@@ -325,12 +330,12 @@
 </head>
 <body class="text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
 
-    <header class="glass-header sticky top-0 z-[100] px-4 py-3">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <<header class="glass-header sticky top-0 z-[100] px-4 py-2">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
             
-            <div class="flex items-center gap-4">
-                <div class="relative">
-                     <img src="provincial-electricity-authority.png" alt="PEA" class="h-12 w-12 object-contain" />
+            <div class="flex items-center gap-3 md:gap-4">
+                <div class="relative flex-shrink-0">
+                     <img src="provincial-electricity-authority.png" alt="PEA" class="header-logo" />
                 </div>
                 <div class="border-l border-white/20 pl-4">
                     <p class="text-[10px] font-bold text-amber-300 uppercase tracking-[0.12em] leading-none mb-1">กองเทคโนโลยีโครงข่ายไฟฟ้า · การไฟฟ้าส่วนภูมิภาค</p>
