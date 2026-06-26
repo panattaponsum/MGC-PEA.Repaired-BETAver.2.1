@@ -283,6 +283,7 @@ function toggleWriteAccess(isLoggedIn) {
 
     const assetBtn = document.getElementById('saveAssetButton'); if (assetBtn) assetBtn.style.display = isAdmin ? 'inline-block' : 'none';
     const importLabel = document.getElementById('importButtonLabel'); if (importLabel) importLabel.style.display = isEditor ? 'inline-block' : 'none';
+    const mapEditModeButton = document.getElementById('mapEditModeButton'); if (mapEditModeButton) mapEditModeButton.classList.toggle('hidden', !isEditor);
     const manageUsersBtn = document.getElementById('manageUsersBtn'); if (manageUsersBtn) manageUsersBtn.classList.toggle('hidden', !isAdmin);
     const roleDisplay = document.getElementById('userRoleDisplay');
     if (roleDisplay) {
@@ -1543,12 +1544,158 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
         });
     });
 };
+/* หัวข้อ: Dynamic Map Editor - สร้าง/แก้ไข/ลบพิกัดอุปกรณ์บนรูปภาพ */
+let dynamicMapPoints = {};
+let isMapEditMode = false;
+
+function getMapConfigRef() { return db.collection('app_config').doc('map_points'); }
+function getCurrentMapImage(container) {
+    if (!container) return null;
+    const view = container.querySelector('.view-wrapper:not(.hidden)');
+    return (view || container).querySelector('img.device-img');
+}
+function getMapViewId(container) {
+    const view = container?.querySelector('.view-wrapper:not(.hidden)');
+    return view?.id || 'main';
+}
+function getSiteMapPoints(siteKey = currentSiteKey) {
+    return Array.isArray(dynamicMapPoints[siteKey]) ? dynamicMapPoints[siteKey] : [];
+}
+function syncConfiguredDevicesFromMap(siteKey = currentSiteKey) {
+    const current = Array.isArray(sites[siteKey]?.devices) ? sites[siteKey].devices : [];
+    const mapped = getSiteMapPoints(siteKey).map(p => p.name).filter(Boolean);
+    sites[siteKey].devices = [...new Set([...mapped, ...current.filter(d => d === 'other')])];
+    if (!sites[siteKey].devices.includes('other')) sites[siteKey].devices.push('other');
+}
+async function loadDynamicMapPoints() {
+    try {
+        const snap = await getMapConfigRef().get();
+        dynamicMapPoints = snap.exists && snap.data().points ? snap.data().points : {};
+        Object.keys(sites).forEach(syncConfiguredDevicesFromMap);
+    } catch (error) {
+        if (error?.code !== 'permission-denied') console.warn('โหลดพิกัดแผนผังไม่สำเร็จ:', error);
+        dynamicMapPoints = {};
+    }
+}
+async function saveDynamicMapPoints() {
+    await getMapConfigRef().set({ points: dynamicMapPoints, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    Object.keys(sites).forEach(syncConfiguredDevicesFromMap);
+    if (currentUserRole === 'admin') await window.saveSitesConfig(sites);
+}
+function disableLegacyImageMaps() {
+    document.querySelectorAll('.map-container img[usemap]').forEach(img => {
+        img.dataset.legacyUsemap = img.getAttribute('usemap');
+        img.removeAttribute('usemap');
+    });
+}
+function getImageClickPercent(event, img) {
+    const rect = img.getBoundingClientRect();
+    return {
+        x: Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)),
+        y: Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100))
+    };
+}
+function makeMapMarker(point, status, alerts) {
+    const marker = document.createElement('button');
+    marker.type = 'button';
+    marker.className = `dynamic-map-marker ${status === 'down' ? 'down' : status === 'abnormal' ? 'abnormal' : 'normal'}`;
+    marker.style.left = `${point.x}%`;
+    marker.style.top = `${point.y}%`;
+    marker.title = point.name;
+    marker.innerHTML = `<span class="dynamic-map-dot"></span><span class="dynamic-map-label">${escapeHtml(point.name)}</span>${alerts ? `<span class="device-alert-badge">!</span>` : ''}`;
+    marker.onclick = (event) => { event.stopPropagation(); isMapEditMode ? openMapPointEditor(point.id) : window.openForm(point.name); };
+    return marker;
+}
+window.renderDynamicMapPoints = function(siteKey = currentSiteKey) {
+    const container = document.getElementById(`map-${siteKey}`);
+    if (!container) return;
+    container.querySelectorAll('.dynamic-map-layer').forEach(el => el.remove());
+    const img = getCurrentMapImage(container);
+    if (!img || currentUserRole === 'viewer') return;
+    const layer = document.createElement('div');
+    layer.className = 'dynamic-map-layer';
+    const viewId = getMapViewId(container);
+    const statuses = cachedDeviceStatus[siteKey] || {};
+    const alerts = cachedDeviceAlerts[siteKey] || {};
+    getSiteMapPoints(siteKey).filter(p => (p.viewId || 'main') === viewId).forEach(point => {
+        layer.appendChild(makeMapMarker(point, statuses[point.name] || 'ok', alerts[point.name] || 0));
+    });
+    img.insertAdjacentElement('afterend', layer);
+};
+window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
+    const container = document.getElementById(`map-${siteKey}`);
+    if (!container) return;
+    container.querySelectorAll('.device-overlay').forEach(el => el.remove());
+    if (!useCache) {
+        const docsSnap = await getAllDevicesDocs(siteKey);
+        cachedDeviceStatus[siteKey] = {}; cachedDeviceAlerts[siteKey] = {};
+        docsSnap.forEach(d => {
+            const data = d.data();
+            if (data?.currentStatus) cachedDeviceStatus[siteKey][d.id] = data.currentStatus;
+            const unack = (data?.records || []).filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null') && !r.acknowledgedAt);
+            if (unack.length) cachedDeviceAlerts[siteKey][d.id] = unack.length;
+        });
+    }
+    window.renderDynamicMapPoints(siteKey);
+};
+async function upsertMapPoint(point) {
+    if (!hasWriteAccess(currentSiteKey)) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor/Admin เท่านั้นที่จัดการพิกัดได้', 'error');
+    dynamicMapPoints[currentSiteKey] = getSiteMapPoints(currentSiteKey).filter(p => p.id !== point.id);
+    dynamicMapPoints[currentSiteKey].push(point);
+    await saveDynamicMapPoints();
+    window.updateDeviceStatusOverlays(currentSiteKey, true);
+}
+window.openMapPointEditor = async function(pointId = null, clickPos = null) {
+    const existing = getSiteMapPoints().find(p => p.id === pointId);
+    const result = await Swal.fire({
+        title: existing ? 'แก้ไขพิกัดอุปกรณ์' : 'เพิ่มพิกัดอุปกรณ์',
+        html: `<input id="mapPointName" class="swal2-input" placeholder="ชื่ออุปกรณ์" value="${escapeHtml(existing?.name || '')}">`,
+        showCancelButton: true,
+        showDenyButton: !!existing,
+        confirmButtonText: 'บันทึก',
+        denyButtonText: 'ลบพิกัด',
+        cancelButtonText: 'ยกเลิก',
+        preConfirm: () => {
+            const name = document.getElementById('mapPointName').value.trim();
+            if (!name) { Swal.showValidationMessage('กรุณาระบุชื่ออุปกรณ์'); return false; }
+            return name;
+        }
+    });
+    if (result.isDenied && existing) {
+        dynamicMapPoints[currentSiteKey] = getSiteMapPoints().filter(p => p.id !== existing.id);
+        await saveDynamicMapPoints(); window.updateDeviceStatusOverlays(currentSiteKey, true); return;
+    }
+    if (!result.isConfirmed) return;
+    const point = existing || { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, viewId: getMapViewId(document.getElementById(`map-${currentSiteKey}`)), x: clickPos.x, y: clickPos.y };
+    point.name = result.value;
+    await upsertMapPoint(point);
+};
+window.toggleMapEditMode = function() {
+    if (!hasWriteAccess(currentSiteKey)) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor/Admin เท่านั้นที่จัดการพิกัดได้', 'error');
+    isMapEditMode = !isMapEditMode;
+    document.body.classList.toggle('map-edit-mode', isMapEditMode);
+    document.getElementById('mapEditModeText').textContent = isMapEditMode ? 'ปิดโหมดกำหนดพิกัด' : 'กำหนดพิกัดอุปกรณ์';
+};
+function bindDynamicMapClicks() {
+    document.querySelectorAll('.map-container').forEach(container => {
+        container.addEventListener('click', event => {
+            if (event.target.closest('.dynamic-map-marker')) return;
+            const img = getCurrentMapImage(container);
+            if (!img) return;
+            const rect = img.getBoundingClientRect();
+            const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+            if (!inside) return;
+            if (isMapEditMode && hasWriteAccess(currentSiteKey)) window.openMapPointEditor(null, getImageClickPercent(event, img));
+            else window.openForm('other');
+        });
+    });
+}
 
 let unsubscribe = null; 
 /* หัวข้อ: Realtime Firestore - ฟังการเปลี่ยนแปลงเพื่ออัปเดต summary/overlay */
 function setupRealtimeListener(siteKey) {
   if (unsubscribe) unsubscribe(); if (!firebase.auth().currentUser) return; 
-  unsubscribe = db.collection(`sites`).doc(siteKey).collection(`devices`).onSnapshot(snapshot => { window.updateDeviceSummary(); window.updateDeviceStatusOverlays(siteKey); }, (error) => { if (error.code !== 'permission-denied') console.error("Listener Error:", error); });
+  unsubscribe = db.collection(`sites`).doc(siteKey).collection(`devices`).onSnapshot(snapshot => { window.updateDeviceSummary(); window.updateDeviceStatusOverlays(siteKey); window.renderDynamicMapPoints(siteKey); }, (error) => { if (error.code !== 'permission-denied') console.error("Listener Error:", error); });
 }
 /* หัวข้อ: Excel Import - รวมข้อมูลจากไฟล์ Excel ตรวจซ้ำ และบันทึกเข้า Firestore */
 async function processAndSaveImport(assetsToImport, recordsToImport, importedGroupMap = {}) {
@@ -2396,6 +2543,7 @@ function switchSite(siteKey) {
     if (typeof imageMapResize === 'function') { imageMapResize(); } 
     setupRealtimeListener(siteKey); 
     window.updateDeviceStatusOverlays(currentSiteKey); 
+    window.renderDynamicMapPoints(currentSiteKey);
     scheduleOverlayRefresh(currentSiteKey, false);
     toggleWriteAccess(currentUser !== null);
     // Reload registry if it's the active page
@@ -2464,6 +2612,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 
                 if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
                  await loadSitesConfig();
+                 await loadDynamicMapPoints();
+                disableLegacyImageMaps();
+                bindDynamicMapClicks();
                 if (currentUserRole === 'viewer') {
                     document.body.classList.add('viewer-mode'); 
                     toggleWriteAccess(false); 
