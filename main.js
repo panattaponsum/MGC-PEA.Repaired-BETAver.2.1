@@ -1796,7 +1796,7 @@ window.exportAllDataExcel = async function() {
         let warrantyStatusText = 'N/A';
         switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
          assetData.push([ groupName, getDeviceDisplayNameById(devName), assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
-
+    };
     // เพิ่มตามกลุ่มก่อน
     const assignedDevices = new Set();
     for (const group of exportGroups) {
