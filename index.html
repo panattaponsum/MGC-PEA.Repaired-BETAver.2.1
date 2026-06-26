@@ -326,6 +326,50 @@
         
         .map-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .map-wrapper img { min-width: 900px; max-width: 100%; height: auto; border-radius: 0.75rem; }
+        .map-wrapper { position: relative; }
+        .map-wrapper .view-wrapper { position: relative; }
+        .dynamic-map-layer {
+            position: absolute;
+            inset: 0;
+            min-width: 900px;
+            pointer-events: none;
+            z-index: 80;
+        }
+        .dynamic-map-marker {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 220px;
+            padding: 5px 8px;
+            border-radius: 9999px;
+            border: 2px solid #10b981;
+            background: rgba(255,255,255,0.94);
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 800;
+            box-shadow: 0 8px 18px rgba(15,23,42,0.18);
+            cursor: pointer;
+            pointer-events: auto;
+            white-space: nowrap;
+        }
+        .dynamic-map-marker.abnormal { border-color: #f59e0b; }
+        .dynamic-map-marker.down { border-color: #ef4444; }
+        .dynamic-map-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 9999px;
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16,185,129,0.16);
+            flex-shrink: 0;
+        }
+        .dynamic-map-marker.abnormal .dynamic-map-dot { background: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,0.18); }
+        .dynamic-map-marker.down .dynamic-map-dot { background: #ef4444; box-shadow: 0 0 0 4px rgba(239,68,68,0.18); }
+        .dynamic-map-label { overflow: hidden; text-overflow: ellipsis; }
+        .dynamic-map-marker .device-alert-badge { top: -12px; right: -12px; }
+        body.map-edit-mode .map-container { cursor: crosshair; outline: 3px dashed rgba(37,99,235,0.45); outline-offset: 4px; }
+
     </style>
 </head>
 <body class="text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
