@@ -1,15 +1,10 @@
 /* หัวข้อ: Firebase - ตั้งค่าการเชื่อมต่อบริการ Auth, Firestore และ Storage */
-const firebaseConfig = {
-apiKey: "AIzaSyCe-qS_uKPYASKJHHL0JuV4eCCzajbpzRY",
-authDomain: "microgrid-th.firebaseapp.com",
-projectId: "microgrid-th",
-storageBucket: "microgrid-th.firebasestorage.app",
-messagingSenderId: "88058740399",
-appId: "1:88058740399:web:bbb38da765672dc4969e5a",
-measurementId: "G-L45B835SV4"
-};
+const firebaseConfig = window.AppConfig && window.AppConfig.firebaseConfig;
+if (!firebaseConfig) {
+    throw new Error("ไม่พบการตั้งค่า Firebase: โปรดกำหนด window.AppConfig.firebaseConfig ใน config.js");
+}
 if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig); 
+    firebase.initializeApp(firebaseConfig);
 }
 const db = firebase.firestore(); 
 const auth = firebase.auth(); 
