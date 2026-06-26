@@ -487,6 +487,43 @@ function hideSharedOverlayIfNoModal() {
     refreshPageBlurState();
 }
 
+function getDeviceId(deviceEntry) {
+    if (deviceEntry && typeof deviceEntry === 'object') return String(deviceEntry.id || deviceEntry.key || deviceEntry.name || '').trim();
+    return String(deviceEntry || '').trim();
+}
+
+function getDeviceDisplayName(deviceEntry) {
+    if (deviceEntry && typeof deviceEntry === 'object') return String(deviceEntry.name || deviceEntry.label || deviceEntry.id || deviceEntry.key || '').trim();
+    return String(deviceEntry || '').trim();
+}
+
+function getSiteDeviceEntries(siteKey = currentSiteKey) {
+    return Array.isArray(sites[siteKey]?.devices) ? sites[siteKey].devices : [];
+}
+
+function getConfiguredDeviceIds(siteKey = currentSiteKey) {
+    return getSiteDeviceEntries(siteKey).map(getDeviceId).filter(Boolean);
+}
+
+function getDeviceDisplayNameById(deviceId, siteKey = currentSiteKey) {
+    const id = String(deviceId || '').trim();
+    const entry = getSiteDeviceEntries(siteKey).find(device => getDeviceId(device) === id);
+    return entry ? getDeviceDisplayName(entry) : id;
+}
+
+
+function resolveDeviceInputToId(deviceName, siteKey = currentSiteKey) {
+    const raw = String(deviceName || '').trim();
+    const entry = getSiteDeviceEntries(siteKey).find(device => getDeviceId(device) === raw || getDeviceDisplayName(device) === raw);
+    return entry ? getDeviceId(entry) : raw;
+}
+
+function getDisplayDeviceSelection(deviceName, siteKey = currentSiteKey) {
+    const { mainDevice, subDevice } = parseDeviceSelection(deviceName);
+    const mainLabel = getDeviceDisplayNameById(mainDevice, siteKey);
+    return subDevice ? `${mainLabel} / ${subDevice}` : mainLabel;
+}
+
 function parseDeviceSelection(deviceName) {
     if (typeof deviceName !== 'string') return { mainDevice: deviceName, subDevice: null };
     const parts = deviceName.split(' / ').map(p => p.trim()).filter(Boolean);
@@ -499,7 +536,7 @@ function parseDeviceSelection(deviceName) {
 window.openForm = async function(deviceName) {
     const { mainDevice, subDevice } = parseDeviceSelection(deviceName);
     currentDevice = mainDevice; editIndex = -1;
-    document.getElementById('formTitle').textContent = `บันทึกข้อมูล: ${deviceName}`;
+    document.getElementById('formTitle').textContent = `บันทึกข้อมูล: ${getDisplayDeviceSelection(deviceName)}`;
     const othersContainer = document.getElementById('othersDeviceContainer');
     const othersSelect = document.getElementById('othersDeviceSelect');
     
@@ -1283,7 +1320,9 @@ window.updateDeviceSummary = async function() {
     const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' }); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
     let summary = []; let totalDevices = 0; let currentBrokenCount = 0; let currentNormalCount = 0;
 
-    for (const dev of siteData.devices) {
+     for (const deviceEntry of siteData.devices) {
+        const dev = getDeviceId(deviceEntry);
+        const devDisplayName = getDeviceDisplayName(deviceEntry);
         const docData = dataMap[dev]; const records = docData?.records || []; if (records.length > 0) records.sort((a, b) => a.ts - b.ts);
         const subDevices = (dev === 'other' && OTHER_SUBDEVICES[currentSiteKey]) ? OTHER_SUBDEVICES[currentSiteKey] : [null];
 
@@ -1311,11 +1350,12 @@ window.updateDeviceSummary = async function() {
             if (filterStatus === 'down' && (scopedRecords.length === 0 || remainingCount > 0)) continue;
             if (filterStatus === 'clean' && scopedRecords.length > 0) continue;
 
-            const deviceLabel = subDeviceName ? `${dev} / ${subDeviceName}` : dev;
+            const deviceLabel = subDeviceName ? `${devDisplayName} / ${subDeviceName}` : devDisplayName;
+            const deviceValue = subDeviceName ? `${dev} / ${subDeviceName}` : dev;
             if (search && !deviceLabel.toLowerCase().includes(search)) continue;
 
-            const unacknowledgedCount = remainingIssues.filter(r => !r.acknowledgedAt).length; // เพิ่มใหม่
-            summary.push({ device: deviceLabel, count: downCount, remaining: remainingCount, brokenDate: earliestBrokenDate, fixedDate: latestFixedDate, status: currentStatusDisplay, latestDescription: latestRecord?.description || '-', latestSolution: latestRecord?.solution || '-', latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays, unacknowledgedCount: unacknowledgedCount });
+            const unacknowledgedCount = remainingIssues.filter(r => !r.acknowledgedAt).length; 
+            summary.push({ device: deviceValue, deviceLabel: deviceLabel, count: downCount, remaining: remainingCount, brokenDate: earliestBrokenDate, fixedDate: latestFixedDate, status: currentStatusDisplay, latestDescription: latestRecord?.description || '-', latestSolution: latestRecord?.solution || '-', latestBrokenDuration: latestBrokenDuration, latestBrokenDays: latestBrokenDays, unacknowledgedCount: unacknowledgedCount });
         }
     }
 
@@ -1335,7 +1375,7 @@ window.updateDeviceSummary = async function() {
 
             const alertBadgeHtml = s.unacknowledgedCount > 0 ? `<span class="history-alert-badge" title="มีรายการชำรุด/ผิดปกติที่ยังไม่รับทราบ ${s.unacknowledgedCount} รายการ">✕</span>` : '';
             const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer'; 
-            tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">${alertBadgeHtml}${escapeHtml(s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
+             tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">${alertBadgeHtml}${escapeHtml(s.deviceLabel || s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-xs text-slate-500 font-mono">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
             tr.onclick = () => window.openForm(s.device); tbody.appendChild(tr);
         });
     }
@@ -1516,11 +1556,12 @@ async function processAndSaveImport(assetsToImport, recordsToImport, importedGro
     for (const item of assetsToImport) assetMap.set(item.deviceName, item.assetInfo);
     const recordMap = new Map(); 
     for (const item of recordsToImport) { if (!recordMap.has(item.deviceName)) recordMap.set(item.deviceName, []); recordMap.get(item.deviceName).push(item.record); }
-    const allDeviceNames = new Set([...assetMap.keys(), ...recordMap.keys(), ...sites[currentSiteKey].devices]);
+     const configuredDeviceIds = getConfiguredDeviceIds(currentSiteKey);
+    const allDeviceNames = new Set([...assetMap.keys(), ...recordMap.keys(), ...configuredDeviceIds]);
     try {
         const docsSnap = await getAllDevicesDocs(currentSiteKey); const existingDataMap = new Map(); docsSnap.forEach(d => existingDataMap.set(d.id, d.data()));
         for (const deviceName of allDeviceNames) {
-            if (!sites[currentSiteKey].devices.includes(deviceName)) continue;
+             if (!configuredDeviceIds.includes(deviceName)) continue;
             const docRef = getSiteCollection(currentSiteKey).doc(deviceName); const existingData = existingDataMap.get(deviceName) || {};
             let finalAssetInfo = assetMap.has(deviceName) ? assetMap.get(deviceName) : (existingData.assetInfo || {});
             
@@ -1629,9 +1670,9 @@ window.importData = function(event) {
                             // เก็บข้อมูลกลุ่มสำหรับ restore
                             if (groupName && groupName !== '(อื่นๆ)') {
                                 if (!importedGroupMap[groupName]) importedGroupMap[groupName] = [];
-                                importedGroupMap[groupName].push(String(deviceName).trim());
+                                importedGroupMap[groupName].push(resolveDeviceInputToId(deviceName));
                             }
-                            assetsToImport.push({ deviceName: String(deviceName).trim(), assetInfo: {
+                           assetsToImport.push({ deviceName: resolveDeviceInputToId(deviceName), assetInfo: {
                                 serial:        colSerial       !== -1 ? (row[colSerial]       || '') : '',
                                 model:         colModel        !== -1 ? (row[colModel]        || '') : '',
                                 peaNo:         colPea          !== -1 ? (row[colPea]          || '') : '',
@@ -1676,7 +1717,7 @@ window.importData = function(event) {
                             const parsedTs = parseThaiDateTimeToTS(importedTs);
                             const timestampToSave = parsedTs ? parsedTs : (Date.now() + i);
 
-                           recordsToImport.push({ deviceName, record: {
+                            recordsToImport.push({ deviceName: resolveDeviceInputToId(deviceName), record: {
                                     ts: timestampToSave, customId: customId,brokenDate: importedBrokenDate || '', 
                                     fixedDate: importedFixedDate || null,  status: finalStatus, 
                                    description: (headerMap['รายละเอียดปัญหา'] !== -1 ? (row[headerMap['รายละเอียดปัญหา']] || '') : '').toString() || 'นำเข้าจาก Excel',  
@@ -1704,7 +1745,7 @@ window.importData = function(event) {
                 workbook: wb,
                 assetsToImport,
                 recordsToImport,
-                allowedDevices: sites[currentSiteKey]?.devices || []
+                allowedDevices: getConfiguredDeviceIds(currentSiteKey)
             });
             if (importValidation && !importValidation.ok) {
                 Swal.fire('ตรวจสอบไฟล์ Excel ไม่ผ่าน', importValidation.errors.slice(0, 10).join('<br>'), 'warning');
@@ -1720,8 +1761,9 @@ window.importData = function(event) {
 /* หัวข้อ: Excel Export - ส่งออกประวัติ ทรัพย์สิน และ log เป็น workbook */
 window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData || siteData.devices.length === 0) return;
+    const configuredDeviceIds = getConfiguredDeviceIds(currentSiteKey);
     const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
-
+    
     // ---- โหลดกลุ่มจาก Firestore ----
     let exportGroups = [];
     try {
@@ -1753,8 +1795,7 @@ window.exportAllDataExcel = async function() {
         const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
         let warrantyStatusText = 'N/A';
         switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
-        assetData.push([ groupName, devName, assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
-    };
+         assetData.push([ groupName, getDeviceDisplayNameById(devName), assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
 
     // เพิ่มตามกลุ่มก่อน
     const assignedDevices = new Set();
@@ -1763,11 +1804,11 @@ window.exportAllDataExcel = async function() {
         // แถวหัวกลุ่ม (merge label)
         assetData.push([`── ${group.name} (${group.deviceKeys.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '', '']);
         for (const dk of group.deviceKeys) {
-            if (siteData.devices.includes(dk)) { pushAssetRow(dk, group.name); assignedDevices.add(dk); }
+           if (configuredDeviceIds.includes(dk)) { pushAssetRow(dk, group.name); assignedDevices.add(dk); }
         }
     }
     // อุปกรณ์อื่นๆ
-    const ungrouped = siteData.devices.filter(d => d !== 'other' && !assignedDevices.has(d));
+    const ungrouped = configuredDeviceIds.filter(d => d !== 'other' && !assignedDevices.has(d));
     if (ungrouped.length > 0) {
         assetData.push([`── อื่นๆ (${ungrouped.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '', '']);
         for (const dk of ungrouped) { pushAssetRow(dk, '(อื่นๆ)'); }
@@ -1782,7 +1823,7 @@ window.exportAllDataExcel = async function() {
             if (r.brokenDate) { if (r.fixedDate) duration = formatDuration(calculateDaysDifference(r.brokenDate, r.fixedDate)); else if (r.status === 'down' || r.status === 'abnormal') duration = formatDuration(calculateDaysDifference(r.brokenDate, null)) + ' (ยังไม่ซ่อม)'; }
             let statusTH = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
             const repairState = (r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : '-';
-            let devNameFinal = r.subDevice ? `${devName} (${r.subDevice})` : devName;
+            let devNameFinal = r.subDevice ? `${getDeviceDisplayNameById(devName)} (${r.subDevice})` : getDeviceDisplayNameById(devName);
             recordsData.push([ 
                 formatThaiDateTime(r.ts), r.customId || '-', devNameFinal, sequenceNumber, 
                 formatThaiDate(r.brokenDate), formatThaiDate(r.fixedDate), 
@@ -1884,7 +1925,7 @@ function getRegistryDocRef(siteKey) {
     return db.collection('site_asset_groups').doc(siteKey);
 }
 function getRegistryDeviceList(siteData) {
-    const configuredDevices = Array.isArray(siteData?.devices) ? siteData.devices : [];
+    const configuredDevices = Array.isArray(siteData?.devices) ? siteData.devices.map(getDeviceId).filter(Boolean) : [];
     const firestoreDevices = Object.keys(registryDataMap || {});
 
     return [...new Set([...configuredDevices, ...firestoreDevices])].filter(d => d && d !== 'other');
@@ -2100,7 +2141,7 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
 <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
 
     <td class="px-3 py-2.5 text-sm font-semibold text-slate-800 whitespace-nowrap text-center">
-        ${escapeHtml(devKey)}
+         ${escapeHtml(getDeviceDisplayNameById(devKey))}
     </td>
 
     <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
@@ -2607,7 +2648,8 @@ window.printReport = async function() {
     let html = '<div class="flex flex-col gap-4 text-left">';
     let hasRecords = false;
 
-    for (const dev of siteData.devices) {
+     for (const dev of getConfiguredDeviceIds(currentSiteKey)) {
+        const devDisplayName = getDeviceDisplayNameById(dev);
         const docData = dataMap[dev] || {};
         const records = docData.records || [];
         if (records.length === 0) continue;
@@ -2618,7 +2660,7 @@ window.printReport = async function() {
         html += `<div class="border border-slate-200 p-4 rounded-xl bg-slate-50/50">
                     <h4 class="font-bold text-blue-800 flex items-center gap-2 mb-2 pb-2 border-b border-slate-200">
                         <input type="checkbox" onchange="toggleDeviceGroup(this, '${safeDevId}')" class="w-4 h-4 dev-checkbox cursor-pointer" checked>
-                        📦 ${dev}
+                        📦 ${devDisplayName}
                     </h4>
                     <div class="ml-6 flex flex-col gap-2" id="group-${safeDevId}">`;
 
