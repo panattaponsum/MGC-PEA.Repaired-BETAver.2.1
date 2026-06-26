@@ -13,7 +13,12 @@
                 isPlainObject(site) &&
                 typeof site.name === 'string' && site.name.trim() &&
                 Array.isArray(site.devices) &&
-                site.devices.every(device => typeof device === 'string' && device.trim());
+                site.devices.every(device => {
+                    if (typeof device === 'string') return device.trim();
+                    return isPlainObject(device) &&
+                        typeof device.id === 'string' && device.id.trim() &&
+                        typeof device.name === 'string' && device.name.trim();
+                });
         });
     }
 
