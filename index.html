@@ -337,15 +337,16 @@
         }
         .dynamic-map-marker {
             position: absolute;
-            transform: translate(-50%, -50%);
             display: inline-flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 6px;
-            max-width: 220px;
+            min-width: 32px;
+            min-height: 24px;
+            max-width: 260px;
             padding: 5px 8px;
-            border-radius: 9999px;
+            border-radius: 10px;
             border: 2px solid #10b981;
-            background: rgba(255,255,255,0.94);
+            background: rgba(255,255,255,0.72);
             color: #0f172a;
             font-size: 12px;
             font-weight: 800;
@@ -353,6 +354,19 @@
             cursor: pointer;
             pointer-events: auto;
             white-space: nowrap;
+            overflow: visible;
+        }
+        .dynamic-map-marker.point { transform: translate(-50%, -50%); border-radius: 9999px; align-items: center; }
+        .dynamic-map-marker.rect { transform: none; background: rgba(16,185,129,0.14); }
+        .dynamic-map-marker.rect.abnormal { background: rgba(245,158,11,0.16); }
+        .dynamic-map-marker.rect.down { background: rgba(239,68,68,0.16); }
+        .dynamic-map-draft {
+            position: absolute;
+            border: 2px dashed #2563eb;
+            background: rgba(37,99,235,0.14);
+            border-radius: 10px;
+            pointer-events: none;
+            z-index: 90;
         }
         .dynamic-map-marker.abnormal { border-color: #f59e0b; }
         .dynamic-map-marker.down { border-color: #ef4444; }
@@ -1010,6 +1024,7 @@
                 <div class="form-field"><label>Serial Number (S/N)</label><input type="text" id="assetSerial"/></div>
                 <div class="form-field"><label>รุ่น (Model)</label><input type="text" id="assetModel"/></div>
                 <div class="form-field"><label>PEA No.</label><input type="text" id="assetPeaNo"/></div>
+                <div class="form-field"><label>IP Address</label><input type="text" id="assetIpAddress" placeholder="เช่น 192.168.1.10"/></div>
                 <div class="form-field"><label>ราคาซื้อ (Price)</label><input type="number" id="assetPrice"/></div>
                 <div class="form-field"><label>สถานที่ติดตั้ง (Location)</label><input type="text" id="assetLocation" placeholder="เช่น ห้องควบคุม, อาคาร A..."/></div>
                 <div class="form-field"><label>ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer"/></div>
