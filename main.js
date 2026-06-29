@@ -1588,17 +1588,10 @@ function removeDeviceFromRegistryGroups(deviceName) {
     return changed;
 }
 async function deleteDeviceMapPoint(deviceName) {
+    if (!deviceName) return;
     const docRef = getSiteCollection(currentSiteKey).doc(deviceName);
     try {
-        const snap = await docRef.get();
-        if (!snap.exists) return;
-        const data = snap.data() || {};
-        const keys = Object.keys(data).filter(key => key !== 'mapPoint');
-        if (keys.length === 0) {
-            await docRef.delete();
-        } else {
-            await docRef.set({ mapPoint: firebase.firestore.FieldValue.delete() }, { merge: true });
-        }
+          await docRef.delete();
     } catch (error) {
         if (error?.code !== 'permission-denied') throw error;
         console.warn('ไม่มีสิทธิ์ลบชื่ออุปกรณ์/พิกัดจากฐานข้อมูล devices:', error);
