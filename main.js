@@ -773,7 +773,7 @@ const statusEl = document.getElementById('warrantyStatusDisplay'); const infoEl 
 if (assetInfo && assetInfo.warrantyEnd) {
 statusEl.innerHTML = getWarrantyStatusHTML(getWarrantyStatus(assetInfo.warrantyEnd));
 let infoParts = [];
-if (assetInfo.model) infoParts.push(`รุ่น: ${escapeHtml(assetInfo.model)}`); if (assetInfo.serial) infoParts.push(`S/N: ${escapeHtml(assetInfo.serial)}`); if (assetInfo.peaNo) infoParts.push(`PEA No. : ${escapeHtml(assetInfo.peaNo)}`);
+if (assetInfo.model) infoParts.push(`รุ่น: ${escapeHtml(assetInfo.model)}`); if (assetInfo.serial) infoParts.push(`S/N: ${escapeHtml(assetInfo.serial)}`); if (assetInfo.peaNo) infoParts.push(`PEA No. : ${escapeHtml(assetInfo.peaNo)}`); if (assetInfo.ipAddress) infoParts.push(`IP: ${escapeHtml(assetInfo.ipAddress)}`);
 infoEl.innerHTML = infoParts.join(' | ') || 'ลงทะเบียนแล้ว';
 } else { statusEl.innerHTML = '<span class="tag tag-warranty-bad">🚫 ยังไม่ลงทะเบียน</span>'; infoEl.innerHTML = '"ดู/แก้ไขข้อมูลทรัพย์สิน"'; }
 }
@@ -1053,7 +1053,7 @@ document.getElementById('assetModal').style.display = 'none'; if (showMainModal 
 
 async function loadAssetData() {
     const docRef = getSiteCollection(currentSiteKey).doc(currentDevice); const snap = await docRef.get(); let assetInfo = {}; if (snap.exists && snap.data().assetInfo) assetInfo = snap.data().assetInfo;
-    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
+    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetIpAddress', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
     const isAdmin = (currentUserRole === 'admin');
 
     inputIds.forEach(id => {
@@ -1072,6 +1072,7 @@ async function loadAssetData() {
     document.getElementById('assetModel').value = assetInfo.model || '';
     document.getElementById('assetPeaNo').value = assetInfo.peaNo || '';
     document.getElementById('assetPrice').value = assetInfo.price || '';
+    document.getElementById('assetIpAddress').value = assetInfo.ipAddress || '';
     document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
     document.getElementById('assetLocation').value = assetInfo.location || '';
     document.getElementById('assetWarrantyStart').value = safeDate(assetInfo.warrantyStart);
@@ -1114,7 +1115,7 @@ window.saveAssetData = async function() {
             imageUrl = await ref.getDownloadURL();
         }
     } catch(e) { Swal.fire('อัปโหลดรูปภาพล้มเหลว', e.message, 'error'); return; }
-    const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
+     const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
     if (imageUrl) assetInfo.imageUrl = imageUrl;
     try { await getSiteCollection(currentSiteKey).doc(currentDevice).set({ assetInfo }, { merge: true }); Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success'); updateAssetDisplays(assetInfo); window.updateDeviceSummary(); closeAssetModal(true); } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
     await createLog("EDIT_ASSET", "แก้ไขรายละเอียดทรัพย์สินของ " + currentDevice);
@@ -1568,18 +1569,41 @@ function syncConfiguredDevicesFromMap(siteKey = currentSiteKey) {
     if (!sites[siteKey].devices.includes('other')) sites[siteKey].devices.push('other');
 }
 async function loadDynamicMapPoints() {
+     dynamicMapPoints = {};
     try {
         const snap = await getMapConfigRef().get();
         dynamicMapPoints = snap.exists && snap.data().points ? snap.data().points : {};
-        Object.keys(sites).forEach(syncConfiguredDevicesFromMap);
     } catch (error) {
-        if (error?.code !== 'permission-denied') console.warn('โหลดพิกัดแผนผังไม่สำเร็จ:', error);
-        dynamicMapPoints = {};
+       if (error?.code !== 'permission-denied') console.warn('โหลดพิกัดแผนผังกลางไม่สำเร็จ:', error);
     }
-}
-async function saveDynamicMapPoints() {
-    await getMapConfigRef().set({ points: dynamicMapPoints, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await Promise.all(Object.keys(sites).map(async siteKey => {
+        try {
+            const docsSnap = await getAllDevicesDocs(siteKey);
+            docsSnap.forEach(doc => {
+                const mapPoint = doc.data()?.mapPoint;
+                if (!mapPoint?.name) return;
+                if (!dynamicMapPoints[siteKey]) dynamicMapPoints[siteKey] = [];
+                if (!dynamicMapPoints[siteKey].some(p => p.id === mapPoint.id || p.name === mapPoint.name)) {
+                    dynamicMapPoints[siteKey].push({ ...mapPoint, id: mapPoint.id || doc.id, name: doc.id });
+                }
+            });
+        } catch (error) {
+            if (error?.code !== 'permission-denied') console.warn(`โหลดพิกัดของไซต์ ${siteKey} ไม่สำเร็จ:`, error);
+        }
+    }));
     Object.keys(sites).forEach(syncConfiguredDevicesFromMap);
+}
+async function saveDynamicMapPoints(point = null) {
+    Object.keys(sites).forEach(syncConfiguredDevicesFromMap);
+     const writes = [];
+    if (point?.name) {
+        writes.push(getSiteCollection(currentSiteKey).doc(point.name).set({ mapPoint: point }, { merge: true }));
+    }
+    writes.push(getMapConfigRef().set({ points: dynamicMapPoints, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(error => {
+        if (error?.code !== 'permission-denied') throw error;
+        console.warn('ไม่มีสิทธิ์บันทึกพิกัดกลาง จึงใช้ข้อมูลใน devices เป็นแหล่งข้อมูลหลัก');
+    }));
+    await Promise.all(writes);
     if (currentUserRole === 'admin') await window.saveSitesConfig(sites);
 }
 function disableLegacyImageMaps() {
@@ -1598,9 +1622,14 @@ function getImageClickPercent(event, img) {
 function makeMapMarker(point, status, alerts) {
     const marker = document.createElement('button');
     marker.type = 'button';
-    marker.className = `dynamic-map-marker ${status === 'down' ? 'down' : status === 'abnormal' ? 'abnormal' : 'normal'}`;
+     const shapeClass = point.shape === 'rect' ? 'rect' : 'point';
+    marker.className = `dynamic-map-marker ${shapeClass} ${status === 'down' ? 'down' : status === 'abnormal' ? 'abnormal' : 'normal'}`;
     marker.style.left = `${point.x}%`;
     marker.style.top = `${point.y}%`;
+    if (point.shape === 'rect') {
+        marker.style.width = `${point.width || 4}%`;
+        marker.style.height = `${point.height || 4}%`;
+    }
     marker.title = point.name;
     marker.innerHTML = `<span class="dynamic-map-dot"></span><span class="dynamic-map-label">${escapeHtml(point.name)}</span>${alerts ? `<span class="device-alert-badge">!</span>` : ''}`;
     marker.onclick = (event) => { event.stopPropagation(); isMapEditMode ? openMapPointEditor(point.id) : window.openForm(point.name); };
@@ -1642,8 +1671,9 @@ async function upsertMapPoint(point) {
     if (!hasWriteAccess(currentSiteKey)) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor/Admin เท่านั้นที่จัดการพิกัดได้', 'error');
     dynamicMapPoints[currentSiteKey] = getSiteMapPoints(currentSiteKey).filter(p => p.id !== point.id);
     dynamicMapPoints[currentSiteKey].push(point);
-    await saveDynamicMapPoints();
+    await saveDynamicMapPoints(point);
     window.updateDeviceStatusOverlays(currentSiteKey, true);
+    window.updateDeviceSummary();
 }
 window.openMapPointEditor = async function(pointId = null, clickPos = null) {
     const existing = getSiteMapPoints().find(p => p.id === pointId);
@@ -1663,11 +1693,16 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
     });
     if (result.isDenied && existing) {
         dynamicMapPoints[currentSiteKey] = getSiteMapPoints().filter(p => p.id !== existing.id);
-        await saveDynamicMapPoints(); window.updateDeviceStatusOverlays(currentSiteKey, true); return;
+       await getSiteCollection(currentSiteKey).doc(existing.name).set({ mapPoint: firebase.firestore.FieldValue.delete() }, { merge: true }).catch(() => {});
+        await saveDynamicMapPoints(); window.updateDeviceStatusOverlays(currentSiteKey, true); window.updateDeviceSummary(); return;
     }
     if (!result.isConfirmed) return;
-    const point = existing || { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, viewId: getMapViewId(document.getElementById(`map-${currentSiteKey}`)), x: clickPos.x, y: clickPos.y };
+    const point = existing || { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, viewId: getMapViewId(document.getElementById(`map-${currentSiteKey}`)), shape: clickPos.width && clickPos.height ? 'rect' : 'point', x: clickPos.x, y: clickPos.y, width: clickPos.width, height: clickPos.height };
+    const oldName = point.name;
     point.name = result.value;
+    if (existing && oldName && oldName !== point.name) {
+        await getSiteCollection(currentSiteKey).doc(oldName).set({ mapPoint: firebase.firestore.FieldValue.delete() }, { merge: true }).catch(() => {});
+    }
     await upsertMapPoint(point);
 };
 window.toggleMapEditMode = function() {
@@ -1678,15 +1713,45 @@ window.toggleMapEditMode = function() {
 };
 function bindDynamicMapClicks() {
     document.querySelectorAll('.map-container').forEach(container => {
-        container.addEventListener('click', event => {
-            if (event.target.closest('.dynamic-map-marker')) return;
-            const img = getCurrentMapImage(container);
-            if (!img) return;
+       let dragStart = null, draftEl = null, didDrag = false;
+        const clearDraft = () => { if (draftEl) draftEl.remove(); draftEl = null; };
+        container.addEventListener('mousedown', event => {
+            if (!isMapEditMode || !hasWriteAccess(currentSiteKey) || event.target.closest('.dynamic-map-marker')) return;
+            const img = getCurrentMapImage(container); if (!img) return;
             const rect = img.getBoundingClientRect();
             const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
             if (!inside) return;
-            if (isMapEditMode && hasWriteAccess(currentSiteKey)) window.openMapPointEditor(null, getImageClickPercent(event, img));
-            else window.openForm('other');
+            event.preventDefault(); didDrag = false;
+            dragStart = { clientX: event.clientX, clientY: event.clientY, ...getImageClickPercent(event, img) };
+            draftEl = document.createElement('div'); draftEl.className = 'dynamic-map-draft';
+            const layer = container.querySelector('.dynamic-map-layer') || img.parentElement;
+            layer.appendChild(draftEl);
+        });
+        container.addEventListener('mousemove', event => {
+            if (!dragStart || !draftEl) return;
+            const img = getCurrentMapImage(container); if (!img) return;
+            const now = getImageClickPercent(event, img);
+            didDrag = didDrag || Math.abs(event.clientX - dragStart.clientX) > 6 || Math.abs(event.clientY - dragStart.clientY) > 6;
+            const x = Math.min(dragStart.x, now.x), y = Math.min(dragStart.y, now.y);
+            draftEl.style.left = `${x}%`; draftEl.style.top = `${y}%`;
+            draftEl.style.width = `${Math.abs(now.x - dragStart.x)}%`; draftEl.style.height = `${Math.abs(now.y - dragStart.y)}%`;
+        });
+        container.addEventListener('mouseup', event => {
+            const img = getCurrentMapImage(container);
+            if (dragStart && img) {
+                const end = getImageClickPercent(event, img);
+                const rectPos = { x: Math.min(dragStart.x, end.x), y: Math.min(dragStart.y, end.y), width: Math.abs(end.x - dragStart.x), height: Math.abs(end.y - dragStart.y) };
+                clearDraft(); const start = dragStart; dragStart = null;
+                if (didDrag && rectPos.width >= 1 && rectPos.height >= 1) { window.openMapPointEditor(null, rectPos); return; }
+                window.openMapPointEditor(null, { x: start.x, y: start.y }); return;
+            }
+            clearDraft(); dragStart = null;
+            if (event.target.closest('.dynamic-map-marker')) return;
+            if (!img) return;
+            const rect = img.getBoundingClientRect();
+            const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+            if (!inside || isMapEditMode) return;
+            window.openForm('other');
         });
     });
 }
@@ -1801,6 +1866,7 @@ window.importData = function(event) {
                     const colSerial       = headers.indexOf('Serial Number');
                     const colModel        = headers.indexOf('Model');
                     const colPea          = headers.indexOf('PEA No.');
+                    const colIpAddress    = headers.indexOf('IP Address');
                     const colPrice        = headers.indexOf('ราคาซื้อ');
                     const colManufacturer = headers.indexOf('Manufacturer');
                     const colLocation     = headers.indexOf('สถานที่ติดตั้ง');
@@ -1823,6 +1889,7 @@ window.importData = function(event) {
                                 serial:        colSerial       !== -1 ? (row[colSerial]       || '') : '',
                                 model:         colModel        !== -1 ? (row[colModel]        || '') : '',
                                 peaNo:         colPea          !== -1 ? (row[colPea]          || '') : '',
+                                ipAddress:     colIpAddress    !== -1 ? (row[colIpAddress]    || '') : '',
                                 price:         colPrice        !== -1 ? (row[colPrice]        || '') : '',
                                 manufacturer:  colManufacturer !== -1 ? (row[colManufacturer] || '') : '',
                                 location:      colLocation     !== -1 ? (row[colLocation]     || '') : '',
@@ -1933,7 +2000,7 @@ window.exportAllDataExcel = async function() {
     ]];
 
     // ---- ชีทข้อมูลทรัพย์สิน (แยกตามกลุ่ม) ----
-    const ASSET_HEADER = ['กลุ่ม', 'ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'ราคาซื้อ', 'Manufacturer', 'สถานที่ติดตั้ง', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
+    const ASSET_HEADER = ['กลุ่ม', 'ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'IP Address', 'ราคาซื้อ', 'Manufacturer', 'สถานที่ติดตั้ง', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
     const assetData = [ASSET_HEADER];
 
     // ฟังก์ชันเพิ่มแถวอุปกรณ์
@@ -1942,7 +2009,7 @@ window.exportAllDataExcel = async function() {
         const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
         let warrantyStatusText = 'N/A';
         switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
-         assetData.push([ groupName, getDeviceDisplayNameById(devName), assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
+        assetData.push([ groupName, getDeviceDisplayNameById(devName), assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.ipAddress || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
     };
     // เพิ่มตามกลุ่มก่อน
     const assignedDevices = new Set();
@@ -2004,6 +2071,7 @@ window.exportAllDataExcel = async function() {
             { wch: 20 }, // S/N
             { wch: 20 }, // Model
             { wch: 16 }, // PEA No.
+            { wch: 18 }, // IP Address
             { wch: 14 }, // ราคา
             { wch: 20 }, // Manufacturer
             { wch: 22 }, // สถานที่ติดตั้ง
@@ -2208,6 +2276,9 @@ const TABLE_HEADER = `
         <th class="px-3 py-2.5 text-center whitespace-nowrap">
             PEA No.
         </th>
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            IP Address
+        </th>
 
         <th class="px-3 py-2.5 text-center whitespace-nowrap">
             ผู้ผลิต
@@ -2301,6 +2372,9 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
 
     <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.peaNo)}
+    </td>
+     <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+        ${v(a.ipAddress)}
     </td>
 
     <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
@@ -2716,7 +2790,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
     const firebaseImageUrl = (type === 'down') ? (baseRec.brokenFileUrl || "") : (baseRec.fixedFileUrl || "");
 
     let subDeviceText = baseRec.subDevice ? ` (${baseRec.subDevice})` : '';
-    let assetText = assetInfo ? `\nข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'}` : '';
+    let assetText = assetInfo ? `\nข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'} | IP: ${assetInfo.ipAddress || '-'}` : '';
     let docText = `\nเลขที่ใบสั่ง: ${baseRec.orderNumber || '-'}\nเลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'}\nเลขที่หนังสือ มท.: ${baseRec.docMinistry || '-'}`;
     let costText = type === 'fixed' ? `\nงบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
 
@@ -2938,8 +3012,11 @@ window.generateSelectedReport = async function () {
         <div class="device-section">
            <div class="device-header"><div class="device-title">${deviceNo++}. ${escapeReportHtml(group.title)}</div>
                 <div class="device-spec">
-                     S/N : ${escapeReportHtml(asset.serial)} | Model : ${escapeReportHtml(asset.model)} | 
-                    PEA No. : ${escapeReportHtml(asset.peaNo)} | Price : ${escapeReportHtml(asset.price)} | 
+                     S/N : ${escapeReportHtml(asset.serial)} |
+                     Model : ${escapeReportHtml(asset.model)} | 
+                     PEA No. : ${escapeReportHtml(asset.peaNo)} |
+                     IP : ${escapeReportHtml(asset.ipAddress || '-')} | 
+                     Price : ${escapeReportHtml(asset.price)} | 
                     Warranty : ${escapeReportHtml(formatThaiDate(asset.warrantyStart))} → ${escapeReportHtml(formatThaiDate(asset.warrantyEnd))}
                 </div>
             </div>
