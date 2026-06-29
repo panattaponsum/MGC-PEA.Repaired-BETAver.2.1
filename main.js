@@ -1630,8 +1630,8 @@ function makeMapMarker(point, status, alerts) {
         marker.style.width = `${point.width || 4}%`;
         marker.style.height = `${point.height || 4}%`;
     }
-    marker.title = point.name;
-    marker.innerHTML = `<span class="dynamic-map-dot"></span><span class="dynamic-map-label">${escapeHtml(point.name)}</span>${alerts ? `<span class="device-alert-badge">!</span>` : ''}`;
+     marker.setAttribute('aria-label', point.name);
+    marker.innerHTML = `<span class="dynamic-map-dot"></span>${alerts ? `<span class="device-alert-badge">!</span>` : ''}`;
     marker.onclick = (event) => { event.stopPropagation(); isMapEditMode ? openMapPointEditor(point.id) : window.openForm(point.name); };
     return marker;
 }
