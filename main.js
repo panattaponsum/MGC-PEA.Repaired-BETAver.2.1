@@ -1563,10 +1563,55 @@ function getSiteMapPoints(siteKey = currentSiteKey) {
     return Array.isArray(dynamicMapPoints[siteKey]) ? dynamicMapPoints[siteKey] : [];
 }
 function syncConfiguredDevicesFromMap(siteKey = currentSiteKey) {
+     if (!sites[siteKey]) return;
     const current = Array.isArray(sites[siteKey]?.devices) ? sites[siteKey].devices : [];
     const mapped = getSiteMapPoints(siteKey).map(p => p.name).filter(Boolean);
-    sites[siteKey].devices = [...new Set([...mapped, ...current.filter(d => d === 'other')])];
+   sites[siteKey].devices = [...new Set([...mapped, ...current])];
     if (!sites[siteKey].devices.includes('other')) sites[siteKey].devices.push('other');
+}
+function removeDeviceFromSiteConfig(siteKey, deviceName) {
+    if (!sites[siteKey] || !deviceName || deviceName === 'other') return false;
+    const before = Array.isArray(sites[siteKey].devices) ? sites[siteKey].devices : [];
+    const after = before.filter(device => getDeviceId(device) !== deviceName);
+    sites[siteKey].devices = after.includes('other') ? after : [...after, 'other'];
+    return after.length !== before.length;
+}
+function removeDeviceFromRegistryGroups(deviceName) {
+    if (!Array.isArray(registryGroups) || !deviceName) return false;
+    let changed = false;
+    registryGroups = registryGroups.map(group => {
+        const before = Array.isArray(group.deviceKeys) ? group.deviceKeys : [];
+        const deviceKeys = before.filter(key => key !== deviceName);
+        if (deviceKeys.length !== before.length) changed = true;
+        return { ...group, deviceKeys };
+    });
+    return changed;
+}
+async function deleteDeviceMapPoint(deviceName) {
+    const docRef = getSiteCollection(currentSiteKey).doc(deviceName);
+    try {
+        const snap = await docRef.get();
+        if (!snap.exists) return;
+        const data = snap.data() || {};
+        const keys = Object.keys(data).filter(key => key !== 'mapPoint');
+        if (keys.length === 0) {
+            await docRef.delete();
+        } else {
+            await docRef.set({ mapPoint: firebase.firestore.FieldValue.delete() }, { merge: true });
+        }
+    } catch (error) {
+        if (error?.code !== 'permission-denied') throw error;
+        console.warn('ไม่มีสิทธิ์ลบชื่ออุปกรณ์/พิกัดจากฐานข้อมูล devices:', error);
+    }
+}
+async function persistDeviceRegistryAfterMapDelete(deviceName) {
+    removeDeviceFromSiteConfig(currentSiteKey, deviceName);
+    const groupChanged = removeDeviceFromRegistryGroups(deviceName);
+    const writes = [];
+    if (currentUserRole === 'admin') writes.push(window.saveSitesConfig(sites));
+    if (groupChanged) writes.push(saveRegistryGroups());
+    writes.push(deleteDeviceMapPoint(deviceName));
+    await Promise.all(writes);
 }
 async function loadDynamicMapPoints() {
      dynamicMapPoints = {};
@@ -1671,6 +1716,8 @@ async function upsertMapPoint(point) {
     if (!hasWriteAccess(currentSiteKey)) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor/Admin เท่านั้นที่จัดการพิกัดได้', 'error');
     dynamicMapPoints[currentSiteKey] = getSiteMapPoints(currentSiteKey).filter(p => p.id !== point.id);
     dynamicMapPoints[currentSiteKey].push(point);
+    window.updateDeviceStatusOverlays(currentSiteKey, true);
+    window.updateDeviceSummary();
     await saveDynamicMapPoints(point);
     window.updateDeviceStatusOverlays(currentSiteKey, true);
     window.updateDeviceSummary();
@@ -1693,8 +1740,13 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
     });
     if (result.isDenied && existing) {
         dynamicMapPoints[currentSiteKey] = getSiteMapPoints().filter(p => p.id !== existing.id);
-       await getSiteCollection(currentSiteKey).doc(existing.name).set({ mapPoint: firebase.firestore.FieldValue.delete() }, { merge: true }).catch(() => {});
-        await saveDynamicMapPoints(); window.updateDeviceStatusOverlays(currentSiteKey, true); window.updateDeviceSummary(); return;
+        window.updateDeviceStatusOverlays(currentSiteKey, true);
+        window.updateDeviceSummary();
+        await persistDeviceRegistryAfterMapDelete(existing.name);
+        await saveDynamicMapPoints();
+        window.updateDeviceStatusOverlays(currentSiteKey, true);
+        window.updateDeviceSummary();
+        return;
     }
     if (!result.isConfirmed) return;
     const point = existing || { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, viewId: getMapViewId(document.getElementById(`map-${currentSiteKey}`)), shape: clickPos.width && clickPos.height ? 'rect' : 'point', x: clickPos.x, y: clickPos.y, width: clickPos.width, height: clickPos.height };
