@@ -1765,27 +1765,24 @@ function removeDeviceFromRegistryGroups(deviceName) {
     });
     return changed;
 }
-async function deleteDeviceMapPoint(deviceName) {
-    if (!deviceName) return;
-    const docRef = getSiteCollection(currentSiteKey).doc(deviceName);
-    try {
-           await docRef.set({
-            mapPoint: firebase.firestore.FieldValue.delete(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-    } catch (error) {
-        if (error?.code !== 'permission-denied') throw error;
-        console.warn('ไม่มีสิทธิ์ลบพิกัดจากฐานข้อมูล devices:', error);
-    }
+async function deleteDeviceEverywhere(siteKey, deviceName) {
+    if (!siteKey || !deviceName) return;
+    const batch = db.batch();
+    batch.delete(getSiteCollection(siteKey).doc(deviceName));
+    batch.delete(getSiteAssetsCollection(siteKey).doc(deviceName));
+    await batch.commit();
 }
 async function persistDeviceRegistryAfterMapDelete(deviceName) {
     removeDeviceFromSiteConfig(currentSiteKey, deviceName);
+    delete registryDataMap[deviceName];
     const groupChanged = removeDeviceFromRegistryGroups(deviceName);
     const writes = [];
     if (currentUserRole === 'admin') writes.push(window.saveSitesConfig(sites));
     if (groupChanged) writes.push(saveRegistryGroups());
     writes.push(deleteDeviceMapPoint(deviceName));
+    writes.push(deleteDeviceEverywhere(currentSiteKey, deviceName));
     await Promise.all(writes);
+    await createLog('DELETE_DEVICE', `ลบอุปกรณ์ ${deviceName} ออกจากแผนผังและทะเบียนทรัพย์สิน`, currentSiteKey);
 }
 async function loadDynamicMapPoints() {
      dynamicMapPoints = {};
@@ -2001,11 +1998,11 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
     let redrawRequested = false;
     const result = await Swal.fire({
         title: existing ? 'แก้ไขพิกัดอุปกรณ์' : 'เพิ่มพิกัดอุปกรณ์',
-        html: `<input id="mapPointName" class="swal2-input" placeholder="ชื่ออุปกรณ์" value="${escapeHtml(existing?.name || '')}">${existing ? '<button type="button" id="redrawMapPointButton" class="swal2-styled" style="background:#4f46e5;margin-top:8px;">วาดพิกัดใหม่</button><div class="text-xs text-slate-500 mt-2">ใช้ปุ่มนี้เพื่อสร้างกรอบ/จุดใหม่ของอุปกรณ์เดิม โดยไม่ลบประวัติหรือข้อมูลเดิม</div>' : ''}`,
+        html: `<input id="mapPointName" class="swal2-input" placeholder="ชื่ออุปกรณ์" value="${escapeHtml(existing?.name || '')}">${existing ? '<button type="button" id="redrawMapPointButton" class="swal2-styled" style="background:#79994a;margin-top:8px;">วาดพิกัดใหม่</button><div class="text-xs text-slate-500 mt-2">ใช้ปุ่มนี้เพื่อสร้างกรอบ/จุดใหม่ของอุปกรณ์เดิม โดยไม่ลบประวัติหรือข้อมูลเดิม</div>' : ''}`,
         showCancelButton: true,
         showDenyButton: !!existing,
         confirmButtonText: 'บันทึก',
-        denyButtonText: 'ลบพิกัด',
+        denyButtonText: 'ลบอุปกรณ์',
         cancelButtonText: 'ยกเลิก',
         didOpen: () => {
             const redrawButton = document.getElementById('redrawMapPointButton');
@@ -2029,6 +2026,16 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
         return;
     }
     if (result.isDenied && existing) {
+         const deleteResult = await Swal.fire({
+            title: 'ลบอุปกรณ์นี้ทั้งหมด?',
+            text: `ระบบจะลบ ${existing.name} ออกจากแผนผัง รายการทรัพย์สิน กลุ่ม และข้อมูลประวัติทั้งหมด`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ใช่, ลบทั้งหมด',
+            cancelButtonText: 'ยกเลิก'
+        });
+        if (!deleteResult.isConfirmed) return;
         dynamicMapPoints[currentSiteKey] = getSiteMapPoints().filter(p => p.id !== existing.id);
         window.updateDeviceStatusOverlays(currentSiteKey, true);
         window.updateDeviceSummary();
