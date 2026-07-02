@@ -2625,7 +2625,7 @@ const TABLE_HEADER = `
             ประกัน
         </th>
 
-        <th class="px-3 py-2.5 text-center whitespace-nowrap">
+        <th class="px-3 py-2.5 text-center whitespace-nowrap w-40 max-w-40">
             กลุ่ม
         </th>
 
@@ -2673,8 +2673,7 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
     const moveSelect = registryGroups.length > 0
         ? `
         <select onchange="assignDeviceToGroup('${safeDevKey}', this.value, '${safeGroupId}')"
-            class="text-[10px] border border-slate-200 rounded-lg px-1.5 py-1 bg-white text-slate-600 cursor-pointer w-full focus:ring-1 focus:ring-indigo-400 outline-none">
-
+             class="text-[10px] border border-slate-200 rounded-lg px-1.5 py-1 bg-white text-slate-600 cursor-pointer w-full max-w-[9rem] truncate focus:ring-1 focus:ring-indigo-400 outline-none">
             <option value="">— เลือกกลุ่ม —</option>
 
             ${groupOptions}
@@ -2722,7 +2721,7 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
         ${warrantyBadge}
     </td>
 
-    <td class="px-3 py-2.5 min-w-[130px] text-center">
+     <td class="px-3 py-2.5 w-40 max-w-40 text-center overflow-hidden">
         ${moveSelect}
     </td>
 
