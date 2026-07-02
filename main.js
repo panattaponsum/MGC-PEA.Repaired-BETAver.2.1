@@ -206,7 +206,41 @@ async function generateAutoId(siteKey) {
 }
 function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>'); }
 function getSiteCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`devices`); }
+function getSiteAssetsCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`assets`); }
 
+async function getAssetInfo(siteKey, device) {
+    const assetSnap = await getSiteAssetsCollection(siteKey).doc(device).get();
+    if (assetSnap.exists) return assetSnap.data().assetInfo || {};
+
+    // Backward compatibility: read legacy assetInfo from the issue-history document until data is migrated.
+    const legacySnap = await getSiteCollection(siteKey).doc(device).get();
+    return legacySnap.exists ? (legacySnap.data().assetInfo || {}) : {};
+}
+
+async function saveAssetInfo(siteKey, device, assetInfo) {
+    return Promise.all([
+        getSiteAssetsCollection(siteKey).doc(device).set({
+            assetInfo,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }),
+        // Keep the issue-history bucket free from asset data after an asset save.
+        getSiteCollection(siteKey).doc(device).set({
+            assetInfo: firebase.firestore.FieldValue.delete()
+        }, { merge: true })
+    ]);
+}
+
+async function getAllAssetDocs(siteKey) { return await getSiteAssetsCollection(siteKey).get(); }
+
+async function getMergedDeviceDataMap(siteKey) {
+    const [deviceSnap, assetSnap] = await Promise.all([getAllDevicesDocs(siteKey), getAllAssetDocs(siteKey)]);
+    const dataMap = {};
+    deviceSnap.forEach(d => { dataMap[d.id] = { ...d.data() }; });
+    assetSnap.forEach(d => {
+        dataMap[d.id] = { ...(dataMap[d.id] || {}), assetInfo: d.data().assetInfo || {} };
+    });
+    return dataMap;
+}
 async function getDeviceRecords(siteKey, device) {
 const docRef = getSiteCollection(siteKey).doc(device); 
 const snap = await docRef.get();
@@ -226,7 +260,12 @@ async function saveDeviceRecords(siteKey, device, records) {
     else if (unresolvedIssues.some(r => r.status === 'abnormal')) currentStatus = 'abnormal';
     
    const downCount = records.length;
-    await getSiteCollection(siteKey).doc(device).set({ records, downCount, currentStatus }, { merge: true });
+    await getSiteCollection(siteKey).doc(device).set({
+        records,
+        downCount,
+        currentStatus,
+        assetInfo: firebase.firestore.FieldValue.delete()
+    }, { merge: true });
 }
 
 async function getAllDevicesDocs(siteKey) { return await getSiteCollection(siteKey).get(); }
@@ -737,9 +776,7 @@ window.saveData = async function() {
         records.push(baseRec);
     }
 
-const docRef = getSiteCollection(currentSiteKey).doc(currentDevice);
-const snap = await docRef.get();
-const assetInfo = snap.exists ? (snap.data().assetInfo || null) : null;
+const assetInfo = await getAssetInfo(currentSiteKey, currentDevice);
 await saveDeviceRecords(currentSiteKey, currentDevice, records);
 
 
@@ -787,12 +824,12 @@ window.loadHistory = async function() {
     let docData = null, records = [], assetInfo = null;
 
     try {   
-        const snap = await docRef.get({ source: 'server' }); 
+        const [snap, loadedAssetInfo] = await Promise.all([docRef.get({ source: 'server' }), getAssetInfo(currentSiteKey, currentDevice)]); 
         if (snap.exists) { 
             docData = snap.data(); 
             records = docData.records || []; 
-            assetInfo = docData.assetInfo || null; 
         }
+          assetInfo = loadedAssetInfo || null;
     } catch (e) { 
         container.innerHTML = '<p>Error loading data</p>'; 
         return; 
@@ -1052,7 +1089,7 @@ document.getElementById('assetModal').style.display = 'none'; if (showMainModal 
 }
 
 async function loadAssetData() {
-    const docRef = getSiteCollection(currentSiteKey).doc(currentDevice); const snap = await docRef.get(); let assetInfo = {}; if (snap.exists && snap.data().assetInfo) assetInfo = snap.data().assetInfo;
+    let assetInfo = await getAssetInfo(currentSiteKey, currentDevice);
     const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetIpAddress', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
     const isAdmin = (currentUserRole === 'admin');
 
@@ -1105,8 +1142,7 @@ window.saveAssetData = async function() {
     Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     let imageUrl = null;
     try {
-        const snap2 = await getSiteCollection(currentSiteKey).doc(currentDevice).get();
-        const existingAsset = snap2.exists ? (snap2.data().assetInfo || {}) : {};
+        const existingAsset = await getAssetInfo(currentSiteKey, currentDevice);
         imageUrl = existingAsset.imageUrl || null;
         const imageFile = document.getElementById('assetImageFile').files[0];
         if (imageFile) {
@@ -1117,8 +1153,7 @@ window.saveAssetData = async function() {
     } catch(e) { Swal.fire('อัปโหลดรูปภาพล้มเหลว', e.message, 'error'); return; }
      const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
     if (imageUrl) assetInfo.imageUrl = imageUrl;
-    try { await getSiteCollection(currentSiteKey).doc(currentDevice).set({ assetInfo }, { merge: true }); Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success'); updateAssetDisplays(assetInfo); window.updateDeviceSummary(); closeAssetModal(true); } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
-    await createLog("EDIT_ASSET", "แก้ไขรายละเอียดทรัพย์สินของ " + currentDevice);
+    try { await saveAssetInfo(currentSiteKey, currentDevice, assetInfo); Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success'); updateAssetDisplays(assetInfo); window.updateDeviceSummary(); closeAssetModal(true); } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
 }
 
 function updateAssetWarrantyStatusField() {
@@ -1319,7 +1354,7 @@ window.deleteUser = async function(email) {
 window.updateDeviceSummary = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData) return;
     const search = document.getElementById('searchInput').value.toLowerCase(); const sortOrder = document.getElementById('sortOrder').value; const filterStatus = document.getElementById('filterStatus').value; const from = document.getElementById('fromDate').value; const to = document.getElementById('toDate').value;
-    const docsSnap = await getSiteCollection(currentSiteKey).get({ source: 'server' }); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
+    const dataMap = await getMergedDeviceDataMap(currentSiteKey);
     let summary = []; let totalDevices = 0; let currentBrokenCount = 0; let currentNormalCount = 0;
 
      for (const deviceEntry of siteData.devices) {
@@ -1817,10 +1852,11 @@ async function processAndSaveImport(assetsToImport, recordsToImport, importedGro
     const allDeviceNames = new Set([...assetMap.keys(), ...recordMap.keys(), ...configuredDeviceIds]);
     try {
         const docsSnap = await getAllDevicesDocs(currentSiteKey); const existingDataMap = new Map(); docsSnap.forEach(d => existingDataMap.set(d.id, d.data()));
+        const assetSnap = await getAllAssetDocs(currentSiteKey); const existingAssetMap = new Map(); assetSnap.forEach(d => existingAssetMap.set(d.id, d.data().assetInfo || {}));
         for (const deviceName of allDeviceNames) {
              if (!configuredDeviceIds.includes(deviceName)) continue;
             const docRef = getSiteCollection(currentSiteKey).doc(deviceName); const existingData = existingDataMap.get(deviceName) || {};
-            let finalAssetInfo = assetMap.has(deviceName) ? assetMap.get(deviceName) : (existingData.assetInfo || {});
+            let finalAssetInfo = assetMap.has(deviceName) ? assetMap.get(deviceName) : (existingAssetMap.get(deviceName) || existingData.assetInfo || {});
             
             const finalRecordsMap = new Map();
             for (const r of (existingData.records || [])) {
@@ -1844,13 +1880,18 @@ async function processAndSaveImport(assetsToImport, recordsToImport, importedGro
             let currentStatus = 'ok'; 
             if (unresolvedIssues.some(r => r.status === 'down')) currentStatus = 'down'; 
             else if (unresolvedIssues.some(r => r.status === 'abnormal')) currentStatus = 'abnormal';
-
+            
+            batch.set(getSiteAssetsCollection(currentSiteKey).doc(deviceName), { 
+                assetInfo: finalAssetInfo,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            
             batch.set(docRef, { 
-                assetInfo: finalAssetInfo, 
                 records: finalRecords, 
                 downCount: downCount, 
-                currentStatus: currentStatus 
-            });
+                currentStatus: currentStatus,
+                assetInfo: firebase.firestore.FieldValue.delete()
+            }, { merge: true });
         }
 
         await batch.commit(); 
@@ -2021,7 +2062,7 @@ window.importData = function(event) {
 window.exportAllDataExcel = async function() {
     const siteData = sites[currentSiteKey]; if (!siteData || siteData.devices.length === 0) return;
     const configuredDeviceIds = getConfiguredDeviceIds(currentSiteKey);
-    const docsSnap = await getAllDevicesDocs(currentSiteKey); const dataMap = {}; docsSnap.forEach(d => dataMap[d.id] = d.data());
+    const dataMap = await getMergedDeviceDataMap(currentSiteKey);
     
     // ---- โหลดกลุ่มจาก Firestore ----
     let exportGroups = [];
@@ -2074,7 +2115,8 @@ window.exportAllDataExcel = async function() {
     }
 
     // ---- records data (ทุกอุปกรณ์ตามลำดับ devices) ----
-    for (const devName of siteData.devices) {
+    for (const deviceEntry of siteData.devices) {
+        const devName = getDeviceId(deviceEntry);
         const docData = dataMap[devName]; if (!docData) continue;
         const records = docData.records || []; records.sort((a, b) => a.ts - b.ts); let downCount = 0; 
         records.forEach(r => {
@@ -2257,10 +2299,7 @@ if (siteNameEl) siteNameEl.textContent = `— ${siteData.name}`;
     }
     registryDataMap = {};
     try {
-        const docsSnap = await getSiteCollection(currentSiteKey).get();
-        docsSnap.forEach(d => {
-            registryDataMap[d.id] = d.data();
-        });
+        registryDataMap = await getMergedDeviceDataMap(currentSiteKey);
     } catch (e) {
        console.error("Failed to load device asset data:", e);
         Swal.fire('โหลดข้อมูลบางส่วน', 'ไม่สามารถโหลดรายละเอียดทรัพย์สินจาก Firestore ได้ แต่จะแสดงรายการอุปกรณ์พื้นฐานให้ก่อน: ' + e.message, 'warning');
@@ -2910,9 +2949,7 @@ window.addEventListener('resize', function() {
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
     Swal.fire({ title: 'กำลังโหลดข้อมูลประวัติ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-    const docsSnap = await getSiteCollection(currentSiteKey).get();
-    const dataMap = {};
-    docsSnap.forEach(d => dataMap[d.id] = d.data());
+    const dataMap = await getMergedDeviceDataMap(currentSiteKey);
     Swal.close();
 
     let html = '<div class="flex flex-col gap-4 text-left">';
