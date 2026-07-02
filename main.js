@@ -1747,10 +1747,13 @@ async function deleteDeviceMapPoint(deviceName) {
     if (!deviceName) return;
     const docRef = getSiteCollection(currentSiteKey).doc(deviceName);
     try {
-          await docRef.delete();
+           await docRef.set({
+            mapPoint: firebase.firestore.FieldValue.delete(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
     } catch (error) {
         if (error?.code !== 'permission-denied') throw error;
-        console.warn('ไม่มีสิทธิ์ลบชื่ออุปกรณ์/พิกัดจากฐานข้อมูล devices:', error);
+        console.warn('ไม่มีสิทธิ์ลบพิกัดจากฐานข้อมูล devices:', error);
     }
 }
 async function persistDeviceRegistryAfterMapDelete(deviceName) {
@@ -1813,6 +1816,32 @@ function getImageClickPercent(event, img) {
         y: Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100))
     };
 }
+function getMapPointerPercent(clientX, clientY, img) {
+    const rect = img.getBoundingClientRect();
+    return {
+        x: Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100)),
+        y: Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100))
+    };
+}
+function clampMapPointPosition(point) {
+    const width = point.shape === 'rect' ? (Number(point.width) || 0) : 0;
+    const height = point.shape === 'rect' ? (Number(point.height) || 0) : 0;
+    return {
+        ...point,
+        x: Math.min(100 - width, Math.max(0, Number(point.x) || 0)),
+        y: Math.min(100 - height, Math.max(0, Number(point.y) || 0))
+    };
+}
+async function moveMapPoint(pointId, x, y) {
+    const point = getSiteMapPoints().find(p => p.id === pointId);
+    if (!point || !hasWriteAccess(currentSiteKey)) return;
+    const movedPoint = clampMapPointPosition({ ...point, x, y });
+    dynamicMapPoints[currentSiteKey] = getSiteMapPoints().map(p => p.id === pointId ? movedPoint : p);
+    window.updateDeviceStatusOverlays(currentSiteKey, true);
+    window.updateDeviceSummary();
+    await saveDynamicMapPoints(movedPoint);
+    window.updateDeviceStatusOverlays(currentSiteKey, true);
+}
 function makeMapMarker(point, status, alerts) {
     const marker = document.createElement('button');
     marker.type = 'button';
@@ -1824,9 +1853,51 @@ function makeMapMarker(point, status, alerts) {
         marker.style.width = `${point.width || 4}%`;
         marker.style.height = `${point.height || 4}%`;
     }
-     marker.setAttribute('aria-label', point.name);
+    marker.setAttribute('aria-label', point.name);
+    marker.title = isMapEditMode ? `${point.name} - ลากเพื่อย้ายพิกัด หรือคลิกเพื่อแก้ไขชื่อ/ลบพิกัด` : point.name;
     marker.innerHTML = `<span class="dynamic-map-dot"></span>${alerts ? `<span class="device-alert-badge">!</span>` : ''}`;
-    marker.onclick = (event) => { event.stopPropagation(); isMapEditMode ? openMapPointEditor(point.id) : window.openForm(point.name); };
+   let markerDrag = null;
+    marker.addEventListener('mousedown', event => {
+        if (!isMapEditMode || !hasWriteAccess(currentSiteKey)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const container = document.getElementById(`map-${currentSiteKey}`);
+        const img = getCurrentMapImage(container);
+        if (!img) return;
+        const pointer = getMapPointerPercent(event.clientX, event.clientY, img);
+        markerDrag = {
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            offsetX: pointer.x - (Number(point.x) || 0),
+            offsetY: pointer.y - (Number(point.y) || 0),
+            moved: false
+        };
+        const onMove = moveEvent => {
+            if (!markerDrag) return;
+            markerDrag.moved = markerDrag.moved || Math.abs(moveEvent.clientX - markerDrag.startClientX) > 4 || Math.abs(moveEvent.clientY - markerDrag.startClientY) > 4;
+            const now = getMapPointerPercent(moveEvent.clientX, moveEvent.clientY, img);
+            const preview = clampMapPointPosition({ ...point, x: now.x - markerDrag.offsetX, y: now.y - markerDrag.offsetY });
+            marker.style.left = `${preview.x}%`;
+            marker.style.top = `${preview.y}%`;
+        };
+        const onUp = async upEvent => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            if (!markerDrag) return;
+            const wasMoved = markerDrag.moved;
+            const now = getMapPointerPercent(upEvent.clientX, upEvent.clientY, img);
+            const next = clampMapPointPosition({ ...point, x: now.x - markerDrag.offsetX, y: now.y - markerDrag.offsetY });
+            markerDrag = null;
+            if (wasMoved) await moveMapPoint(point.id, next.x, next.y);
+            else openMapPointEditor(point.id);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    });
+    marker.onclick = (event) => {
+        event.stopPropagation();
+        if (!isMapEditMode) window.openForm(point.name);
+    };
     return marker;
 }
 window.renderDynamicMapPoints = function(siteKey = currentSiteKey) {
