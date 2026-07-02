@@ -1664,6 +1664,74 @@ function removeDeviceFromSiteConfig(siteKey, deviceName) {
     sites[siteKey].devices = after.includes('other') ? after : [...after, 'other'];
     return after.length !== before.length;
 }
+
+function renameDeviceInSiteConfig(siteKey, oldName, newName) {
+    if (!sites[siteKey] || !oldName || !newName || oldName === newName || oldName === 'other') return false;
+    const before = Array.isArray(sites[siteKey].devices) ? sites[siteKey].devices : [];
+    let changed = false;
+    const after = before.map(device => {
+        if (getDeviceId(device) !== oldName) return device;
+        changed = true;
+        if (device && typeof device === 'object') {
+            return { ...device, id: newName, name: newName };
+        }
+        return newName;
+    });
+    if (!after.some(device => getDeviceId(device) === newName)) after.push(newName);
+    sites[siteKey].devices = after.includes('other') || after.some(device => getDeviceId(device) === 'other') ? after : [...after, 'other'];
+    return changed;
+}
+function renameDeviceInRegistryGroups(oldName, newName) {
+    if (!Array.isArray(registryGroups) || !oldName || !newName || oldName === newName) return false;
+    let changed = false;
+    registryGroups = registryGroups.map(group => {
+        const before = Array.isArray(group.deviceKeys) ? group.deviceKeys : [];
+        const deviceKeys = [...new Set(before.map(key => {
+            if (key === oldName) { changed = true; return newName; }
+            return key;
+        }))];
+        return { ...group, deviceKeys };
+    });
+    return changed;
+}
+async function moveFirestoreDocument(oldRef, newRef, transformData = data => data) {
+    const oldSnap = await oldRef.get();
+    if (!oldSnap.exists) return false;
+    const newSnap = await newRef.get();
+    const movedData = transformData(oldSnap.data() || {});
+    const batch = db.batch();
+    batch.set(newRef, { ...movedData, ...(newSnap.exists ? (newSnap.data() || {}) : {}) }, { merge: true });
+    batch.delete(oldRef);
+    await batch.commit();
+    return true;
+}
+async function syncDeviceRenameAcrossCollections(siteKey, oldName, newName, mapPoint) {
+    if (!oldName || !newName || oldName === newName) return;
+    const groupChanged = renameDeviceInRegistryGroups(oldName, newName);
+    renameDeviceInSiteConfig(siteKey, oldName, newName);
+
+    const deviceOldRef = getSiteCollection(siteKey).doc(oldName);
+    const deviceNewRef = getSiteCollection(siteKey).doc(newName);
+    const assetOldRef = getSiteAssetsCollection(siteKey).doc(oldName);
+    const assetNewRef = getSiteAssetsCollection(siteKey).doc(newName);
+
+    await Promise.all([
+        moveFirestoreDocument(deviceOldRef, deviceNewRef, data => ({
+            ...data,
+            mapPoint: mapPoint ? { ...mapPoint, name: newName } : (data.mapPoint ? { ...data.mapPoint, name: newName } : data.mapPoint),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        })),
+        moveFirestoreDocument(assetOldRef, assetNewRef, data => ({
+            ...data,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }))
+    ]);
+
+    if (currentUserRole === 'admin') await window.saveSitesConfig(sites);
+    if (groupChanged) await saveRegistryGroups();
+    await createLog('RENAME_DEVICE', `เปลี่ยนชื่ออุปกรณ์จาก ${oldName} เป็น ${newName}`, siteKey);
+}
+
 function removeDeviceFromRegistryGroups(deviceName) {
     if (!Array.isArray(registryGroups) || !deviceName) return false;
     let changed = false;
@@ -1816,6 +1884,13 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
         preConfirm: () => {
             const name = document.getElementById('mapPointName').value.trim();
             if (!name) { Swal.showValidationMessage('กรุณาระบุชื่ออุปกรณ์'); return false; }
+            const isRenaming = existing && existing.name && existing.name !== name;
+            const duplicateMapPoint = getSiteMapPoints().some(p => p.id !== existing?.id && p.name === name);
+            const duplicateConfiguredDevice = isRenaming && getSiteDeviceEntries(currentSiteKey).some(device => getDeviceId(device) === name);
+            if (duplicateMapPoint || duplicateConfiguredDevice) {
+                Swal.showValidationMessage('มีชื่ออุปกรณ์นี้อยู่แล้ว กรุณาใช้ชื่ออื่น');
+                return false;
+            }
             return name;
         }
     });
@@ -1834,7 +1909,7 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
     const oldName = point.name;
     point.name = result.value;
     if (existing && oldName && oldName !== point.name) {
-        await getSiteCollection(currentSiteKey).doc(oldName).set({ mapPoint: firebase.firestore.FieldValue.delete() }, { merge: true }).catch(() => {});
+          await syncDeviceRenameAcrossCollections(currentSiteKey, oldName, point.name, point);
     }
     await upsertMapPoint(point);
 };
