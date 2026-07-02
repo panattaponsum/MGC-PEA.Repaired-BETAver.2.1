@@ -1636,7 +1636,7 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
 /* หัวข้อ: Dynamic Map Editor - สร้าง/แก้ไข/ลบพิกัดอุปกรณ์บนรูปภาพ */
 let dynamicMapPoints = {};
 let isMapEditMode = false;
-
+let mapRedrawPointId = null;
 function getMapConfigRef() { return db.collection('app_config').doc('map_points'); }
 function getCurrentMapImage(container) {
     if (!container) return null;
@@ -1854,7 +1854,7 @@ function makeMapMarker(point, status, alerts) {
         marker.style.height = `${point.height || 4}%`;
     }
     marker.setAttribute('aria-label', point.name);
-    marker.title = isMapEditMode ? `${point.name} - ลากเพื่อย้ายพิกัด หรือคลิกเพื่อแก้ไขชื่อ/ลบพิกัด` : point.name;
+    marker.title = isMapEditMode ? `${point.name} - ลากเพื่อย้ายพิกัด คลิกเพื่อแก้ไข/ลบ หรือเลือกวาดพิกัดใหม่` : point.name;
     marker.innerHTML = `<span class="dynamic-map-dot"></span>${alerts ? `<span class="device-alert-badge">!</span>` : ''}`;
    let markerDrag = null;
     marker.addEventListener('mousedown', event => {
@@ -1932,6 +1932,38 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
     }
     window.renderDynamicMapPoints(siteKey);
 };
+function getMapPointShapeFromPosition(position = {}) {
+    return position.width && position.height ? 'rect' : 'point';
+}
+async function redrawExistingMapPoint(position) {
+    const point = getSiteMapPoints().find(p => p.id === mapRedrawPointId);
+    if (!point) {
+        mapRedrawPointId = null;
+        return false;
+    }
+    const redrawnPoint = clampMapPointPosition({
+        ...point,
+        viewId: getMapViewId(document.getElementById(`map-${currentSiteKey}`)),
+        shape: getMapPointShapeFromPosition(position),
+        x: position.x,
+        y: position.y,
+        width: position.width,
+        height: position.height
+    });
+    mapRedrawPointId = null;
+    await upsertMapPoint(redrawnPoint);
+    Swal.fire({ icon: 'success', title: 'วาดพิกัดใหม่แล้ว', text: `บันทึกพิกัดใหม่ของ ${redrawnPoint.name} โดยคงข้อมูลเดิมไว้`, timer: 1800, showConfirmButton: false });
+    return true;
+}
+function requestMapPointRedraw(point) {
+    mapRedrawPointId = point.id;
+    Swal.fire({
+        icon: 'info',
+        title: 'วาดพิกัดใหม่',
+        text: `ลากกรอบหรือคลิกตำแหน่งใหม่บนแผนผังสำหรับ ${point.name} ระบบจะคงข้อมูลเดิมไว้`,
+        confirmButtonText: 'ตกลง'
+    });
+}
 async function upsertMapPoint(point) {
     if (!hasWriteAccess(currentSiteKey)) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor/Admin เท่านั้นที่จัดการพิกัดได้', 'error');
     dynamicMapPoints[currentSiteKey] = getSiteMapPoints(currentSiteKey).filter(p => p.id !== point.id);
@@ -1944,14 +1976,19 @@ async function upsertMapPoint(point) {
 }
 window.openMapPointEditor = async function(pointId = null, clickPos = null) {
     const existing = getSiteMapPoints().find(p => p.id === pointId);
+    let redrawRequested = false;
     const result = await Swal.fire({
         title: existing ? 'แก้ไขพิกัดอุปกรณ์' : 'เพิ่มพิกัดอุปกรณ์',
-        html: `<input id="mapPointName" class="swal2-input" placeholder="ชื่ออุปกรณ์" value="${escapeHtml(existing?.name || '')}">`,
+        html: `<input id="mapPointName" class="swal2-input" placeholder="ชื่ออุปกรณ์" value="${escapeHtml(existing?.name || '')}">${existing ? '<button type="button" id="redrawMapPointButton" class="swal2-styled" style="background:#4f46e5;margin-top:8px;">วาดพิกัดใหม่</button><div class="text-xs text-slate-500 mt-2">ใช้ปุ่มนี้เพื่อสร้างกรอบ/จุดใหม่ของอุปกรณ์เดิม โดยไม่ลบประวัติหรือข้อมูลเดิม</div>' : ''}`,
         showCancelButton: true,
         showDenyButton: !!existing,
         confirmButtonText: 'บันทึก',
         denyButtonText: 'ลบพิกัด',
         cancelButtonText: 'ยกเลิก',
+        didOpen: () => {
+            const redrawButton = document.getElementById('redrawMapPointButton');
+            if (redrawButton) redrawButton.addEventListener('click', () => { redrawRequested = true; Swal.close(); });
+        },
         preConfirm: () => {
             const name = document.getElementById('mapPointName').value.trim();
             if (!name) { Swal.showValidationMessage('กรุณาระบุชื่ออุปกรณ์'); return false; }
@@ -1965,6 +2002,10 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
             return name;
         }
     });
+    if (redrawRequested && existing) {
+        requestMapPointRedraw(existing);
+        return;
+    }
     if (result.isDenied && existing) {
         dynamicMapPoints[currentSiteKey] = getSiteMapPoints().filter(p => p.id !== existing.id);
         window.updateDeviceStatusOverlays(currentSiteKey, true);
@@ -1976,7 +2017,7 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
         return;
     }
     if (!result.isConfirmed) return;
-    const point = existing || { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, viewId: getMapViewId(document.getElementById(`map-${currentSiteKey}`)), shape: clickPos.width && clickPos.height ? 'rect' : 'point', x: clickPos.x, y: clickPos.y, width: clickPos.width, height: clickPos.height };
+     const point = existing || { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, viewId: getMapViewId(document.getElementById(`map-${currentSiteKey}`)), shape: getMapPointShapeFromPosition(clickPos), x: clickPos.x, y: clickPos.y, width: clickPos.width, height: clickPos.height };
     const oldName = point.name;
     point.name = result.value;
     if (existing && oldName && oldName !== point.name) {
@@ -2021,8 +2062,15 @@ function bindDynamicMapClicks() {
                 const end = getImageClickPercent(event, img);
                 const rectPos = { x: Math.min(dragStart.x, end.x), y: Math.min(dragStart.y, end.y), width: Math.abs(end.x - dragStart.x), height: Math.abs(end.y - dragStart.y) };
                 clearDraft(); const start = dragStart; dragStart = null;
-                if (didDrag && rectPos.width >= 1 && rectPos.height >= 1) { window.openMapPointEditor(null, rectPos); return; }
-                window.openMapPointEditor(null, { x: start.x, y: start.y }); return;
+                 if (didDrag && rectPos.width >= 1 && rectPos.height >= 1) {
+                    if (mapRedrawPointId) redrawExistingMapPoint(rectPos);
+                    else window.openMapPointEditor(null, rectPos);
+                    return;
+                }
+                const pointPos = { x: start.x, y: start.y };
+                if (mapRedrawPointId) redrawExistingMapPoint(pointPos);
+                else window.openMapPointEditor(null, pointPos);
+                return;
             }
             clearDraft(); dragStart = null;
             if (event.target.closest('.dynamic-map-marker')) return;
