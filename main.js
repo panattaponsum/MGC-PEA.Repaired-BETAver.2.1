@@ -593,6 +593,24 @@ function resolveDeviceInputToId(deviceName, siteKey = currentSiteKey) {
     return entry ? getDeviceId(entry) : raw;
 }
 
+function normalizeImportedDeviceSelection(deviceName, siteKey = currentSiteKey) {
+    const raw = String(deviceName || '').trim();
+    const otherDisplayName = getDeviceDisplayNameById('other', siteKey);
+    const escapedOtherDisplayName = otherDisplayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parenthesisMatch = raw.match(new RegExp(`^(?:other|${escapedOtherDisplayName})\\s*\\((.+)\\)$`, 'i'));
+    const slashSelection = parseDeviceSelection(raw);
+
+    if (parenthesisMatch) {
+        return { deviceId: 'other', subDevice: parenthesisMatch[1].trim() || null };
+    }
+    if (slashSelection.mainDevice === 'other' && slashSelection.subDevice) {
+        return { deviceId: 'other', subDevice: slashSelection.subDevice };
+    }
+
+    return { deviceId: resolveDeviceInputToId(raw, siteKey), subDevice: null };
+}
+
+
 function getDisplayDeviceSelection(deviceName, siteKey = currentSiteKey) {
     const { mainDevice, subDevice } = parseDeviceSelection(deviceName);
     const mainLabel = getDeviceDisplayNameById(mainDevice, siteKey);
@@ -2004,9 +2022,9 @@ window.importData = function(event) {
                             // เก็บข้อมูลกลุ่มสำหรับ restore
                             if (groupName && groupName !== '(อื่นๆ)') {
                                 if (!importedGroupMap[groupName]) importedGroupMap[groupName] = [];
-                                importedGroupMap[groupName].push(resolveDeviceInputToId(deviceName));
+                                 importedGroupMap[groupName].push(normalizeImportedDeviceSelection(deviceName).deviceId);
                             }
-                           assetsToImport.push({ deviceName: resolveDeviceInputToId(deviceName), assetInfo: {
+                            assetsToImport.push({ deviceName: normalizeImportedDeviceSelection(deviceName).deviceId, assetInfo: {
                                 serial:        colSerial       !== -1 ? (row[colSerial]       || '') : '',
                                 model:         colModel        !== -1 ? (row[colModel]        || '') : '',
                                 peaNo:         colPea          !== -1 ? (row[colPea]          || '') : '',
@@ -2042,6 +2060,7 @@ window.importData = function(event) {
                     if (headerMap['ชื่ออุปกรณ์'] !== -1 && headerMap['วันที่เกิดเหตุ'] !== -1) {
                         for (let i = 1; i < recordRawData.length; i++) {
                             const row = recordRawData[i]; const deviceName = row[headerMap['ชื่ออุปกรณ์']]; if (!deviceName) continue;
+                            const importedDevice = normalizeImportedDeviceSelection(deviceName);
                             const importedBrokenDate = cleanDate(row[headerMap['วันที่เกิดเหตุ']]); const importedFixedDate = cleanDate(row[headerMap['วันที่ซ่อมแซม']]);
                             const statusValue = (row[headerMap['สถานะ']] || '').toString(); const importedTs = row[headerMap['Timestamp']];
                             const customIdIdx = headerMap['เลข ID อ้างอิง'];
@@ -2052,10 +2071,11 @@ window.importData = function(event) {
                             const parsedTs = parseThaiDateTimeToTS(importedTs);
                             const timestampToSave = parsedTs ? parsedTs : (Date.now() + i);
 
-                            recordsToImport.push({ deviceName: resolveDeviceInputToId(deviceName), record: {
+                             recordsToImport.push({ deviceName: importedDevice.deviceId, record: {
                                     ts: timestampToSave, customId: customId,brokenDate: importedBrokenDate || '', 
                                     fixedDate: importedFixedDate || null,  status: finalStatus, 
-                                   description: (headerMap['รายละเอียดปัญหา'] !== -1 ? (row[headerMap['รายละเอียดปัญหา']] || '') : '').toString() || 'นำเข้าจาก Excel',  
+                                    subDevice: importedDevice.subDevice,   
+                                    description: (headerMap['รายละเอียดปัญหา'] !== -1 ? (row[headerMap['รายละเอียดปัญหา']] || '') : '').toString() || 'นำเข้าจาก Excel',  
                                     brokenFileUrl: row[headerMap['ลิงก์รูปชำรุด']] || null,
                                     solution: (headerMap['วิธีแก้ไข'] !== -1) ? (row[headerMap['วิธีแก้ไข']] || '').toString() : '',
                                     fixedFileUrl: row[headerMap['ลิงก์รูปแก้ไข']] || null, 
