@@ -575,6 +575,15 @@ function getDeviceDisplayName(deviceEntry) {
 function getSiteDeviceEntries(siteKey = currentSiteKey) {
     return Array.isArray(sites[siteKey]?.devices) ? sites[siteKey].devices : [];
 }
+function compareTextNatural(a, b) {
+    return String(a || '').localeCompare(String(b || ''), ['th', 'en'], { numeric: true, sensitivity: 'base' });
+}
+
+function compareDeviceKeysByDisplayName(a, b, siteKey = currentSiteKey) {
+    const nameCompare = compareTextNatural(getDeviceDisplayNameById(a, siteKey), getDeviceDisplayNameById(b, siteKey));
+    if (nameCompare !== 0) return nameCompare;
+    return compareTextNatural(a, b);
+}
 
 function getConfiguredDeviceIds(siteKey = currentSiteKey) {
     return getSiteDeviceEntries(siteKey).map(getDeviceId).filter(Boolean);
@@ -1450,7 +1459,20 @@ window.updateDeviceSummary = async function() {
     }
 
     if (document.getElementById('cardTotal')) document.getElementById('cardTotal').innerText = totalDevices; if (document.getElementById('cardNormal')) document.getElementById('cardNormal').innerText = currentNormalCount; if (document.getElementById('cardBroken')) document.getElementById('cardBroken').innerText = currentBrokenCount;
-    summary.sort((a, b) => { const countSort = sortOrder === 'desc' ? b.count - a.count : a.count - b.count; if (countSort !== 0) return countSort; return b.latestBrokenDays - a.latestBrokenDays; });
+   summary.sort((a, b) => {
+        const issueSort = Number(b.count > 0) - Number(a.count > 0);
+        if (issueSort !== 0) return issueSort;
+
+        const activeIssueSort = Number(b.remaining > 0) - Number(a.remaining > 0);
+        if (activeIssueSort !== 0) return activeIssueSort;
+
+        const nameSort = compareTextNatural(a.deviceLabel || a.device, b.deviceLabel || b.device);
+        if (nameSort !== 0) return nameSort;
+
+        const countSort = sortOrder === 'desc' ? b.count - a.count : a.count - b.count;
+        if (countSort !== 0) return countSort;
+        return b.latestBrokenDays - a.latestBrokenDays;
+    });
     const totalPages = Math.max(1, Math.ceil(summary.length / pageSize)); if (currentPage > totalPages) currentPage = totalPages; const startIndex = (currentPage - 1) * pageSize; const pageData = summary.slice(startIndex, startIndex + pageSize);
     const tbody = document.getElementById('summaryBody'); tbody.innerHTML = '';
 
@@ -2479,7 +2501,9 @@ function getRegistryDeviceList(siteData) {
     const configuredDevices = Array.isArray(siteData?.devices) ? siteData.devices.map(getDeviceId).filter(Boolean) : [];
     const firestoreDevices = Object.keys(registryDataMap || {});
 
-    return [...new Set([...configuredDevices, ...firestoreDevices])].filter(d => d && d !== 'other');
+     return [...new Set([...configuredDevices, ...firestoreDevices])]
+        .filter(d => d && d !== 'other')
+        .sort((a, b) => compareDeviceKeysByDisplayName(a, b, currentSiteKey));
 }
 
 function normalizeRegistryGroups(rawGroups) {
@@ -2495,7 +2519,7 @@ function normalizeRegistryGroups(rawGroups) {
             return {
                 id: String(group.id || `grp_${index}_${Date.now()}`),
                 name: String(group.name || `กลุ่ม ${index + 1}`),
-                deviceKeys
+                deviceKeys: deviceKeys.sort((a, b) => compareDeviceKeysByDisplayName(a, b, currentSiteKey))
             };
         });
 }
@@ -2739,7 +2763,8 @@ function buildGroupTable(deviceKeys, isInGroup, groupId) {
         `;
     }
 
-    const rows = deviceKeys
+    const sortedDeviceKeys = [...deviceKeys].sort((a, b) => compareDeviceKeysByDisplayName(a, b, currentSiteKey));
+    const rows = sortedDeviceKeys
         .map(dk => deviceRowHTML(dk, isInGroup, groupId))
         .join('');
 
