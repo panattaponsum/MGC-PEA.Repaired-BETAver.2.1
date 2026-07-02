@@ -209,10 +209,13 @@ function getSiteCollection(siteKey) { return db.collection(`sites`).doc(siteKey)
 function getSiteAssetsCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`assets`); }
 
 async function getAssetInfo(siteKey, device) {
-    const assetSnap = await getSiteAssetsCollection(siteKey).doc(device).get();
-    if (assetSnap.exists) return assetSnap.data().assetInfo || {};
-
-    // Backward compatibility: read legacy assetInfo from the issue-history document until data is migrated.
+    try {
+        const assetSnap = await getSiteAssetsCollection(siteKey).doc(device).get();
+        if (assetSnap.exists) return assetSnap.data().assetInfo || {};
+    } catch (error) {
+        if (error?.code !== 'permission-denied') throw error;
+        console.warn('ไม่มีสิทธิ์อ่านข้อมูลทรัพย์สินจาก assets จึงลองใช้ข้อมูลเดิมจาก devices:', error);
+    }
     const legacySnap = await getSiteCollection(siteKey).doc(device).get();
     return legacySnap.exists ? (legacySnap.data().assetInfo || {}) : {};
 }
@@ -233,12 +236,24 @@ async function saveAssetInfo(siteKey, device, assetInfo) {
 async function getAllAssetDocs(siteKey) { return await getSiteAssetsCollection(siteKey).get(); }
 
 async function getMergedDeviceDataMap(siteKey) {
-    const [deviceSnap, assetSnap] = await Promise.all([getAllDevicesDocs(siteKey), getAllAssetDocs(siteKey)]);
     const dataMap = {};
-    deviceSnap.forEach(d => { dataMap[d.id] = { ...d.data() }; });
-    assetSnap.forEach(d => {
-        dataMap[d.id] = { ...(dataMap[d.id] || {}), assetInfo: d.data().assetInfo || {} };
-    });
+     const [deviceResult, assetResult] = await Promise.allSettled([getAllDevicesDocs(siteKey), getAllAssetDocs(siteKey)]);
+
+    if (deviceResult.status === 'fulfilled') {
+        deviceResult.value.forEach(d => { dataMap[d.id] = { ...d.data() }; });
+    } else {
+        throw deviceResult.reason;
+    }
+
+    if (assetResult.status === 'fulfilled') {
+        assetResult.value.forEach(d => {
+            dataMap[d.id] = { ...(dataMap[d.id] || {}), assetInfo: d.data().assetInfo || {} };
+        });
+    } else if (assetResult.reason?.code === 'permission-denied') {
+        console.warn('ไม่มีสิทธิ์อ่านข้อมูลทรัพย์สินจาก assets จึงแสดงข้อมูลอุปกรณ์พื้นฐานก่อน:', assetResult.reason);
+    } else {
+        throw assetResult.reason;
+    }
     return dataMap;
 }
 async function getDeviceRecords(siteKey, device) {
