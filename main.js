@@ -1765,7 +1765,7 @@ function removeDeviceFromRegistryGroups(deviceName) {
     });
     return changed;
 }
-async function deleteDeviceEverywhere(siteKey, deviceName) {
+async function deleteDeviceMapPoint(siteKey, deviceName) {
     if (!siteKey || !deviceName) return;
     const batch = db.batch();
     batch.delete(getSiteCollection(siteKey).doc(deviceName));
@@ -1779,8 +1779,7 @@ async function persistDeviceRegistryAfterMapDelete(deviceName) {
     const writes = [];
     if (currentUserRole === 'admin') writes.push(window.saveSitesConfig(sites));
     if (groupChanged) writes.push(saveRegistryGroups());
-    writes.push(deleteDeviceMapPoint(deviceName));
-    writes.push(deleteDeviceEverywhere(currentSiteKey, deviceName));
+    writes.push(deleteDeviceMapPoint(currentSiteKey, deviceName));
     await Promise.all(writes);
     await createLog('DELETE_DEVICE', `ลบอุปกรณ์ ${deviceName} ออกจากแผนผังและทะเบียนทรัพย์สิน`, currentSiteKey);
 }
@@ -2027,7 +2026,7 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
     }
     if (result.isDenied && existing) {
          const deleteResult = await Swal.fire({
-            title: 'ลบอุปกรณ์นี้ทั้งหมด?',
+            title: 'ลบอุปกรณ์นี้?',
             text: `ระบบจะลบ ${existing.name} ออกจากแผนผัง รายการทรัพย์สิน กลุ่ม และข้อมูลประวัติทั้งหมด`,
             icon: 'warning',
             showCancelButton: true,
