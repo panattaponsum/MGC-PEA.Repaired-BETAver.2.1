@@ -207,17 +207,30 @@ async function generateAutoId(siteKey) {
 function escapeHtml(text) { return String(text || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m] || m)).replace(/\n/g, '<br>'); }
 function getSiteCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`devices`); }
 function getSiteAssetsCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`assets`); }
-
+function isPermissionDenied(error) { return error?.code === 'permission-denied'; }
+function canReadAssetDetails() { return currentUserRole !== 'viewer'; }
+function removeAssetInfo(data) {
+    if (!data || typeof data !== 'object') return data;
+    const sanitized = { ...data };
+    delete sanitized.assetInfo;
+    return sanitized;
+}
 async function getAssetInfo(siteKey, device) {
+     if (!canReadAssetDetails()) return {};
+
     try {
         const assetSnap = await getSiteAssetsCollection(siteKey).doc(device).get();
         if (assetSnap.exists) return assetSnap.data().assetInfo || {};
     } catch (error) {
-        if (error?.code !== 'permission-denied') throw error;
-        console.warn('ไม่มีสิทธิ์อ่านข้อมูลทรัพย์สินจาก assets จึงลองใช้ข้อมูลเดิมจาก devices:', error);
+        if (!isPermissionDenied(error)) throw error;
     }
-    const legacySnap = await getSiteCollection(siteKey).doc(device).get();
-    return legacySnap.exists ? (legacySnap.data().assetInfo || {}) : {};
+     try {
+        const legacySnap = await getSiteCollection(siteKey).doc(device).get();
+        return legacySnap.exists ? (legacySnap.data().assetInfo || {}) : {};
+    } catch (error) {
+        if (!isPermissionDenied(error)) throw error;
+        return {};
+    }
 }
 
 async function saveAssetInfo(siteKey, device, assetInfo) {
@@ -236,25 +249,32 @@ async function saveAssetInfo(siteKey, device, assetInfo) {
 async function getAllAssetDocs(siteKey) { return await getSiteAssetsCollection(siteKey).get(); }
 
 async function getMergedDeviceDataMap(siteKey) {
-    const dataMap = {};
-     const [deviceResult, assetResult] = await Promise.allSettled([getAllDevicesDocs(siteKey), getAllAssetDocs(siteKey)]);
+     const dataMap = {};
+      const canLoadAssets = canReadAssetDetails();
+    const assetDocsPromise = canLoadAssets ? getAllAssetDocs(siteKey) : Promise.resolve(null);
+    const [deviceResult, assetResult] = await Promise.allSettled([getAllDevicesDocs(siteKey), assetDocsPromise]);
 
     if (deviceResult.status === 'fulfilled') {
-        deviceResult.value.forEach(d => { dataMap[d.id] = { ...d.data() }; });
+        deviceResult.value.forEach(d => { dataMap[d.id] = canLoadAssets ? { ...d.data() } : removeAssetInfo(d.data()); });
     } else {
         throw deviceResult.reason;
+    }
+
+    if (!canLoadAssets) {
+        return dataMap;
     }
 
     if (assetResult.status === 'fulfilled') {
         assetResult.value.forEach(d => {
             dataMap[d.id] = { ...(dataMap[d.id] || {}), assetInfo: d.data().assetInfo || {} };
         });
-    } else if (assetResult.reason?.code === 'permission-denied') {
-        console.warn('ไม่มีสิทธิ์อ่านข้อมูลทรัพย์สินจาก assets จึงแสดงข้อมูลอุปกรณ์พื้นฐานก่อน:', assetResult.reason);
+    } else if (isPermissionDenied(assetResult.reason)) {
+        // Asset details are optional for users without Firestore read access; keep rendering device data.
     } else {
         throw assetResult.reason;
     }
-    return dataMap;
+
+     return dataMap;
 }
 async function getDeviceRecords(siteKey, device) {
 const docRef = getSiteCollection(siteKey).doc(device); 
