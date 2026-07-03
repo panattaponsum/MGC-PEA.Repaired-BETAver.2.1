@@ -1823,6 +1823,7 @@ async function saveDynamicMapPoints(point = null) {
 }
 function disableLegacyImageMaps() {
     document.querySelectorAll('.map-container img[usemap]').forEach(img => {
+        if (img.closest('#map-betong')) return;
         img.dataset.legacyUsemap = img.getAttribute('usemap');
         img.removeAttribute('usemap');
     });
@@ -2059,6 +2060,14 @@ window.toggleMapEditMode = function() {
     document.body.classList.toggle('map-edit-mode', isMapEditMode);
     document.getElementById('mapEditModeText').textContent = isMapEditMode ? 'ปิดโหมดกำหนดพิกัด' : 'กำหนดพิกัดอุปกรณ์';
 };
+function openOtherForUnmappedMapClick(event, img) {
+    if (!img || isMapEditMode || event.target.closest('.dynamic-map-marker')) return;
+    const rect = img.getBoundingClientRect();
+    const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    if (!inside) return;
+    // Replaces the removed legacy `<area shape="default">` fallback: any unmapped image area opens Other.
+    window.openForm('other');
+}
 function bindDynamicMapClicks() {
     document.querySelectorAll('.map-container').forEach(container => {
        let dragStart = null, draftEl = null, didDrag = false;
@@ -2085,6 +2094,7 @@ function bindDynamicMapClicks() {
             draftEl.style.width = `${Math.abs(now.x - dragStart.x)}%`; draftEl.style.height = `${Math.abs(now.y - dragStart.y)}%`;
         });
         container.addEventListener('mouseup', event => {
+             if (event.target.closest('area')) return;
             const img = getCurrentMapImage(container);
             if (dragStart && img) {
                 const end = getImageClickPercent(event, img);
@@ -2101,12 +2111,7 @@ function bindDynamicMapClicks() {
                 return;
             }
             clearDraft(); dragStart = null;
-            if (event.target.closest('.dynamic-map-marker')) return;
-            if (!img) return;
-            const rect = img.getBoundingClientRect();
-            const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
-            if (!inside || isMapEditMode) return;
-            window.openForm('other');
+            openOtherForUnmappedMapClick(event, img);
         });
     });
 }
