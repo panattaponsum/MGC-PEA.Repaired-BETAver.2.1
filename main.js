@@ -604,16 +604,16 @@ function resolveDeviceInputToId(deviceName, siteKey = currentSiteKey) {
 
 function normalizeImportedDeviceSelection(deviceName, siteKey = currentSiteKey) {
     const raw = String(deviceName || '').trim();
-    const otherDisplayName = getDeviceDisplayNameById('other', siteKey);
+    const otherDisplayName = getDeviceDisplayNameById('Other', siteKey);
     const escapedOtherDisplayName = otherDisplayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const parenthesisMatch = raw.match(new RegExp(`^(?:other|${escapedOtherDisplayName})\\s*\\((.+)\\)$`, 'i'));
+    const parenthesisMatch = raw.match(new RegExp(`^(?:Other|${escapedOtherDisplayName})\\s*\\((.+)\\)$`, 'i'));
     const slashSelection = parseDeviceSelection(raw);
 
     if (parenthesisMatch) {
-        return { deviceId: 'other', subDevice: parenthesisMatch[1].trim() || null };
+        return { deviceId: 'Other', subDevice: parenthesisMatch[1].trim() || null };
     }
-    if (slashSelection.mainDevice === 'other' && slashSelection.subDevice) {
-        return { deviceId: 'other', subDevice: slashSelection.subDevice };
+    if (slashSelection.mainDevice === 'Other' && slashSelection.subDevice) {
+        return { deviceId: 'Other', subDevice: slashSelection.subDevice };
     }
 
     return { deviceId: resolveDeviceInputToId(raw, siteKey), subDevice: null };
@@ -629,8 +629,8 @@ function getDisplayDeviceSelection(deviceName, siteKey = currentSiteKey) {
 function parseDeviceSelection(deviceName) {
     if (typeof deviceName !== 'string') return { mainDevice: deviceName, subDevice: null };
     const parts = deviceName.split(' / ').map(p => p.trim()).filter(Boolean);
-    if (parts[0] === 'other' && parts.length > 1) {
-        return { mainDevice: 'other', subDevice: parts.slice(1).join(' / ') };
+    if (parts[0] === 'Other' && parts.length > 1) {
+        return { mainDevice: 'Other', subDevice: parts.slice(1).join(' / ') };
     }
     return { mainDevice: deviceName.trim(), subDevice: null };
 }
@@ -643,7 +643,7 @@ window.openForm = async function(deviceName) {
     const othersSelect = document.getElementById('othersDeviceSelect');
     
   
-    if (mainDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
+    if (mainDevice === 'Other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
         othersContainer.classList.remove('hidden'); 
         let optionsHtml = '';
         
@@ -791,7 +791,7 @@ window.saveData = async function() {
         ts: Date.now(), counted: true 
     };
 
-    if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
+    if (currentDevice === 'Other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
         baseRec.subDevice = document.getElementById('othersDeviceSelect').value; 
     }
    if (!isEditing) baseRec.brokenAt = Date.now();
@@ -1127,7 +1127,7 @@ window.editRecord = async function(ts) {
     document.getElementById('orderNumber').value = r.orderNumber || ''; document.getElementById('repairCost').value = r.repairCost || ''; 
     document.getElementById('docMinistry').value = r.docMinistry || ''; document.getElementById('docPEA').value = r.docPEA || ''; 
 
-    if (currentDevice === 'other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay') && r.subDevice) {
+    if (currentDevice === 'Other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay') && r.subDevice) {
         document.getElementById('othersDeviceSelect').value = r.subDevice;
     }
 
@@ -1423,7 +1423,7 @@ window.updateDeviceSummary = async function() {
         const dev = getDeviceId(deviceEntry);
         const devDisplayName = getDeviceDisplayName(deviceEntry);
         const docData = dataMap[dev]; const records = docData?.records || []; if (records.length > 0) records.sort((a, b) => a.ts - b.ts);
-        const subDevices = (dev === 'other' && OTHER_SUBDEVICES[currentSiteKey]) ? OTHER_SUBDEVICES[currentSiteKey] : [null];
+        const subDevices = (dev === 'Other' && OTHER_SUBDEVICES[currentSiteKey]) ? OTHER_SUBDEVICES[currentSiteKey] : [null];
 
         for (const subDeviceName of subDevices) {
             totalDevices++;
@@ -1629,7 +1629,7 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
     mapElements.forEach(mapElement => {
         mapElement.querySelectorAll('area').forEach(area => {
             const deviceName = area.getAttribute('alt'); 
-            if(!deviceName || deviceName === 'The other' || deviceName === 'To Powerstore' || deviceName === 'Back to Main') return; 
+            if(!deviceName || deviceName === 'The Other' || deviceName === 'To Powerstore' || deviceName === 'Back to Main') return; 
             const status = devicesStatus[deviceName] || 'ok'; 
             const coordsAttr = area.getAttribute('coords'); 
             if(!coordsAttr) return;
@@ -1677,18 +1677,18 @@ function syncConfiguredDevicesFromMap(siteKey = currentSiteKey) {
     const current = Array.isArray(sites[siteKey]?.devices) ? sites[siteKey].devices : [];
     const mapped = getSiteMapPoints(siteKey).map(p => p.name).filter(Boolean);
    sites[siteKey].devices = [...new Set([...mapped, ...current])];
-    if (!sites[siteKey].devices.includes('other')) sites[siteKey].devices.push('other');
+    if (!sites[siteKey].devices.includes('Other')) sites[siteKey].devices.push('Other');
 }
 function removeDeviceFromSiteConfig(siteKey, deviceName) {
-    if (!sites[siteKey] || !deviceName || deviceName === 'other') return false;
+    if (!sites[siteKey] || !deviceName || deviceName === 'Other') return false;
     const before = Array.isArray(sites[siteKey].devices) ? sites[siteKey].devices : [];
     const after = before.filter(device => getDeviceId(device) !== deviceName);
-    sites[siteKey].devices = after.includes('other') ? after : [...after, 'other'];
+    sites[siteKey].devices = after.includes('Other') ? after : [...after, 'Other'];
     return after.length !== before.length;
 }
 
 function renameDeviceInSiteConfig(siteKey, oldName, newName) {
-    if (!sites[siteKey] || !oldName || !newName || oldName === newName || oldName === 'other') return false;
+    if (!sites[siteKey] || !oldName || !newName || oldName === newName || oldName === 'Other') return false;
     const before = Array.isArray(sites[siteKey].devices) ? sites[siteKey].devices : [];
     let changed = false;
     const after = before.map(device => {
@@ -1700,7 +1700,7 @@ function renameDeviceInSiteConfig(siteKey, oldName, newName) {
         return newName;
     });
     if (!after.some(device => getDeviceId(device) === newName)) after.push(newName);
-    sites[siteKey].devices = after.includes('other') || after.some(device => getDeviceId(device) === 'other') ? after : [...after, 'other'];
+    sites[siteKey].devices = after.includes('Other') || after.some(device => getDeviceId(device) === 'Other') ? after : [...after, 'Other'];
     return changed;
 }
 function renameDeviceInRegistryGroups(oldName, newName) {
@@ -2082,7 +2082,7 @@ function openOtherForUnmappedMapClick(event, img) {
     const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
     if (!inside) return;
     // Replaces the removed legacy `<area shape="default">` fallback: any unmapped image area opens Other.
-    window.openForm('other');
+    window.openForm('Other');
 }
 function bindDynamicMapClicks() {
     document.querySelectorAll('.map-container').forEach(container => {
@@ -2406,7 +2406,7 @@ window.exportAllDataExcel = async function() {
         }
     }
     // อุปกรณ์อื่นๆ
-    const ungrouped = configuredDeviceIds.filter(d => d !== 'other' && !assignedDevices.has(d));
+    const ungrouped = configuredDeviceIds.filter(d => d !== 'Other' && !assignedDevices.has(d));
     if (ungrouped.length > 0) {
         assetData.push([`── อื่นๆ (${ungrouped.length} อุปกรณ์) ──`, '', '', '', '', '', '', '', '', '', '']);
         for (const dk of ungrouped) { pushAssetRow(dk, '(อื่นๆ)'); }
@@ -2529,7 +2529,7 @@ function getRegistryDeviceList(siteData) {
     const firestoreDevices = Object.keys(registryDataMap || {});
 
      return [...new Set([...configuredDevices, ...firestoreDevices])]
-        .filter(d => d && d !== 'other')
+        .filter(d => d && d !== 'Other')
         .sort((a, b) => compareDeviceKeysByDisplayName(a, b, currentSiteKey));
 }
 
