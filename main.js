@@ -642,48 +642,12 @@ window.openForm = async function(deviceName) {
     const othersContainer = document.getElementById('othersDeviceContainer');
     const othersSelect = document.getElementById('othersDeviceSelect');
     
-  
-    if (mainDevice === 'Other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
-        othersContainer.classList.remove('hidden'); 
-        let optionsHtml = '';
-        
-        if (currentSiteKey === 'phrao') {
-            optionsHtml = `
-                <option value="Office">Office</option>
-                <option value="Current Transformer">Current Transformer</option>
-                <option value="Voltage Transformer">Voltage Transformer</option>
-                <option value="Step-up Transformer 5 MVA">Step-up Transformer 5 MVA</option>
-                <option value="Service Transformer 160 KVA">Service Transformer 160 KVA</option>
-                <option value="Disconnecting Switch">Disconnecting Switch</option>
-                <option value="Fire Alarm">Fire Alarm System</option>
-                <option value="PQ Meter">PQ Meter</option>
-                <option value="Power Meter">Power Meter</option>
-                <option value="The Other">The Other</option>`;
-        } else if (currentSiteKey === 'betong') {
-            optionsHtml = `
-                <option value="Office">Office</option>
-                 <option value="SVG">SVG</option>
-                <option value="Fire Alarm System">Fire Alarm System</option>
-                <option value="The Other">The Other</option>`;
-        } else if (currentSiteKey === 'ko-phaluay') {
-            optionsHtml = `
-                <option value="ระบบควบคุมอาคาร">ระบบควบคุมอาคาร</option>
-                <option value="เครื่องปรับอากาศ">เครื่องปรับอากาศ</option>
-                <option value="Cable">Cable</option>
-                <option value="Riser Pole">Riser Pole</option>
-                <option value="ไฟฉุกเฉิน">ไฟฉุกเฉิน</option>
-                <option value="ถังดับเพลิง">ถังดับเพลิง</option>
-                <option value="PQM">PQM</option>
-                <option value="Generator">Generator</option>
-                <option value="PV">PV</option>
-                <option value="Battery">Battery</option>
-                <option value="โทรศัพท์">โทรศัพท์</option>
-                <option value="วิทยุสื่อสาร">วิทยุสื่อสาร</option>
-                <option value="Breaker">Breaker</option>
-                <option value="Recloser">Recloser</option>
-                <option value="The Other">The Other</option>`;
-        }
-        othersSelect.innerHTML = optionsHtml;
+    const otherSubdevices = OTHER_SUBDEVICES[currentSiteKey] || [];
+    if (mainDevice === 'Other' && otherSubdevices.length) { 
+       othersContainer.classList.remove('hidden'); 
+        othersSelect.innerHTML = otherSubdevices
+            .map(subdevice => `<option value="${escapeHtml(subdevice)}">${escapeHtml(subdevice)}</option>`)
+            .join('');
         if (subDevice) {
             const hasOption = Array.from(othersSelect.options).some(opt => opt.value === subDevice);
             othersSelect.value = hasOption ? subDevice : othersSelect.options[0]?.value;
@@ -791,7 +755,7 @@ window.saveData = async function() {
         ts: Date.now(), counted: true 
     };
 
-    if (currentDevice === 'Other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay')) { 
+if (currentDevice === 'Other' && (OTHER_SUBDEVICES[currentSiteKey] || []).length) { 
         baseRec.subDevice = document.getElementById('othersDeviceSelect').value; 
     }
    if (!isEditing) baseRec.brokenAt = Date.now();
@@ -1126,9 +1090,8 @@ window.editRecord = async function(ts) {
     document.getElementById('description').value = r.description || ''; document.getElementById('solution').value = r.solution || ''; 
     document.getElementById('orderNumber').value = r.orderNumber || ''; document.getElementById('repairCost').value = r.repairCost || ''; 
     document.getElementById('docMinistry').value = r.docMinistry || ''; document.getElementById('docPEA').value = r.docPEA || ''; 
-
-    if (currentDevice === 'Other' && (currentSiteKey === 'phrao' || currentSiteKey === 'betong' || currentSiteKey === 'ko-phaluay') && r.subDevice) {
-        document.getElementById('othersDeviceSelect').value = r.subDevice;
+    if (currentDevice === 'Other' && (OTHER_SUBDEVICES[currentSiteKey] || []).length && r.subDevice) {
+    document.getElementById('othersDeviceSelect').value = r.subDevice;
     }
 
     document.getElementById('brokenFileLink').innerHTML = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="hover:underline">มีไฟล์แนบเดิม (คลิกดู) - อัปโหลดใหม่เพื่อเขียนทับ</a>` : '';
