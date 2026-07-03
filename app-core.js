@@ -535,31 +535,31 @@ window.closeLogModal = function() {
 
 window.toggleBetongView = function(viewType) {
    
-    document.getElementById('betong-main-view').classList.add('hidden');
-    
-    
+    const main = document.getElementById('betong-main-view');
     const sub1 = document.getElementById('betong-sub-view-1');
-    if (sub1) sub1.classList.add('hidden');
-    
     const sub2 = document.getElementById('betong-sub-view-2');
-    if (sub2) sub2.classList.add('hidden');
-    
     const sub3 = document.getElementById('betong-sub-view-3');
-    if (sub3) sub3.classList.add('hidden');
+    const views = [main, sub1, sub2, sub3].filter(Boolean);
 
- 
-    if (viewType === 'sub1' && sub1) {
-        sub1.classList.remove('hidden');
-    } else if (viewType === 'sub2' && sub2) {
-        sub2.classList.remove('hidden');
-    } else if (viewType === 'sub3' && sub3) {
-        sub3.classList.remove('hidden');
-    } else {
-        document.getElementById('betong-main-view').classList.remove('hidden');
-    }
-    
-    if (typeof imageMapResize === 'function') { imageMapResize(); }
-    window.updateDeviceStatusOverlays('betong');
+    views.forEach(view => view.classList.add('hidden'));
+
+    const targetView = viewType === 'sub1' ? sub1
+        : viewType === 'sub2' ? sub2
+        : viewType === 'sub3' ? sub3
+        : main;
+
+    (targetView || main)?.classList.remove('hidden');
+
+    const refreshBetongMap = () => {
+        if (typeof imageMapResize === 'function') imageMapResize();
+        window.updateDeviceStatusOverlays('betong');
+        if (typeof window.renderDynamicMapPoints === 'function') {
+            window.renderDynamicMapPoints('betong');
+        }
+    };
+
+    refreshBetongMap();
+    requestAnimationFrame(refreshBetongMap);
 };
 function setPageBlur(active) {
     document.body.classList.toggle('modal-blur-active', !!active);
