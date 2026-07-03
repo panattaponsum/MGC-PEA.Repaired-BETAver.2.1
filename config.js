@@ -11,10 +11,10 @@ window.AppConfig.firebaseConfig = {
 };
 
 window.AppConfig.defaultSites = {
-    "ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: ["other"] },
-    "mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: ["other"] },
-    "betong": { name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา", devices: ["other"] },
-    "phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: ["other"] }
+    "ko-phaluay": { name: "ไมโครกริดเกาะพะลวย อ.เกาะสมุย จ.สุราษฎร์ธานี", devices: ["Other"] },
+    "mae-sariang": { name: "ไมโครกริดแม่สะเรียง อ.แม่สะเรียง จ.แม่ฮ่องสอน", devices: ["Other"] },
+    "betong": { name: "ไมโครกริดเบตง อ.เบตง จ.ยะลา", devices: ["Other"] },
+    "phrao": { name: "ระบบกักเก็บพลังงานแบตเตอรี่พร้าว อ.พร้าว จ.เชียงใหม่", devices: ["Other"] }
 };
 window.AppConfig.otherSubdevices = {
     phrao: ["Office","Current Transformer","Voltage Transformer","Step-up Transformer 5 MVA",
