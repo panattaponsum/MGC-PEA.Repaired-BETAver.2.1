@@ -13,6 +13,35 @@ function getMapViewId(container) {
     const view = container?.querySelector('.view-wrapper:not(.hidden)');
     return view?.id || 'main';
 }
+const BETONG_NAV_HOTSPOTS = {
+    'betong-main-view': [
+        { coords: [1525, 467, 1657, 539], view: 'sub1' },
+        { coords: [923, 797, 1237, 833], view: 'sub2' },
+        { coords: [584, 559, 689, 667], view: 'sub3' }
+    ],
+    'betong-sub-view-1': [{ coords: [36, 135, 133, 232], view: 'main' }],
+    'betong-sub-view-2': [{ coords: [109, 44, 205, 88], view: 'main' }],
+    'betong-sub-view-3': [{ coords: [17, 326, 98, 400], view: 'main' }]
+};
+function getBetongNavigationTarget(event, img) {
+    const view = img?.closest('.view-wrapper');
+    const hotspots = view ? BETONG_NAV_HOTSPOTS[view.id] : null;
+    if (!img || !hotspots) return null;
+
+    const rect = img.getBoundingClientRect();
+    const naturalWidth = img.naturalWidth || Number(img.getAttribute('width')) || rect.width;
+    const naturalHeight = img.naturalHeight || Number(img.getAttribute('height')) || rect.height;
+    if (!rect.width || !rect.height || !naturalWidth || !naturalHeight) return null;
+
+    const x = ((event.clientX - rect.left) / rect.width) * naturalWidth;
+    const y = ((event.clientY - rect.top) / rect.height) * naturalHeight;
+
+    const hit = hotspots.find(({ coords }) => (
+        x >= coords[0] && x <= coords[2] && y >= coords[1] && y <= coords[3]
+    ));
+
+    return hit?.view || null;
+}
 function getSiteMapPoints(siteKey = currentSiteKey) {
     return Array.isArray(dynamicMapPoints[siteKey]) ? dynamicMapPoints[siteKey] : [];
 }
@@ -425,6 +454,13 @@ function openOtherForUnmappedMapClick(event, img) {
     const rect = img.getBoundingClientRect();
     const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
     if (!inside) return;
+    const betongTargetView = img.closest('#map-betong') ? getBetongNavigationTarget(event, img) : null;
+    if (betongTargetView) {
+        window.toggleBetongView(betongTargetView);
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+    }
     // Replaces the removed legacy `<area shape="default">` fallback: any unmapped image area opens Other.
     window.openForm('Other');
 }
