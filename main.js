@@ -1828,6 +1828,21 @@ function disableLegacyImageMaps() {
         img.removeAttribute('usemap');
     });
 }
+function setBetongImageMapsForEditMode(disabled) {
+    document.querySelectorAll('#map-betong img').forEach(img => {
+        if (disabled) {
+            if (img.hasAttribute('usemap')) {
+                img.dataset.editModeUsemap = img.getAttribute('usemap');
+                img.removeAttribute('usemap');
+            }
+            return;
+        }
+        if (!img.hasAttribute('usemap') && img.dataset.editModeUsemap) {
+            img.setAttribute('usemap', img.dataset.editModeUsemap);
+            delete img.dataset.editModeUsemap;
+        }
+    });
+}
 function getImageClickPercent(event, img) {
     const rect = img.getBoundingClientRect();
     return {
@@ -2058,6 +2073,7 @@ window.toggleMapEditMode = function() {
     if (!hasWriteAccess(currentSiteKey)) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor/Admin เท่านั้นที่จัดการพิกัดได้', 'error');
     isMapEditMode = !isMapEditMode;
     document.body.classList.toggle('map-edit-mode', isMapEditMode);
+    setBetongImageMapsForEditMode(isMapEditMode);
     document.getElementById('mapEditModeText').textContent = isMapEditMode ? 'ปิดโหมดกำหนดพิกัด' : 'กำหนดพิกัดอุปกรณ์';
 };
 function openOtherForUnmappedMapClick(event, img) {
