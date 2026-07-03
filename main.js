@@ -376,7 +376,34 @@ function toggleWriteAccess(isLoggedIn) {
     if (document.getElementById('formModal').style.display === 'flex') loadHistory(); 
 }
 
-function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => Swal.fire('Login ผิดพลาด', e.message, 'error')); }
+function isApiKeyReferrerBlocked(error) {
+    const message = `${error?.message || ''} ${JSON.stringify(error?.serverResponse || {})}`;
+    return message.includes('API_KEY_HTTP_REFERRER_BLOCKED') ||
+        message.includes('Requests from referer') ||
+        message.includes('referer') && message.includes('blocked');
+}
+
+function getFirebaseAuthErrorMessage(error) {
+    if (!isApiKeyReferrerBlocked(error)) return error?.message || 'ไม่สามารถเข้าสู่ระบบได้';
+    const currentOrigin = window.location.origin || 'โดเมนปัจจุบัน';
+    return [
+        `Firebase ปฏิเสธโดเมน ${currentOrigin}`,
+        'ให้ไปที่ Google Cloud Console > APIs & Services > Credentials > API key ของ Firebase project microgrid-th',
+        `เพิ่ม HTTP referrer: ${currentOrigin}/*`,
+        'ถ้าใช้ GitHub Pages แบบ project site ให้เพิ่ม path ของ repository ด้วย เช่น https://panattaponsum.github.io/MGC-PEA.Repaired-BETAver.2.1/*',
+        'จากนั้นรอสักครู่และลองเข้าสู่ระบบใหม่'
+    ].join('\n');
+}
+
+function login() {
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+        .catch(e => Swal.fire({
+            title: 'Login ผิดพลาด',
+            text: getFirebaseAuthErrorMessage(e),
+            icon: 'error',
+            customClass: { popup: 'text-left' }
+        }));
+}
 
 window.logout = async function() {
     if (currentUser) await createLog("AUTH_LOGOUT", "ผู้ใช้กดออกจากระบบ");
