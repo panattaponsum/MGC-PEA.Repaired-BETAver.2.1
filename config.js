@@ -18,7 +18,7 @@ window.AppConfig.defaultSites = {
 };
 window.AppConfig.otherSubdevices = {
     phrao: ["Office","Current Transformer","Voltage Transformer","Step-up Transformer 5 MVA",
-            "Service Transformer 160 KVA","Disconnecting Switch","Fire Alarm","PQ Meter","Power Meter","The Other"],
+            "Service Transformer 160 KVA","Disconnecting Switch","Fire Alarm","The Other"],
     betong: ["Office","SVG","Fire Alarm System","The Other"],
   "ko-phaluay": ["ระบบควบคุมอาคาร","เครื่องปรับอากาศ","Cable","Riser Pole","Recloser",
 "ไฟฉุกเฉิน","ถังดับเพลิง","PQM","Generator","PV","Battery","โทรศัพท์","วิทยุสื่อสาร","Breaker","The Other"]
