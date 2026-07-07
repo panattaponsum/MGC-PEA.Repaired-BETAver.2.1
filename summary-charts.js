@@ -3,6 +3,12 @@ window.updateDeviceSummary = async function() {
     const requestedSiteKey = currentSiteKey;
     const requestedSwitchVersion = siteSwitchVersion;
     const siteData = sites[requestedSiteKey]; if (!siteData) return;
+     if (!canReadSiteData(requestedSiteKey)) {
+        const tbody = document.getElementById('summaryBody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-slate-400 italic">🔒 ไม่มีสิทธิ์ดูข้อมูลไซต์นี้</td></tr>';
+        ['cardTotal', 'cardNormal', 'cardBroken'].forEach(id => { const el = document.getElementById(id); if (el) el.innerText = '0'; });
+        return;
+     }
     const search = document.getElementById('searchInput').value.toLowerCase(); const sortOrder = document.getElementById('sortOrder').value; const filterStatus = document.getElementById('filterStatus').value; const from = document.getElementById('fromDate').value; const to = document.getElementById('toDate').value;
     const dataMap = await getMergedDeviceDataMap(requestedSiteKey);
     if (requestedSiteKey !== currentSiteKey || requestedSwitchVersion !== siteSwitchVersion) return;
@@ -97,6 +103,7 @@ window.chart1 = null;
 window.chart2 = null;
 
 window.renderDashboardCharts = async function(siteKey) {
+     if (!canReadSiteData(siteKey)) return;
     console.log("กำลังเริ่มคำนวณกราฟสำหรับ:", siteKey);
     const docs = await getAllDevicesDocs(siteKey);
     let allDevicesData = [];
@@ -185,7 +192,7 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
     if (!mapContainer) return;
     
     mapContainer.querySelectorAll('.device-overlay').forEach(el => el.remove());
-    if (currentUserRole === 'viewer') return; 
+     if (!canReadSiteData(siteKey) || currentUserRole === 'viewer') return;
     
     if (!useCache) {
         const docsSnap = await getAllDevicesDocs(siteKey); 
