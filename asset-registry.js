@@ -63,12 +63,14 @@ async function loadAssetRegistry() {
     const loadingEl = document.getElementById('registryLoading');
     const contentEl = document.getElementById('registryContent');
 
-    if (!siteData) {
-        if (siteNameEl) siteNameEl.textContent = '';
+   if (!siteData || !canReadSiteData(requestedSiteKey)) {
+        if (siteNameEl) siteNameEl.textContent = siteData ? `— ${siteData.name}` : '';
         if (loadingEl) loadingEl.classList.add('hidden');
         if (contentEl) {
             contentEl.classList.remove('hidden');
-            contentEl.innerHTML = '<div class="bg-white border border-red-200 text-red-600 rounded-xl p-4 text-sm font-semibold">ไม่พบข้อมูลพื้นที่ที่เลือก</div>';
+             contentEl.innerHTML = siteData
+                ? '<div class="bg-white border border-amber-200 text-amber-700 rounded-xl p-4 text-sm font-semibold">🔒 ไม่มีสิทธิ์ดูข้อมูลรายการทรัพย์สินของไซต์นี้</div>'
+                : '<div class="bg-white border border-red-200 text-red-600 rounded-xl p-4 text-sm font-semibold">ไม่พบข้อมูลพื้นที่ที่เลือก</div>';
         }
         return;
     }
@@ -468,7 +470,13 @@ function scheduleOverlayRefresh(siteKey = currentSiteKey, useCache = false) {
         window.updateDeviceStatusOverlays(siteKey, useCache);
     }, 100);
 }
-function switchSite(siteKey) { 
+function switchSite(siteKey) {
+    applySiteAccessOptions();
+    if (!canReadSiteData(siteKey)) {
+        const fallbackSiteKey = getDefaultReadableSiteKey();
+        if (!fallbackSiteKey) { showNoSiteAccessMessage(); toggleWriteAccess(false); return; }
+        if (siteKey !== fallbackSiteKey) return switchSite(fallbackSiteKey);
+    }
     const siteData = sites[siteKey]; if (!siteData) return; currentSiteKey = siteKey; 
     siteSwitchVersion += 1;
     currentDevice = null;
