@@ -1,7 +1,7 @@
 /* Extracted from main.js: 3034-3556. Keep script order in index.html. */
 document.addEventListener("DOMContentLoaded", async function() {
     // หัวข้อ: Bootstrap - ใช้ config จากไฟล์ก่อน แล้วค่อยโหลด override เมื่อมีผู้ใช้ที่ผ่าน auth
-   
+    try { await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION); } catch (e) { console.warn("ตั้งค่า session persistence ไม่สำเร็จ:", e); }
 
     auth.onAuthStateChanged(async user => {
         
@@ -50,11 +50,15 @@ document.addEventListener("DOMContentLoaded", async function() {
                 bindDynamicMapClicks();
                 if (currentUserRole === 'viewer') {
                     document.body.classList.add('viewer-mode'); 
-                    toggleWriteAccess(false); 
                 } else {
                     document.body.classList.remove('viewer-mode'); 
-                    toggleWriteAccess(true); 
                 }
+                applySiteAccessOptions();
+                const readableSiteKey = canReadSiteData(currentSiteKey) ? currentSiteKey : getDefaultReadableSiteKey();
+                if (readableSiteKey) switchSite(readableSiteKey);
+                else showNoSiteAccessMessage();
+                toggleWriteAccess(true);
+                if (appContent) appContent.classList.remove('hidden');
 
                 document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email;
                 document.getElementById('userRoleDisplay').textContent = currentUserRole; 
@@ -64,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                     await createLog("AUTH_LOGIN", `เข้าสู่ระบบ (Role: ${currentUserRole})`);
                     sessionStorage.setItem(sessionLogKey, "true");
                 }
-                scheduleOverlayRefresh(currentSiteKey);
+                if (canReadSiteData(currentSiteKey)) scheduleOverlayRefresh(currentSiteKey);
                 startAutoLogoutTimer();
             } catch (e) {
                 console.error("Error fetching user role:", e);
@@ -88,7 +92,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             document.getElementById('loginButton').classList.remove('hidden');
             
             toggleWriteAccess(false);
-            stopAutoLogoutTimer();
+            stopAutoLogoutTimer(true);
         }
     });
 
@@ -102,31 +106,32 @@ document.addEventListener("DOMContentLoaded", async function() {
         locationSelect.addEventListener("change", function() {
             switchSite(this.value);
         });
-        try {
-            let initialSiteKey = locationSelect.value;
-            if (!sites[initialSiteKey]) initialSiteKey = Object.keys(sites)[0];
-            switchSite(initialSiteKey);
-        } catch (error) {}
+       // รอให้ onAuthStateChanged โหลด role/allowedSites ก่อนจึงค่อยเลือกไซต์ เพื่อไม่ให้ข้อมูลหรือรูปภาพแสดงก่อนตรวจสิทธิ์
     }
 });
 
 
 let countdownInterval; 
 const LOGOUT_TIME_LIMIT = 60 * 60 * 1000; 
+
+function getLogoutExpirationKey() {
+    return currentUser ? `logoutExpiration_${currentUser.uid}` : 'logoutExpiration';
+}
 window.startAutoLogoutTimer = function() {
-    stopAutoLogoutTimer(); 
-    let expirationTime = localStorage.getItem('logoutExpiration'); 
-    if (!expirationTime) { 
-        expirationTime = Date.now() + LOGOUT_TIME_LIMIT; 
-        localStorage.setItem('logoutExpiration', expirationTime); 
+    stopAutoLogoutTimer(false);
+    const expirationKey = getLogoutExpirationKey();
+    let expirationTime = Number(localStorage.getItem(expirationKey));
+    if (!expirationTime || Number.isNaN(expirationTime)) {
+        expirationTime = Date.now() + LOGOUT_TIME_LIMIT;
+        localStorage.setItem(expirationKey, String(expirationTime));
     }
     countdownInterval = setInterval(() => {
-        let timeLeft = Math.ceil((expirationTime - Date.now()) / 1000); 
-        if (timeLeft <= 0) { 
-            stopAutoLogoutTimer(); 
-            localStorage.removeItem('logoutExpiration'); 
-            logout(); 
-            return; 
+       let timeLeft = Math.ceil((expirationTime - Date.now()) / 1000);
+        if (timeLeft <= 0) {
+            stopAutoLogoutTimer();
+            localStorage.removeItem(expirationKey);
+            logout(true);
+            return;
         }
         const minElem = document.getElementById('timerMinutes'); 
         const secElem = document.getElementById('timerSeconds');
@@ -136,9 +141,10 @@ window.startAutoLogoutTimer = function() {
         }
     }, 1000);
 };
-window.stopAutoLogoutTimer = function() { 
-    if (countdownInterval) clearInterval(countdownInterval); 
-    localStorage.removeItem('logoutExpiration'); 
+window.stopAutoLogoutTimer = function(clearExpiration = false) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = null;
+    if (clearExpiration) localStorage.removeItem(getLogoutExpirationKey());
 };
 
 window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, count) {
