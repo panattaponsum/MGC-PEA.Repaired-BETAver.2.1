@@ -579,12 +579,10 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">ตั้งแต่ (From)</label>
-                        <input id="fromDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none"/>
-                    </div>
+                         <input id="fromDate" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none"/>
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">ถึง (To)</label>
-                        <input id="toDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none"/>
-                    </div>
+                       <input id="toDate" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none"/>
                 </div>
             </div>
 
@@ -708,7 +706,7 @@
                         </div>
                         <div class="form-field">
                             <label>วันที่เกิดเหตุ</label>
-                            <input type="date" id="brokenDate"/>
+                            <input type="text" inputmode="numeric" id="brokenDate" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}"/>
                         </div>
                         <div class="sm:col-span-2 form-field">
                             <label>รายละเอียดปัญหา</label>
@@ -738,7 +736,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="form-field">
                             <label>วันที่ซ่อมแซมเสร็จ</label>
-                            <input type="date" id="fixedDate"/>
+                           <input type="text" inputmode="numeric" id="fixedDate" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}"/>
                         </div>
                         <div class="form-field">
                             <label>ราคาซ่อมแซม (บาท)</label>
@@ -754,8 +752,8 @@
                             <input type="text" id="docMinistry"/>
                         </div>
                         <div class="form-field">
-                            <label>เลขที่หนังสือ กฟภ.</label>
-                            <input type="text" id="docPEA"/>
+                             <label>ลงวันที่</label>
+                            <input type="text" inputmode="numeric" id="docPEA" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}"/>
                         </div>
                         <div class="sm:col-span-2 form-field">
                             <label>รายละเอียดวิธีแก้ไข</label>
@@ -838,9 +836,9 @@
                 <div class="form-field"><label>สถานที่ติดตั้ง (Location)</label><input type="text" id="assetLocation" placeholder="เช่น ห้องควบคุม, อาคาร A..."/></div>
                 <div class="form-field"><label>ผู้ผลิต (Manufacturer)</label><input type="text" id="assetManufacturer"/></div>
                 <div class="sm:col-span-2 h-px bg-slate-200 my-1"></div>
-                <div class="form-field"><label>วันที่เริ่มรับประกัน</label><input type="date" id="assetWarrantyStart"/></div>
+               <div class="form-field"><label>วันที่เริ่มรับประกัน</label><input type="text" inputmode="numeric" id="assetWarrantyStart" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}"/></div>
                 <div class="form-field"><label>จำนวนปีรับประกัน</label><input type="number" id="assetWarrantyYears"/></div>
-                <div class="form-field"><label>วันที่หมดรับประกัน</label><input type="date" id="assetWarrantyEnd"/></div>
+                  <div class="form-field"><label>วันที่หมดรับประกัน</label><input type="text" inputmode="numeric" id="assetWarrantyEnd" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}"/></div>
                 <div class="form-field"><label>สถานะประกัน</label><input type="text" id="assetWarrantyStatus" readOnly/></div>
             </div>
         </div>
