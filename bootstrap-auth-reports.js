@@ -156,7 +156,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
 
     let subDeviceText = baseRec.subDevice ? ` (${baseRec.subDevice})` : '';
     let assetText = assetInfo ? `\nข้อมูลทรัพย์สิน: รุ่น ${assetInfo.model || '-'} | S/N: ${assetInfo.serial || '-'} | PEA No: ${assetInfo.peaNo || '-'} | IP: ${assetInfo.ipAddress || '-'}` : '';
-    let docText = `\nเลขที่ใบสั่ง: ${baseRec.orderNumber || '-'}\nเลขที่หนังสือ กฟภ.: ${baseRec.docPEA || '-'}\nเลขที่หนังสือ มท.: ${baseRec.docMinistry || '-'}`;
+   let docText = `\nเลขที่ใบสั่ง: ${baseRec.orderNumber || '-'}\nลงวันที่: ${formatThaiDate(baseRec.docPEA)}\nเลขที่หนังสือ มท.: ${baseRec.docMinistry || '-'}`;
     let costText = type === 'fixed' ? `\nงบประมาณซ่อมแซม: ${baseRec.repairCost ? Number(baseRec.repairCost).toLocaleString() + ' บาท' : '-'}` : '';
 
     const formatReporter = (name, position, department) => {
@@ -412,7 +412,7 @@ window.generateSelectedReport = async function () {
                     <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? escapeReportHtml(Number(r.repairCost).toLocaleString()) : '-'}</div>
                     <div><b>เลขที่ใบสั่ง:</b> ${escapeReportHtml(r.orderNumber)}</div>
                     <div class="doc-line"><b>หนังสือ มท</b> ${escapeReportHtml(r.docMinistry)}</div>
-                    <div><b>หนังสือ กฟภ.</b> ${escapeReportHtml(r.docPEA)}</div>
+                     <div><b>ลงวันที่</b> ${escapeReportHtml(formatThaiDate(r.docPEA))}</div>
                     <div><b>สถานะซ่อม:</b> ${r.fixedDate ? 'ซ่อมแล้ว' : ((r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : 'รอดำเนินการ')}</div>
                     <div><b>ชื่อ-สกุล ผู้รับทราบ :</b> ${escapeReportHtml(r.acknowledgedBy)}</div>
                     <div><b>วันที่-เวลา :</b> ${r.acknowledgedAt ? escapeReportHtml(formatThaiDateTime(r.acknowledgedAt)) : '-'}</div>
