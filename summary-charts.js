@@ -9,7 +9,7 @@ window.updateDeviceSummary = async function() {
         ['cardTotal', 'cardNormal', 'cardBroken'].forEach(id => { const el = document.getElementById(id); if (el) el.innerText = '0'; });
         return;
      }
-    const search = document.getElementById('searchInput').value.toLowerCase(); const sortOrder = document.getElementById('sortOrder').value; const filterStatus = document.getElementById('filterStatus').value; const from = document.getElementById('fromDate').value; const to = document.getElementById('toDate').value;
+   const search = document.getElementById('searchInput').value.toLowerCase(); const sortOrder = document.getElementById('sortOrder').value; const filterStatus = document.getElementById('filterStatus').value; const from = getDateInputStandard('fromDate'); const to = getDateInputStandard('toDate');
     const dataMap = await getMergedDeviceDataMap(requestedSiteKey);
     if (requestedSiteKey !== currentSiteKey || requestedSwitchVersion !== siteSwitchVersion) return;
     let summary = []; let totalDevices = 0; let currentBrokenCount = 0; let currentNormalCount = 0;
@@ -39,7 +39,7 @@ window.updateDeviceSummary = async function() {
             }
 
             let dateFilterSource = earliestBrokenDate !== '-' ? earliestBrokenDate : (latestRecord?.brokenDate);
-            if (dateFilterSource && dateFilterSource !== '-') { const latestTs = new Date(dateFilterSource).getTime(); if (from && latestTs < new Date(from).getTime()) continue; if (to && latestTs >= new Date(to).getTime() + 86400000) continue; }
+             if (dateFilterSource && dateFilterSource !== '-') { const latestTs = dateValueToTime(dateFilterSource); if (from && latestTs < dateValueToTime(from)) continue; if (to && latestTs >= dateValueToTime(to) + 86400000) continue; }
             if (filterStatus === 'currently-down' && !isDown) continue; if (filterStatus === 'currently-abnormal' && !isAbnormal) continue;
             if (filterStatus === 'down' && (scopedRecords.length === 0 || remainingCount > 0)) continue;
             if (filterStatus === 'clean' && scopedRecords.length > 0) continue;
