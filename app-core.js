@@ -57,6 +57,26 @@ function formatThaiDateTime(ts) {
     return `${day}/${month}/${year} ${time}`;
 }
 
+function normalizeDateForParsing(val) {
+    const standard = parseThaiDateToStandard(val);
+    return standard || '';
+}
+
+function dateValueToTime(val) {
+    const standard = normalizeDateForParsing(val);
+    if (!standard) return NaN;
+    return new Date(`${standard}T00:00:00`).getTime();
+}
+
+function setDateInputDisplay(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val ? formatThaiDate(val) : '';
+}
+
+function getDateInputStandard(id) {
+    return parseThaiDateToStandard(document.getElementById(id)?.value || '');
+}
+
 function parseThaiDateToStandard(val) {
     if (!val || val === '-' || val.toString().trim() === '') return '';
     if (typeof val === 'number' && val < 100000) {
@@ -347,9 +367,11 @@ async function getAllDevicesDocs(siteKey) { return await getSiteCollection(siteK
 
 function calculateDaysDifference(dateString1, dateString2) {
 if (!dateString1) return 0;
-if (isNaN(new Date(dateString1).getTime())) return 0;
-const date1 = new Date(dateString1);
-const date2 = dateString2 && !isNaN(new Date(dateString2).getTime()) ? new Date(dateString2) : new Date(); 
+const date1Time = dateValueToTime(dateString1);
+if (isNaN(date1Time)) return 0;
+const date1 = new Date(date1Time);
+const date2Time = dateString2 && !isNaN(dateValueToTime(dateString2)) ? dateValueToTime(dateString2) : Date.now();
+const date2 = new Date(date2Time);
 const _MS_PER_DAY = 1000 * 60 * 60 * 24;
 const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
 const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
@@ -767,7 +789,7 @@ function clearForm() {
     editIndex = -1; document.getElementById('editHint').classList.add('hidden');
 }
 
-function isValidDate(str) { if (!str) return false; const d = new Date(str); return d instanceof Date && !isNaN(d); }
+function isValidDate(str) { return !isNaN(dateValueToTime(str)); }
 
 async function uploadFileToStorage(file, folderName) {
     if (!file) return null;
@@ -781,11 +803,13 @@ window.saveData = async function() {
     if (saveValidation && !saveValidation.ok) { Swal.fire('ไม่สามารถบันทึกได้', saveValidation.message, 'error'); return false; }
 
     let statusVal = document.getElementById('status').value;
-    const brokenDate = document.getElementById('brokenDate').value;
-    const fixedDate = document.getElementById('fixedDate').value;
+    const brokenDate = getDateInputStandard('brokenDate');
+    const fixedDate = getDateInputStandard('fixedDate');
+    const docPEADate = getDateInputStandard('docPEA');
     const isEditing = editIndex >= 0;
     const currentUserStr = document.getElementById('userName').value || "ไม่ระบุ";
     let statusTextTH = statusVal === 'down' ? 'ชำรุด' : (statusVal === 'abnormal' ? 'ผิดปกติ' : 'ใช้งานได้');
+    if (document.getElementById('docPEA').value.trim() && !docPEADate) { Swal.fire("วันที่ผิดพลาด", "กรุณากรอกช่องลงวันที่ในรูปแบบ dd/mm/yyyy", "warning"); return false; }
 
     const confirmResult = await Swal.fire({ title: isEditing ? 'ยืนยันการแก้ไข?' : 'ยืนยันการเพิ่มข้อมูล?', text: `บันทึกสถานะ ${currentDevice} เป็น "${statusTextTH}" ใช่หรือไม่?`, icon: 'question', showCancelButton: true, confirmButtonColor: '#2563eb', cancelButtonColor: '#64748b', confirmButtonText: 'ยืนยันบันทึก', cancelButtonText: 'ยกเลิก' });
     if (!confirmResult.isConfirmed) return false;
@@ -795,14 +819,14 @@ window.saveData = async function() {
     if (currentUserRole === 'engineer' && !isEditing && (statusVal === 'down' || statusVal === 'abnormal')) { Swal.fire('ไม่อนุญาต', 'Engineer ไม่สามารถเพิ่มรายการแจ้งชำรุดใหม่ได้', 'warning'); return false; }
     if (statusVal === 'ok' && !canMarkFixed(currentSiteKey)) { Swal.fire('ไม่อนุญาต', 'เฉพาะ Engineer หรือ Admin เท่านั้นที่แจ้งซ่อมแล้วเสร็จได้', 'warning'); return false; }
     
-    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999); 
-    if (brokenDate && isValidDate(brokenDate) && new Date(brokenDate) > todayEnd) { Swal.fire("วันที่ผิดพลาด", "วันที่เกิดเหตุเป็นอนาคตไม่ได้", "warning"); return false; }
-    if (fixedDate && isValidDate(fixedDate) && new Date(fixedDate) > todayEnd) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมเป็นล่วงหน้า (อนาคต) ไม่ได้", "warning"); return false; }
-    
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    if (brokenDate && isValidDate(brokenDate) && new Date(dateValueToTime(brokenDate)) > todayEnd) { Swal.fire("วันที่ผิดพลาด", "วันที่เกิดเหตุเป็นอนาคตไม่ได้", "warning"); return false; }
+    if (fixedDate && isValidDate(fixedDate) && new Date(dateValueToTime(fixedDate)) > todayEnd) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมเป็นล่วงหน้า (อนาคต) ไม่ได้", "warning"); return false; }
+
     if ((statusVal === 'down' || statusVal === 'abnormal') && !isValidDate(brokenDate)) { Swal.fire("ข้อมูลไม่ครบ", "กรุณาเลือกวันที่", "warning"); return false; }
     if (statusVal === 'ok') {
         if (!isValidDate(brokenDate) || !isValidDate(fixedDate)) { Swal.fire("ข้อมูลไม่ครบ", "กรุณากรอกวันที่ให้ครบ", "warning"); return false; }
-        if (new Date(brokenDate) > new Date(fixedDate)) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมต้องหลังวันที่เกิดเหตุ", "warning"); return false; }
+          if (dateValueToTime(brokenDate) > dateValueToTime(fixedDate)) { Swal.fire("วันที่ผิดพลาด", "วันที่ซ่อมแซมต้องหลังวันที่เกิดเหตุ", "warning"); return false; }
     }
 
     const brokenFile = document.getElementById('brokenFile').files[0];
@@ -828,8 +852,8 @@ window.saveData = async function() {
         orderNumber: document.getElementById('orderNumber').value,
         repairCost: document.getElementById('repairCost').value,
         docMinistry: document.getElementById('docMinistry').value,
-        docPEA: document.getElementById('docPEA').value,
-        ts: Date.now(), counted: true 
+        docPEA: docPEADate,
+        ts: Date.now(), counted: true
     };
 
 if (currentDevice === 'Other' && (OTHER_SUBDEVICES[currentSiteKey] || []).length) { 
@@ -1016,7 +1040,7 @@ window.loadHistory = async function() {
                 <div>เลขที่ใบสั่ง : <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
                 <div>ราคาซ่อมแซม : <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
                 <div>หนังสือ มท : <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
-                <div>หนังสือ กฟภ. : <span class="font-semibold">${escapeHtml(r.docPEA || '-')}</span></div>
+                <div>ลงวันที่ : <span class="font-semibold">${escapeHtml(formatThaiDate(r.docPEA))}</span></div>
                 <div class="col-span-2 text-red-600">ระยะเวลาที่เกิดเหตุ: ${duration}</div>
             </div>
             <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
@@ -1162,10 +1186,10 @@ window.editRecord = async function(ts) {
     const fixedInput = document.getElementById('fixedDate');
     fixedInput.disabled = false; fixedInput.classList.remove('bg-gray-200', 'cursor-not-allowed'); fixedInput.placeholder = "";
     
-    document.getElementById('brokenDate').value = r.brokenDate || ''; fixedInput.value = r.fixedDate || '';
-    document.getElementById('description').value = r.description || ''; document.getElementById('solution').value = r.solution || ''; 
-    document.getElementById('orderNumber').value = r.orderNumber || ''; document.getElementById('repairCost').value = r.repairCost || ''; 
-    document.getElementById('docMinistry').value = r.docMinistry || ''; document.getElementById('docPEA').value = r.docPEA || ''; 
+    setDateInputDisplay('brokenDate', r.brokenDate); setDateInputDisplay('fixedDate', r.fixedDate);
+    document.getElementById('description').value = r.description || ''; document.getElementById('solution').value = r.solution || '';
+    document.getElementById('orderNumber').value = r.orderNumber || ''; document.getElementById('repairCost').value = r.repairCost || '';
+    document.getElementById('docMinistry').value = r.docMinistry || ''; setDateInputDisplay('docPEA', r.docPEA || '');
     if (currentDevice === 'Other' && (OTHER_SUBDEVICES[currentSiteKey] || []).length && r.subDevice) {
     document.getElementById('othersDeviceSelect').value = r.subDevice;
     }
@@ -1213,8 +1237,8 @@ async function loadAssetData() {
     document.getElementById('assetIpAddress').value = assetInfo.ipAddress || '';
     document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
     document.getElementById('assetLocation').value = assetInfo.location || '';
-    document.getElementById('assetWarrantyStart').value = safeDate(assetInfo.warrantyStart);
-    document.getElementById('assetWarrantyEnd').value = safeDate(assetInfo.warrantyEnd);
+    setDateInputDisplay('assetWarrantyStart', assetInfo.warrantyStart);
+    setDateInputDisplay('assetWarrantyEnd', assetInfo.warrantyEnd);
     const ws = safeDate(assetInfo.warrantyStart), we = safeDate(assetInfo.warrantyEnd);
     if (ws && we) document.getElementById('assetWarrantyYears').value = Math.round(((new Date(we)) - (new Date(ws))) / (1000 * 60 * 60 * 24 * 365.25) * 10) / 10; else document.getElementById('assetWarrantyYears').value = '';
     updateAssetWarrantyStatusField();
@@ -1252,13 +1276,13 @@ window.saveAssetData = async function() {
             imageUrl = await ref.getDownloadURL();
         }
     } catch(e) { Swal.fire('อัปโหลดรูปภาพล้มเหลว', e.message, 'error'); return; }
-     const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
+     const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: getDateInputStandard('assetWarrantyStart'), warrantyEnd: getDateInputStandard('assetWarrantyEnd') };
     if (imageUrl) assetInfo.imageUrl = imageUrl;
     try { await saveAssetInfo(currentSiteKey, currentDevice, assetInfo); Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success'); updateAssetDisplays(assetInfo); window.updateDeviceSummary(); closeAssetModal(true); } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
 }
 
 function updateAssetWarrantyStatusField() {
-const status = getWarrantyStatus(document.getElementById('assetWarrantyEnd').value); const field = document.getElementById('assetWarrantyStatus');
+const status = getWarrantyStatus(getDateInputStandard('assetWarrantyEnd')); const field = document.getElementById('assetWarrantyStatus');
 switch (status) { case 'ok': field.value = 'รับประกัน'; break; case 'warn': field.value = 'ใกล้หมดประกัน'; break; case 'bad': field.value = 'หมดประกัน'; break; default: field.value = 'N/A'; }
 }
 
@@ -1278,8 +1302,8 @@ window.previewAssetImage = function(input) {
 
 function setupWarrantyCalculators() {
 const startEl = document.getElementById('assetWarrantyStart'); const yearsEl = document.getElementById('assetWarrantyYears'); const endEl = document.getElementById('assetWarrantyEnd');
-function calculateEnd() { if (startEl.value && yearsEl.value) { const startDate = new Date(startEl.value); const years = parseFloat(yearsEl.value); if (!isNaN(startDate) && years > 0) { startDate.setFullYear(startDate.getFullYear() + Math.floor(years)); const fractionalDays = (years % 1) * 365.25; startDate.setDate(startDate.getDate() + Math.round(fractionalDays)); endEl.value = startDate.toISOString().split('T')[0]; updateAssetWarrantyStatusField(); } } }
-function calculateYears() { if (startEl.value && endEl.value) { const startDate = new Date(startEl.value); const endDate = new Date(endEl.value); if (!isNaN(startDate) && !isNaN(endDate) && endDate > startDate) { yearsEl.value = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24 * 365.25) * 100) / 100; updateAssetWarrantyStatusField(); } } }
+function calculateEnd() { const startStandard = getDateInputStandard('assetWarrantyStart'); if (startStandard && yearsEl.value) { const startDate = new Date(`${startStandard}T00:00:00`); const years = parseFloat(yearsEl.value); if (!isNaN(startDate) && years > 0) { startDate.setFullYear(startDate.getFullYear() + Math.floor(years)); const fractionalDays = (years % 1) * 365.25; startDate.setDate(startDate.getDate() + Math.round(fractionalDays)); endEl.value = formatThaiDate(startDate); updateAssetWarrantyStatusField(); } } }
+function calculateYears() { const startStandard = getDateInputStandard('assetWarrantyStart'); const endStandard = getDateInputStandard('assetWarrantyEnd'); if (startStandard && endStandard) { const startDate = new Date(`${startStandard}T00:00:00`); const endDate = new Date(`${endStandard}T00:00:00`); if (!isNaN(startDate) && !isNaN(endDate) && endDate > startDate) { yearsEl.value = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24 * 365.25) * 100) / 100; updateAssetWarrantyStatusField(); } } }
 startEl.addEventListener('change', calculateEnd); yearsEl.addEventListener('change', calculateEnd); endEl.addEventListener('change', calculateYears); endEl.addEventListener('change', updateAssetWarrantyStatusField);
 }
 
