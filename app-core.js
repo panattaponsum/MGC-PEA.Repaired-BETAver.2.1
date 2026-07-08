@@ -7,10 +7,10 @@ if (!firebaseConfig) {
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-const db = firebase.firestore(); 
-const auth = firebase.auth(); 
-const storage = firebase.storage(); 
-const devicesCol = db.collection("devices"); 
+const db = firebase.firestore();
+const auth = firebase.auth();
+const storage = firebase.storage();
+const devicesCol = db.collection("devices");
 
 let cachedDeviceStatus = {}; 
 let cachedDeviceAlerts = {}; // เพิ่มใหม่: เก็บข้อมูล "อุปกรณ์ที่มีปัญหายังไม่รับทราบ" ต่อไซต์
@@ -129,21 +129,59 @@ let currentUserDept = '';
 let currentUserPhone = ''; 
 const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
 /* หัวข้อ: Auth/Permissions - ตรวจสิทธิ์การดูแลไซต์ การรับทราบ และการปิดงานซ่อม */
-function hasWriteAccess(siteKey = currentSiteKey) {
+function hasAssignedSiteAccess(siteKey = currentSiteKey) {
+    return currentUserAllowedSites.includes(siteKey) || currentUserAllowedSites.includes('all');
+}
+function canReadSiteData(siteKey = currentSiteKey) {
+    if (!currentUser) return false;
     if (currentUserRole === 'admin') return true;
-    if (currentUserRole === 'editor') {
-        return currentUserAllowedSites.includes(siteKey) || currentUserAllowedSites.includes('all');
-    }
+    if (currentUserRole === 'viewer') return false;
+    if (currentUserRole === 'editor' || currentUserRole === 'engineer') return hasAssignedSiteAccess(siteKey);
     return false;
 }
+function hasWriteAccess(siteKey = currentSiteKey) {
+    if (currentUserRole === 'admin') return true;
+    return currentUserRole === 'editor' && hasAssignedSiteAccess(siteKey);
+}
 function hasEngineerSiteAccess(siteKey = currentSiteKey) {
-    return currentUserRole === 'engineer' && (currentUserAllowedSites.includes(siteKey) || currentUserAllowedSites.includes('all'));
+     return currentUserRole === 'engineer' && hasAssignedSiteAccess(siteKey);
 }
 function canAcknowledgeIssue(siteKey = currentSiteKey) {
     return currentUserRole === 'admin' || hasWriteAccess(siteKey) || hasEngineerSiteAccess(siteKey);
 }
+function canEditIssueData(siteKey = currentSiteKey) {
+    return currentUserRole === 'admin' || hasWriteAccess(siteKey) || hasEngineerSiteAccess(siteKey);
+}
 function canMarkFixed(siteKey = currentSiteKey) {
     return currentUserRole === 'admin' || hasEngineerSiteAccess(siteKey);
+}
+function getReadableSiteKeys() {
+    const keys = Object.keys(sites || {});
+    if (currentUserRole === 'admin') return keys;
+    if (!currentUser || currentUserRole === 'viewer') return [];
+    if (currentUserAllowedSites.includes('all')) return keys;
+    return keys.filter(key => currentUserAllowedSites.includes(key));
+}
+function getDefaultReadableSiteKey() {
+    return getReadableSiteKeys()[0] || null;
+}
+function applySiteAccessOptions() {
+    const locationSelect = document.getElementById('location-select');
+    if (!locationSelect) return;
+    const readable = new Set(getReadableSiteKeys());
+    Array.from(locationSelect.options).forEach(option => {
+        const allowed = readable.has(option.value);
+        option.hidden = !allowed;
+        option.disabled = !allowed;
+    });
+}
+function showNoSiteAccessMessage() {
+    document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden'));
+    const title = document.getElementById('locationTitle');
+    if (title) title.textContent = '🔒 ไม่มีสิทธิ์ดูข้อมูลไซต์';
+    const history = document.getElementById('historySection');
+    if (history) history.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่มีสิทธิ์ดูข้อมูลประวัติชำรุด</p>';
+    updateAssetDisplays(null);
 }
 /* หัวข้อ: Config - โหลดค่ารายชื่อไซต์/อุปกรณ์จากไฟล์ config.js และรองรับ override จาก Firestore */
 let sites = window.AppConfig?.defaultSites || {};
@@ -211,6 +249,7 @@ function getSiteCollection(siteKey) { return db.collection(`sites`).doc(siteKey)
 function getSiteAssetsCollection(siteKey) { return db.collection(`sites`).doc(siteKey).collection(`assets`); }
 function isPermissionDenied(error) { return error?.code === 'permission-denied'; }
 function canReadAssetDetails() { return currentUserRole !== 'viewer'; }
+function canReadAssetDetails(siteKey = currentSiteKey) { return canReadSiteData(siteKey) && currentUserRole !== 'viewer'; }
 function removeAssetInfo(data) {
     if (!data || typeof data !== 'object') return data;
     const sanitized = { ...data };
@@ -218,8 +257,7 @@ function removeAssetInfo(data) {
     return sanitized;
 }
 async function getAssetInfo(siteKey, device) {
-     if (!canReadAssetDetails()) return {};
-
+      if (!canReadAssetDetails(siteKey)) return {};
     try {
         const assetSnap = await getSiteAssetsCollection(siteKey).doc(device).get();
         if (assetSnap.exists) return assetSnap.data().assetInfo || {};
@@ -251,8 +289,8 @@ async function saveAssetInfo(siteKey, device, assetInfo) {
 async function getAllAssetDocs(siteKey) { return await getSiteAssetsCollection(siteKey).get(); }
 
 async function getMergedDeviceDataMap(siteKey) {
-     const dataMap = {};
-      const canLoadAssets = canReadAssetDetails();
+    const dataMap = {};
+    const canLoadAssets = canReadAssetDetails(siteKey);
     const assetDocsPromise = canLoadAssets ? getAllAssetDocs(siteKey) : Promise.resolve(null);
     const [deviceResult, assetResult] = await Promise.allSettled([getAllDevicesDocs(siteKey), assetDocsPromise]);
 
@@ -348,10 +386,16 @@ switch (status) { case 'ok': return '<span class="tag tag-warranty-ok">🛡️ �
 
 function toggleWriteAccess(isLoggedIn) {
     const role = isLoggedIn ? currentUserRole : 'viewer';
-    const isAdmin = role === 'admin'; 
-    const isEditor = hasWriteAccess(currentSiteKey); 
+    const isAdmin = role === 'admin';
+    const isEditor = hasWriteAccess(currentSiteKey);
+    const canManageIssues = canEditIssueData(currentSiteKey);
 
-    ['saveDataButton', 'clearDeviceButton', 'clearAllButton'].forEach(id => {
+    const saveDataButton = document.getElementById('saveDataButton');
+    if (saveDataButton) {
+        saveDataButton.disabled = !canManageIssues;
+        saveDataButton.title = canManageIssues ? '' : (isLoggedIn ? 'สิทธิ์ไม่เพียงพอ' : 'กรุณาลงชื่อเข้าใช้ก่อน');
+    }
+    ['clearDeviceButton', 'clearAllButton'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) { btn.disabled = !isEditor; btn.title = isEditor ? '' : 'สิทธิ์ไม่เพียงพอ'; 
         if (!isLoggedIn) btn.title = 'กรุณาลงชื่อเข้าใช้ก่อน'; }
@@ -375,7 +419,7 @@ function toggleWriteAccess(isLoggedIn) {
     const userNameInput = document.getElementById('userName');
     if (isLoggedIn && currentUser) { userNameInput.value = currentUserFullName || currentUser.email; userNameInput.readOnly = true; } 
     else { userNameInput.value = 'ผู้เยี่ยมชม (อ่านอย่างเดียว)'; userNameInput.readOnly = true; }
-    if (document.getElementById('formModal').style.display === 'flex') loadHistory(); 
+   if (document.getElementById('formModal').style.display === 'flex' && canReadSiteData(currentSiteKey)) loadHistory();
 }
 
 function isApiKeyReferrerBlocked(error) {
@@ -407,9 +451,13 @@ function login() {
         }));
 }
 
-window.logout = async function() {
-    if (currentUser) await createLog("AUTH_LOGOUT", "ผู้ใช้กดออกจากระบบ");
-    auth.signOut().then(() => location.reload());
+window.logout = async function(isAutoLogout = false) {
+    const expirationKey = currentUser ? `logoutExpiration_${currentUser.uid}` : null;
+    if (currentUser) await createLog(isAutoLogout ? "AUTH_AUTO_LOGOUT" : "AUTH_LOGOUT", isAutoLogout ? "ออกจากระบบอัตโนมัติเมื่อครบเวลา" : "ผู้ใช้กดออกจากระบบ");
+    if (expirationKey) localStorage.removeItem(expirationKey);
+    sessionStorage.clear();
+    await auth.signOut();
+    location.reload();
 };
 
 window.createLog = async function(action, details, siteKey = null) {
@@ -903,8 +951,7 @@ window.loadHistory = async function() {
     }
 
     // ตรวจสอบสิทธิ์การแก้ไข (viewer จะไม่มีสิทธิ์)
-    const canEdit = canAcknowledgeIssue(currentSiteKey) ? '' : 'disabled title="ไม่มีสิทธิ์จัดการข้อมูล" style="opacity: 0.5; cursor: not-allowed;"';
-    
+    const canEdit = canEditIssueData(currentSiteKey) ? '' : 'disabled title="ไม่มีสิทธิ์จัดการข้อมูล" style="opacity: 0.5; cursor: not-allowed;"';
     records.forEach((r, index) => {
         const recordSequence = records.length - index; 
         let duration = '-';
@@ -935,7 +982,7 @@ window.loadHistory = async function() {
         } else {
             // กรณีเป็น viewer และมีการอัปโหลดรูปไว้ ให้แสดงข้อความแจ้งเตือนแทนการแสดงลิงก์
             if (r.brokenFileUrl || r.fixedFileUrl) {
-                filesHtml = `<div class="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400 italic">🔒 รูปภาพ/ไฟล์แนบถูกจำกัดสิทธิ์เฉพาะ Editor/Admin</div>`;
+                filesHtml = `<div class="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400 italic">🔒 รูปภาพ/ไฟล์แนบถูกจำกัดสิทธิ์ตามไซต์ที่ได้รับอนุญาต</div>`;
             }
         }
         // -----------------------------------------------------------
@@ -1102,7 +1149,7 @@ window.acknowledgeRecord = async function(ts) {
 };
 
 window.editRecord = async function(ts) {
-    if (!hasWriteAccess(currentSiteKey)) return;
+    if (!canEditIssueData(currentSiteKey)) return;
     if (!currentDevice) return;
     let records = await getDeviceRecords(currentSiteKey, currentDevice);
     const idx = records.findIndex(r => String(r.ts) === String(ts));
@@ -1130,7 +1177,7 @@ window.editRecord = async function(ts) {
 };
 
 window.openAssetModal = async function() {
-if (!currentDevice) return;
+if (!currentDevice || !canReadAssetDetails(currentSiteKey)) { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์ดูข้อมูลรายการทรัพย์สินของไซต์นี้', 'error'); return; }
     document.getElementById('assetFormTitle').textContent = `📋 ข้อมูลทรัพย์สิน: ${currentDevice}`;
     document.getElementById('formModal').style.display = 'none'; 
     document.getElementById('assetModal').style.display = 'flex'; 
