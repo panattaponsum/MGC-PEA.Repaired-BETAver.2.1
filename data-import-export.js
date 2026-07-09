@@ -152,7 +152,7 @@ window.importData = function(event) {
                                         'วันที่เกิดเหตุ': headers.indexOf('วันที่เกิดเหตุ') !== -1 ? headers.indexOf('วันที่เกิดเหตุ') : headers.indexOf('วันที่ชำรุด'), 
                                         'วันที่ซ่อมแซม': headers.indexOf('วันที่ซ่อมแซม'), 'สถานะ': headers.indexOf('สถานะ'), 'คำอธิบาย': headers.indexOf('คำอธิบาย'),'ลิงก์รูปชำรุด': headers.indexOf('ลิงก์รูปชำรุด'), 'วิธีแก้ไข': headers.indexOf('วิธีแก้ไข'),'ลิงก์รูปแก้ไข': headers.indexOf('ลิงก์รูปแก้ไข'), 
                                         'เลขที่ใบสั่ง': headers.indexOf('เลขที่ใบสั่ง'), 'ราคาซ่อม': headers.indexOf('ราคาซ่อม'), 
-                                        'หนังสือ มท': headers.indexOf('หนังสือ มท'), 'หนังสือ กฟภ.': headers.indexOf('หนังสือ กฟภ.'),
+                                        'หนังสือ มท': headers.indexOf('หนังสือ มท'), 'ลงวันที่': headers.indexOf('ลงวันที่') !== -1 ? headers.indexOf('ลงวันที่') : headers.indexOf('หนังสือ กฟภ.'),
                                         'ชื่อ-สกุล ผู้แจ้งเหตุ': headers.indexOf('ชื่อ-สกุล ผู้แจ้งเหตุ') !== -1 ? headers.indexOf('ชื่อ-สกุล ผู้แจ้งเหตุ') : headers.indexOf('ผู้บันทึก'),
                                         'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
                                         'ชื่อ-สกุล ผู้แจ้งซ่อมแซม': headers.indexOf('ชื่อ-สกุล ผู้แจ้งซ่อมแซม'), 'ตำแหน่ง': headers.indexOf('ตำแหน่ง'), 'สังกัด': headers.indexOf('สังกัด'),
@@ -186,7 +186,7 @@ window.importData = function(event) {
                                     orderNumber: (headerMap['เลขที่ใบสั่ง'] !== -1) ? (row[headerMap['เลขที่ใบสั่ง']] || '').toString() : '', 
                                     repairCost: (headerMap['ราคาซ่อม'] !== -1) ? (row[headerMap['ราคาซ่อม']] || '').toString() : '',
                                     docMinistry: (headerMap['หนังสือ มท'] !== -1) ? (row[headerMap['หนังสือ มท']] || '').toString() : '',
-                                    docPEA: (headerMap['หนังสือ กฟภ.'] !== -1) ? (row[headerMap['หนังสือ กฟภ.']] || '').toString() : '',
+                                    docPEA: (headerMap['ลงวันที่'] !== -1) ? cleanDate(row[headerMap['ลงวันที่']]) : '',,
                                     brokenUser: (headerMap['ชื่อ-สกุล ผู้แจ้งเหตุ'] !== -1) ? (row[headerMap['ชื่อ-สกุล ผู้แจ้งเหตุ']] || '').toString() : (currentUserFullName || currentUser.email), 
                                     brokenUserPos: (headerMap['ตำแหน่ง'] !== -1) ? (row[headerMap['ตำแหน่ง']] || '').toString() : '',
                                     brokenUserDept: (headerMap['สังกัด'] !== -1) ? (row[headerMap['สังกัด']] || '').toString() : '',
@@ -240,7 +240,7 @@ window.exportAllDataExcel = async function() {
     const recordsData = [[
         'Timestamp', 'เลข ID อ้างอิง', 'ชื่ออุปกรณ์', 'ลำดับการบันทึก (ครั้งที่ N)', 
         'วันที่เกิดเหตุ', 'วันที่ซ่อมแซม', 'ระยะเวลา', 'สถานะ', 'รายละเอียดปัญหา', 'ลิงก์รูปชำรุด', 
-        'วิธีแก้ไข', 'ลิงก์รูปแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท', 'หนังสือ กฟภ.', 
+        'วิธีแก้ไข', 'ลิงก์รูปแก้ไข', 'เลขที่ใบสั่ง', 'ราคาซ่อม', 'หนังสือ มท', 'ลงวันที่',
         'ชื่อ-สกุล ผู้แจ้งเหตุ', 'ตำแหน่ง', 'สังกัด', 'ชื่อ-สกุล ผู้รับทราบ', 'วันที่-เวลารับทราบ', 'สถานะซ่อม', 'ชื่อ-สกุล ผู้แจ้งซ่อมแซม', 'ตำแหน่ง', 'สังกัด'
     ]];
 
@@ -288,7 +288,7 @@ window.exportAllDataExcel = async function() {
                 formatThaiDateTime(r.ts), r.customId || '-', devNameFinal, sequenceNumber, 
                 formatThaiDate(r.brokenDate), formatThaiDate(r.fixedDate), 
                 duration, statusTH, r.description || '-', r.brokenFileUrl || '-', r.solution || '-', r.fixedFileUrl || '-', 
-                r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.docPEA || '-', 
+                 r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', formatThaiDate(r.docPEA) || '-',
                 r.brokenUser || r.user || '-', r.brokenUserPos || '-', r.brokenUserDept || '-', 
                 r.acknowledgedBy || '-', r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-',
                 repairState, r.fixedUser || '-', r.fixedUserPos || '-', r.fixedUserDept || '-'
