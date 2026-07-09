@@ -1016,7 +1016,7 @@ window.loadHistory = async function() {
                 <div>เลขที่ใบสั่ง : <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
                 <div>ราคาซ่อมแซม : <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
                 <div>หนังสือ มท : <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
-                <div>หนังสือ กฟภ. : <span class="font-semibold">${escapeHtml(r.docPEA || '-')}</span></div>
+                <div>ลงวันที่ : <span class="font-semibold">${r.docPEA ? formatThaiDate(r.docPEA) : '-'}</span></div>
                 <div class="col-span-2 text-red-600">ระยะเวลาที่เกิดเหตุ: ${duration}</div>
             </div>
             <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
