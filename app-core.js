@@ -814,16 +814,20 @@ window.saveData = async function() {
     if (ministryFile && ministryFile.size > MAX_SIZE) { Swal.fire('ไฟล์ใหญ่เกินไป', 'ไฟล์ มท. ต้องขนาดไม่เกิน 5 MB', 'warning'); return false; }
     if (fixedFile && fixedFile.size > MAX_SIZE) { Swal.fire('ไฟล์ใหญ่เกินไป', 'หลักฐานซ่อมแซม ต้องขนาดไม่เกิน 5 MB', 'warning'); return false; }
 
-    Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+   
 
     let records = await getDeviceRecords(currentSiteKey, currentDevice); 
     if (statusVal === 'ok' && isEditing) {
         const originalRecord = records[editIndex];
-        if (!originalRecord?.acknowledgedAt) {
-            Swal.fire('ยังไม่ได้รับทราบ', 'ต้องกด "รับทราบ" ก่อน จึงจะเปลี่ยนสถานะเป็นใช้งานได้', 'warning');
+        const isChangingDamagedRecordToOk = originalRecord && ['down', 'abnormal'].includes(originalRecord.status);
+        if (isChangingDamagedRecordToOk && !originalRecord.acknowledgedAt) {
+            Swal.fire('ยังไม่ได้รับทราบ', 'ต้องกด "รับทราบ" ก่อน จึงจะแก้ไขข้อมูลชำรุดเป็นสถานะใช้งานได้', 'warning');
             return false;
         }
     }
+
+       Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    
     let baseRec = {
         status: statusVal, brokenDate, fixedDate,
         description: document.getElementById('description').value,
