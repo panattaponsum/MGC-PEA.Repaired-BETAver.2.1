@@ -760,6 +760,7 @@ function clearForm() {
     document.getElementById('orderNumber').value = ''; document.getElementById('repairCost').value = '';
     document.getElementById('docMinistry').value = ''; document.getElementById('docPEA').value = '';
     document.getElementById('brokenFile').value = ''; document.getElementById('brokenFileLink').innerHTML = '';
+    document.getElementById('ministryFile').value = ''; document.getElementById('ministryFileLink').innerHTML = '';
     document.getElementById('fixedFile').value = ''; document.getElementById('fixedFileLink').innerHTML = '';
     
     const othersSelect = document.getElementById('othersDeviceSelect');
@@ -806,9 +807,11 @@ window.saveData = async function() {
     }
 
     const brokenFile = document.getElementById('brokenFile').files[0];
+    const ministryFile = document.getElementById('ministryFile').files[0];
     const fixedFile = document.getElementById('fixedFile').files[0];
     const MAX_SIZE = 5 * 1024 * 1024;
     if (brokenFile && brokenFile.size > MAX_SIZE) { Swal.fire('ไฟล์ใหญ่เกินไป', 'หลักฐานแจ้งเสีย ต้องขนาดไม่เกิน 5 MB', 'warning'); return false; }
+    if (ministryFile && ministryFile.size > MAX_SIZE) { Swal.fire('ไฟล์ใหญ่เกินไป', 'ไฟล์ มท. ต้องขนาดไม่เกิน 5 MB', 'warning'); return false; }
     if (fixedFile && fixedFile.size > MAX_SIZE) { Swal.fire('ไฟล์ใหญ่เกินไป', 'หลักฐานซ่อมแซม ต้องขนาดไม่เกิน 5 MB', 'warning'); return false; }
 
     Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
@@ -841,6 +844,8 @@ if (currentDevice === 'Other' && (OTHER_SUBDEVICES[currentSiteKey] || []).length
         baseRec.customId = originalRecord.customId;
         baseRec.brokenFileUrl = originalRecord.brokenFileUrl || null;
         baseRec.brokenFileType = originalRecord.brokenFileType || null;
+        baseRec.ministryFileUrl = originalRecord.ministryFileUrl || null;
+        baseRec.ministryFileType = originalRecord.ministryFileType || null;
         baseRec.fixedFileUrl = originalRecord.fixedFileUrl || null;
         baseRec.fixedFileType = originalRecord.fixedFileType || null;
         baseRec.ts = originalRecord.ts;
@@ -867,6 +872,7 @@ if (currentDevice === 'Other' && (OTHER_SUBDEVICES[currentSiteKey] || []).length
     }
     try {
         if (brokenFile) { baseRec.brokenFileUrl = await uploadFileToStorage(brokenFile, 'broken'); baseRec.brokenFileType = brokenFile.type; }
+        if (ministryFile) { baseRec.ministryFileUrl = await uploadFileToStorage(ministryFile, 'ministry'); baseRec.ministryFileType = ministryFile.type; }
         if (fixedFile) { baseRec.fixedFileUrl = await uploadFileToStorage(fixedFile, 'fixed'); baseRec.fixedFileType = fixedFile.type; }
     } catch (err) { Swal.fire("อัปโหลดไฟล์ล้มเหลว", err.message, "error"); return false; }
 
@@ -974,14 +980,15 @@ window.loadHistory = async function() {
         let filesHtml = '';
         if (currentUserRole !== 'viewer') {
             let brokenLinkHtml = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="text-blue-500 hover:underline inline-flex items-center gap-1">📄 หลักฐานแจ้งปัญหา</a>` : '';
+            let ministryLinkHtml = r.ministryFileUrl ? `<a href="${r.ministryFileUrl}" target="_blank" class="text-indigo-600 hover:underline inline-flex items-center gap-1">📄 ไฟล์ มท.</a>` : '';
             let fixedLinkHtml = r.fixedFileUrl ? `<a href="${r.fixedFileUrl}" target="_blank" class="text-green-600 hover:underline inline-flex items-center gap-1">📄 หลักฐานซ่อมแซม</a>` : '';
             
-            if (brokenLinkHtml || fixedLinkHtml) {
-                filesHtml = `<div class="mt-2 pt-2 border-t border-gray-100 flex gap-4 text-xs font-semibold">${brokenLinkHtml} ${fixedLinkHtml}</div>`;
-            }
+              if (brokenLinkHtml || ministryLinkHtml || fixedLinkHtml) {
+                filesHtml = `<div class="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-4 text-xs font-semibold">${brokenLinkHtml} ${ministryLinkHtml} ${fixedLinkHtml}</div>`;
+              }
         } else {
             // กรณีเป็น viewer และมีการอัปโหลดรูปไว้ ให้แสดงข้อความแจ้งเตือนแทนการแสดงลิงก์
-            if (r.brokenFileUrl || r.fixedFileUrl) {
+           if (r.brokenFileUrl || r.ministryFileUrl || r.fixedFileUrl) {
                 filesHtml = `<div class="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400 italic">🔒 รูปภาพ/ไฟล์แนบถูกจำกัดสิทธิ์ตามไซต์ที่ได้รับอนุญาต</div>`;
             }
         }
@@ -1115,6 +1122,9 @@ window.deleteRecord = async function(ts) {
     if (recordToDelete.brokenFileUrl) {
         try { await firebase.storage().refFromURL(recordToDelete.brokenFileUrl).delete(); } catch(e) { console.warn("Failed to delete brokenFile:", e); }
     }
+     if (recordToDelete.ministryFileUrl) {
+        try { await firebase.storage().refFromURL(recordToDelete.ministryFileUrl).delete(); } catch(e) { console.warn("Failed to delete ministryFile:", e); }
+    }
     if (recordToDelete.fixedFileUrl) {
         try { await firebase.storage().refFromURL(recordToDelete.fixedFileUrl).delete(); } catch(e) { console.warn("Failed to delete fixedFile:", e); }
     }
@@ -1171,6 +1181,7 @@ window.editRecord = async function(ts) {
     }
 
     document.getElementById('brokenFileLink').innerHTML = r.brokenFileUrl ? `<a href="${r.brokenFileUrl}" target="_blank" class="hover:underline">มีไฟล์แนบเดิม (คลิกดู) - อัปโหลดใหม่เพื่อเขียนทับ</a>` : '';
+    document.getElementById('ministryFileLink').innerHTML = r.ministryFileUrl ? `<a href="${r.ministryFileUrl}" target="_blank" class="hover:underline">มีไฟล์ มท. เดิม (คลิกดู) - อัปโหลดใหม่เพื่อเขียนทับ</a>` : '';
     document.getElementById('fixedFileLink').innerHTML = r.fixedFileUrl ? `<a href="${r.fixedFileUrl}" target="_blank" class="hover:underline">มีไฟล์แนบเดิม (คลิกดู) - อัปโหลดใหม่เพื่อเขียนทับ</a>` : '';
 
     editIndex = idx; document.getElementById('editHint').classList.remove('hidden');
