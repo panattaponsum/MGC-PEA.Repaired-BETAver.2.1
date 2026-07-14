@@ -289,8 +289,8 @@ window.exportAllDataExcel = async function() {
                 formatThaiDateTime(r.ts), r.customId || '-', devNameFinal, sequenceNumber, 
                 formatThaiDate(r.brokenDate), formatThaiDate(r.fixedDate), 
                 duration, statusTH, r.description || '-', r.brokenFileUrl || '-', r.solution || '-', r.fixedFileUrl || '-', 
-                 r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', formatThaiDate(r.docPEA) || '-',
-               r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.ministryFileUrl || '-', formatThaiDate(r.docPEA) || '-',
+                r.orderNumber || '-', r.repairCost || '-', r.docMinistry || '-', r.ministryFileUrl || '-', formatThaiDate(r.docPEA) || '-',
+                r.brokenUser || r.user || '-', r.brokenUserPos || '-', r.brokenUserDept || '-',
                 r.acknowledgedBy || '-', r.acknowledgedAt ? formatThaiDateTime(r.acknowledgedAt) : '-',
                 repairState, r.fixedUser || '-', r.fixedUserPos || '-', r.fixedUserDept || '-'
             ]);
