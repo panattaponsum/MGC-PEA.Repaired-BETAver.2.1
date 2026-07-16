@@ -471,6 +471,7 @@ function scheduleOverlayRefresh(siteKey = currentSiteKey, useCache = false) {
     }, 100);
 }
 function switchSite(siteKey) {
+    if (!siteKey) { showWelcomeSitePage(); toggleWriteAccess(false); return; }
     applySiteAccessOptions();
     if (!canReadSiteData(siteKey)) {
         const fallbackSiteKey = getDefaultReadableSiteKey();
