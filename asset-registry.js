@@ -478,7 +478,7 @@ function switchSite(siteKey) {
         if (!fallbackSiteKey) { showNoSiteAccessMessage(); toggleWriteAccess(false); return; }
         if (siteKey !== fallbackSiteKey) return switchSite(fallbackSiteKey);
     }
-    const siteData = sites[siteKey]; if (!siteData) return; currentSiteKey = siteKey; 
+    const siteData = sites[siteKey]; if (!siteData) return; document.body.classList.remove('home-site-mode'); currentSiteKey = siteKey;
     siteSwitchVersion += 1;
     currentDevice = null;
     currentPage = 1;
