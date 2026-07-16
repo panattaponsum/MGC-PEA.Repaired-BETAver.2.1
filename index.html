@@ -42,7 +42,7 @@
             border: 1px solid rgba(255,255,255,0.18);
             box-shadow: 0 28px 80px rgba(12,10,35,0.45), inset 0 1px 0 rgba(255,255,255,0.16);
         }
-        .login-stage::before, .welcome-stage::before {
+       .login-stage::before {
             content: '';
             position: absolute;
             inset: 0;
@@ -70,13 +70,7 @@
             box-shadow: 0 16px 34px rgba(245,158,11,0.32), inset 0 1px 0 rgba(255,255,255,0.45);
         }
         .login-button-premium:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 20px 42px rgba(245,158,11,0.42); }
-        .welcome-stage {
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, #21043b, #47075a 45%, #102061);
-            border: 1px solid rgba(255,255,255,0.18);
-            box-shadow: 0 30px 90px rgba(10,10,40,0.42);
-        }
+       
         .welcome-hero-image {
             box-shadow: 0 24px 60px rgba(10,10,40,0.42);
             border: 1px solid rgba(255,255,255,0.24);
@@ -510,19 +504,18 @@
             </div>
         </div>
 
-        <section id="welcomeScreen" class="hidden py-10">
-            <div class="welcome-stage max-w-5xl mx-auto rounded-[2rem] p-5 md:p-8 text-center text-white">
-                <img src="pea-welcome.jpg" alt="PEA welcome" class="welcome-hero-image relative z-10 w-full rounded-3xl object-cover" />
-                <div class="relative z-10 mt-6">
-                    <p class="text-amber-200 text-xs font-bold tracking-[0.3em] uppercase">Welcome to PEA Microgrid</p>
-                    <h2 class="mt-2 text-3xl md:text-4xl font-black">ยินดีต้อนรับเข้าสู่ระบบบริหารจัดการทรัพย์สิน</h2>
-                    <p class="mt-3 text-violet-100">กดดำเนินการต่อเพื่อเลือกไซต์และเริ่มใช้งานแดชบอร์ด</p>
-                    <button id="continueToSitesButton" class="mt-6 rounded-xl bg-amber-400 px-7 py-3 text-sm font-black text-purple-950 shadow-xl shadow-amber-900/30 transition hover:-translate-y-0.5 hover:bg-amber-300">เลือกไซต์ปฏิบัติงาน →</button>
+        <div id="appContent" class="hidden">
+            <div id="preSiteWelcomeCard" class="bg-white rounded-xl card-shadow border border-slate-200 p-4 mb-6">
+                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    <img src="pea-welcome.jpg" alt="PEA welcome" class="welcome-hero-image block w-full max-h-[420px] object-cover" />
+                </div>
+                <div class="mt-4 text-center">
+                    <p class="text-[11px] font-black uppercase tracking-[0.24em] text-amber-600">Welcome to PEA Microgrid</p>
+                    <h2 class="mt-1 text-xl md:text-2xl font-black text-slate-800">ยินดีต้อนรับเข้าสู่ระบบบริหารจัดการทรัพย์สิน</h2>
+                    <p class="mt-1 text-sm text-slate-500">กรุณาเลือกไซต์งานที่คุณมีสิทธิ์เข้าถึงเพื่อเริ่มใช้งานแดชบอร์ด</p>
                 </div>
             </div>
-        </section>
 
-        <div id="appContent" class="hidden">
             <div class="bg-white rounded-xl card-shadow border border-slate-200 p-4 mb-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div class="flex items-center gap-3 w-full lg:w-auto">
                     <div class="p-2 bg-brand-50 rounded-lg text-brand-600">
