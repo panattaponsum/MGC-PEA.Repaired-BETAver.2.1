@@ -7,12 +7,15 @@ document.addEventListener("DOMContentLoaded", async function() {
         
         const appContent = document.getElementById('appContent');
         const loginPrompt = document.getElementById('loginPrompt');
+        const welcomeScreen = document.getElementById('welcomeScreen');
 
         if (user) {
           
-            if (appContent) appContent.classList.remove('hidden');
+            if (appContent) appContent.classList.add('hidden');
+            if (welcomeScreen) welcomeScreen.classList.remove('hidden');
             if (loginPrompt) loginPrompt.classList.add('hidden');
-
+            document.body.classList.add('auth-hero-active');
+            
             currentUser = user;
             document.getElementById('userInfo').classList.remove('hidden');
             document.getElementById('loginButton').classList.add('hidden');
@@ -58,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 if (readableSiteKey) switchSite(readableSiteKey);
                 else showNoSiteAccessMessage();
                 toggleWriteAccess(true);
-                if (appContent) appContent.classList.remove('hidden');
+              
 
                 document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email;
                 document.getElementById('userRoleDisplay').textContent = currentUserRole; 
@@ -78,7 +81,9 @@ document.addEventListener("DOMContentLoaded", async function() {
             
         } else {
             if (appContent) appContent.classList.add('hidden');
+            if (welcomeScreen) welcomeScreen.classList.add('hidden');
             if (loginPrompt) loginPrompt.classList.remove('hidden');
+            document.body.classList.add('auth-hero-active');
             
             if (currentUser) sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
             currentUser = null;
@@ -99,6 +104,17 @@ document.addEventListener("DOMContentLoaded", async function() {
   
     document.getElementById('loginButton').addEventListener('click', login);
     document.getElementById('logoutButton').addEventListener('click', logout);
+    const continueToSitesButton = document.getElementById('continueToSitesButton');
+    if (continueToSitesButton) {
+        continueToSitesButton.addEventListener('click', function() {
+            const appContent = document.getElementById('appContent');
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            if (welcomeScreen) welcomeScreen.classList.add('hidden');
+            if (appContent) appContent.classList.remove('hidden');
+            document.body.classList.remove('auth-hero-active');
+            if (canReadSiteData(currentSiteKey)) scheduleOverlayRefresh(currentSiteKey, true);
+        });
+    }
     setupWarrantyCalculators();
 
     const locationSelect = document.getElementById("location-select");
@@ -175,7 +191,7 @@ window.sendEmailNotify = async function(type, deviceName, baseRec, assetInfo, co
 
     let message = `${title}
 
-เรียน ผู้ที่มีส่วนเกี่ยวข้อง
+เรียน ส่วนที่เกี่ยวข้อง
 
 ขอแจ้งรายงานจากระบบบริหารจัดการอุปกรณ์ Microgrid โดยมีรายละเอียดดังนี้
 
