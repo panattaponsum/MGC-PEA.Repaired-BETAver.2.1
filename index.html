@@ -234,7 +234,13 @@
         display: none !important; 
     }
 
+    .viewer-mode #map-welcome img {
+        display: block !important;
+    }
 
+    .viewer-mode #map-welcome::after {
+        content: none !important;
+    }
     .viewer-mode .map-container::after {
         content: "🔒 ข้อมูลแผนผังและสถานะเชิงภาพถูกจำกัดสิทธิ์เฉพาะ Editor/Admin ";
         white-space: pre-wrap; 
@@ -505,16 +511,6 @@
         </div>
 
         <div id="appContent" class="hidden">
-            <div id="preSiteWelcomeCard" class="bg-white rounded-xl card-shadow border border-slate-200 p-4 mb-6">
-                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                    <img src="pea-welcome.jpg" alt="PEA welcome" class="welcome-hero-image block w-full max-h-[420px] object-cover" />
-                </div>
-                <div class="mt-4 text-center">
-                    <p class="text-[11px] font-black uppercase tracking-[0.24em] text-amber-600">Welcome to PEA Microgrid</p>
-                    <h2 class="mt-1 text-xl md:text-2xl font-black text-slate-800">ยินดีต้อนรับเข้าสู่ระบบบริหารจัดการทรัพย์สิน</h2>
-                    <p class="mt-1 text-sm text-slate-500">กรุณาเลือกไซต์งานที่คุณมีสิทธิ์เข้าถึงเพื่อเริ่มใช้งานแดชบอร์ด</p>
-                </div>
-            </div>
 
             <div class="bg-white rounded-xl card-shadow border border-slate-200 p-4 mb-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div class="flex items-center gap-3 w-full lg:w-auto">
@@ -524,6 +520,7 @@
                     <div class="flex-1">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase">สถานที่ (Site Location)</label>
                         <select id="location-select" class="w-full lg:w-64 mt-0.5 bg-transparent text-sm font-bold text-slate-800 border-none outline-none cursor-pointer focus:ring-0 p-0">
+                            <option value="" selected>🏠 หน้าแรก - กรุณาเลือกไซต์</option>
                             <option value="ko-phaluay">📍 ไมโครกริดเกาะพะลวย</option>
                             <option value="mae-sariang">📍 ไมโครกริดอำเภอแม่สะเรียง</option>
                             <option value="betong">📍 ไมโครกริดอำเภอเบตง</option>
@@ -558,7 +555,11 @@
             </h2>
 
         <div id="topologyPage" class="bg-white p-4 rounded-xl card-shadow border border-slate-200">
-            <div id="map-ko-phaluay" class="map-container relative map-wrapper">
+             <div id="map-welcome" class="map-container relative map-wrapper">
+                <img class="bg-white welcome-hero-image" src="pea-welcome.jpg" loading="eager" decoding="async" alt="PEA welcome" />
+            </div>
+
+            <div id="map-ko-phaluay" class="map-container hidden relative map-wrapper">
                 <img class="device-img bg-white" src="phaluay.jpg" loading="lazy" decoding="async" usemap="#netmap" width="1736" height="920" alt="Topology" />
                 <map name="netmap">
             
