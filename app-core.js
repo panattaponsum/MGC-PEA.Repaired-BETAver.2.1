@@ -170,13 +170,30 @@ function applySiteAccessOptions() {
     if (!locationSelect) return;
     const readable = new Set(getReadableSiteKeys());
     Array.from(locationSelect.options).forEach(option => {
+         if (option.value === '') {
+            option.hidden = false;
+            option.disabled = false;
+            return;
+        }
         const allowed = readable.has(option.value);
         option.hidden = !allowed;
         option.disabled = !allowed;
     });
 }
+function showWelcomeSitePage() {
+    document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden'));
+    const welcomeMap = document.getElementById('map-welcome');
+    if (welcomeMap) welcomeMap.classList.remove('hidden');
+    const locationSelect = document.getElementById('location-select');
+    if (locationSelect) locationSelect.value = '';
+    const title = document.getElementById('locationTitle');
+    if (title) title.textContent = '🏠 หน้าแรก - กรุณาเลือกไซต์ที่คุณมีสิทธิ์เข้าถึง';
+    updateAssetDisplays(null);
+}
 function showNoSiteAccessMessage() {
     document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden'));
+    const welcomeMap = document.getElementById('map-welcome');
+    if (welcomeMap) welcomeMap.classList.remove('hidden');
     const title = document.getElementById('locationTitle');
     if (title) title.textContent = '🔒 ไม่มีสิทธิ์ดูข้อมูลไซต์';
     const history = document.getElementById('historySection');
