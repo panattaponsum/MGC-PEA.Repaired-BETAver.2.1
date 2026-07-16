@@ -181,6 +181,7 @@ function applySiteAccessOptions() {
     });
 }
 function showWelcomeSitePage() {
+    document.body.classList.add('home-site-mode');
     document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden'));
     const welcomeMap = document.getElementById('map-welcome');
     if (welcomeMap) welcomeMap.classList.remove('hidden');
@@ -191,6 +192,7 @@ function showWelcomeSitePage() {
     updateAssetDisplays(null);
 }
 function showNoSiteAccessMessage() {
+    document.body.classList.add('home-site-mode');
     document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden'));
     const welcomeMap = document.getElementById('map-welcome');
     if (welcomeMap) welcomeMap.classList.remove('hidden');
