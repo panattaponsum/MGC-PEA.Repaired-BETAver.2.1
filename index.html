@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>กองเทคโนโลยีโครงข่ายไฟฟ้า - Microgrid Asset Management</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Kodchasan:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'Prompt', 'sans-serif'] },
+                    fontFamily: { sans: ['TH Kodchasal Bold', 'Kodchasan', 'sans-serif'] },
                     colors: {
                         brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' },
                         status: { ok: '#10b981', warn: '#f59e0b', bad: '#ef4444' }
@@ -24,6 +24,7 @@
     </script>
 
     <style>
+        html, body, button, input, select, textarea, .swal2-popup { font-family: 'TH Kodchasal Bold', 'Kodchasan', sans-serif !important; font-weight: 700; }
         body { background-color: #f1f5f9; }
           /* === LOGIN + WELCOME EXPERIENCE === */
         body.auth-hero-active {
@@ -70,7 +71,7 @@
             box-shadow: 0 16px 34px rgba(245,158,11,0.32), inset 0 1px 0 rgba(255,255,255,0.45);
         }
         .login-button-premium:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 20px 42px rgba(245,158,11,0.42); }
-       
+
         .welcome-hero-image {
             box-shadow: 0 24px 60px rgba(10,10,40,0.42);
             border: 1px solid rgba(255,255,255,0.24);
@@ -83,17 +84,34 @@
             user-select: none;
         }
         /* === HEADER === */
-        .glass-header { 
-            background: #74045f;
+        .glass-header {
+            background:
+                radial-gradient(circle at 88% 18%, rgba(245,158,11,0.24), transparent 26%),
+                linear-gradient(135deg, #74045f 0%, #4c0f63 48%, #1d2a72 100%);
             border-bottom: 3px solid #f59e0b;
-            box-shadow: 0 4px 20px rgba(15,32,68,0.35);
+            box-shadow: 0 10px 30px rgba(15,32,68,0.35);
         }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04); }
         .header-logo {
-            width: clamp(4rem, 6vw, 5.5rem);
-            height: clamp(4rem, 6vw, 5.5rem);
-            max-height: 5.5rem;
+            width: clamp(7.5rem, 14vw, 12rem);
+            height: auto;
+            max-height: 5.75rem;
             object-fit: contain;
+            object-position: left center;
+        }
+        .header-brand-panel {
+            min-width: 0;
+        }
+        .header-user-panel {
+            background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 9999px;
+            padding: 0.45rem 0.6rem;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 14px 32px rgba(15,23,42,0.18);
+            backdrop-filter: blur(12px);
+        }
+        body.home-site-mode .site-action-toolbar {
+            display: none !important;
         }
         /* === FORM MODAL IMPROVEMENTS === */
         .form-section-header {
@@ -195,8 +213,8 @@
             transition: all 0.15s;
             display: flex; align-items: center; gap: 6px;
         }
-        .btn-primary:hover { 
-            background: linear-gradient(135deg, #1d4ed8, #1e3a8a); 
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
             box-shadow: 0 6px 16px rgba(37,99,235,0.45);
             transform: translateY(-1px);
         }
@@ -211,13 +229,13 @@
             display: flex; background: #e8edf5; padding: 4px; border-radius: 10px;
         }
         .tab-group-styled button {
-            padding: 7px 16px; font-size: 12px; font-weight: 600; 
+            padding: 7px 16px; font-size: 12px; font-weight: 600;
             border-radius: 7px; border: none; cursor: pointer;
             transition: all 0.15s; color: #64748b; background: transparent;
             white-space: nowrap;
         }
         .tab-group-styled button.active-tab {
-            background: #fff; color: #2563eb; 
+            background: #fff; color: #2563eb;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         .sidebar-history-panel {
@@ -226,12 +244,12 @@
             border-radius: 0 0 16px 0;
         }
 
-        .viewer-mode .device-img, 
+        .viewer-mode .device-img,
     .viewer-mode .map-container img,
     .viewer-mode .history-image,
     .viewer-mode [id$="FileLink"],
-    .viewer-mode .device-overlay { 
-        display: none !important; 
+    .viewer-mode .device-overlay {
+        display: none !important;
     }
 
     .viewer-mode #map-welcome img {
@@ -243,7 +261,7 @@
     }
     .viewer-mode .map-container::after {
         content: "🔒 ข้อมูลแผนผังและสถานะเชิงภาพถูกจำกัดสิทธิ์เฉพาะ Editor/Admin ";
-        white-space: pre-wrap; 
+        white-space: pre-wrap;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -374,12 +392,12 @@
     flex-shrink: 0;
     animation: alert-badge-pulse 1.4s infinite ease-in-out;
 }
- 
+
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
+
         .map-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .map-wrapper img { min-width: 900px; max-width: 100%; height: auto; border-radius: 0.75rem; }
         .map-wrapper { position: relative; }
@@ -440,37 +458,37 @@
         .dynamic-map-marker .device-alert-badge { top: -12px; right: -12px; }
         body.map-edit-mode .map-container { cursor: crosshair; outline: 3px dashed rgba(37,99,235,0.45); outline-offset: 4px; }
          body.map-edit-mode .dynamic-map-marker { cursor: move; }
-        
+
     </style>
 </head>
 <body class="text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
 
     <header class="glass-header sticky top-0 z-[100] py-2">
-        <div class="w-full flex flex-col md:flex-row md:items-center justify-between gap-3">
-            
-            <div class="flex items-center gap-3 md:gap-4">
+        <div class="w-full px-4 md:px-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+
+            <div class="flex items-center gap-3 md:gap-5 min-w-0">
                 <div class="relative flex-shrink-0">
                      <img src="provincial-electricity-authority.png" alt="PEA" class="header-logo" />
                 </div>
-                <div class="border-l border-white/20 pl-4">
+                <div class="header-brand-panel border-l border-white/20 pl-4">
                     <p class="text-[10px] font-bold text-amber-300 uppercase tracking-[0.12em] leading-none mb-1">กองเทคโนโลยีโครงข่ายไฟฟ้า · การไฟฟ้าส่วนภูมิภาค</p>
                     <h1 class="text-lg font-bold tracking-tight text-white leading-tight">Microgrid <span class="text-amber-300">Asset Management</span></h1>
                     <p class="text-[10px] font-medium text-blue-200 mt-0.5 tracking-wide">ระบบบริหารจัดการทรัพย์สินโครงข่ายไฟฟ้าขนาดเล็ก</p>
                 </div>
             </div>
 
-            
-            <div id="userInfo" class="hidden flex items-center gap-3 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-4">
+
+            <div id="userInfo" class="header-user-panel hidden flex items-center gap-3 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-4">
                 <div id="logoutTimerDisplay" class="flex items-center gap-1.5 bg-red-500/20 text-red-200 px-3 py-1 rounded-full border border-red-400/30 text-xs font-mono font-bold">
                     <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-400"></span></span>
                     <span id="timerMinutes">60</span>:<span id="timerSeconds">00</span>
                 </div>
-                
+
                 <div class="text-right hidden sm:block">
                     <div id="userNameDisplay" class="text-sm font-bold text-white leading-none"></div>
                     <div id="userRoleDisplay" class="text-[10px] mt-1 font-bold uppercase px-2 py-0.5 rounded bg-white/15 text-amber-300 inline-block border border-white/20">Viewer</div>
                 </div>
-                
+
                 <button id="logoutButton" class="p-2 text-white/50 hover:text-red-300 hover:bg-white/10 rounded-lg transition-colors" title="ออกจากระบบ">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                 </button>
@@ -479,18 +497,17 @@
     </header>
 
  <main class="max-w-7xl mx-auto px-4 py-6">
-        
+
         <div id="loginPrompt" class="py-14 text-center">
             <div class="login-stage max-w-4xl mx-auto rounded-[2rem] p-6 md:p-10 text-white">
                 <div class="login-orb orb-amber"></div>
                 <div class="login-orb orb-violet"></div>
                 <div class="relative grid gap-8 md:grid-cols-[1.05fr_0.95fr] md:items-center text-left">
                     <div>
-                        <div class="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-white/10 px-3 py-1 text-xs font-bold text-amber-200 shadow-lg backdrop-blur">PEA MICROGRID COMMAND CENTER</div>
-                        <h2 class="mt-5 text-4xl md:text-5xl font-black leading-tight tracking-tight">Asset Management<br><span class="text-amber-300">เข้าสู่ระบบควบคุม</span></h2>
-                        <p class="mt-4 text-sm md:text-base text-violet-100/90 leading-7">จัดการทรัพย์สินโครงข่ายไฟฟ้าขนาดเล็ก ตรวจสถานะอุปกรณ์ และติดตามประวัติการซ่อมบำรุงในที่เดียว</p>
+                       
+                        <h2 class="mt-5 text-4xl md:text-5xl font-black leading-tight tracking-tight">Microgrid<br><span class="text-amber-300">Asset Management</span></h2>
+                        <p class="mt-4 text-sm md:text-base text-violet-100/90 leading-7">จัดการทรัพย์สินโครงข่ายไฟฟ้าขนาดเล็ก ตรวจสถานะอุปกรณ์ และติดตามประวัติการซ่อมแซมอุปกรณ์ชำรุด</p>
                         <div class="mt-6 flex flex-wrap gap-2 text-xs font-semibold text-white/85">
-                            <span class="rounded-full bg-white/10 px-3 py-1 border border-white/15">⚡ Secure Access</span>
                             <span class="rounded-full bg-white/10 px-3 py-1 border border-white/15">📊 Real-time Dashboard</span>
                             <span class="rounded-full bg-white/10 px-3 py-1 border border-white/15">🗺️ Site Monitoring</span>
                         </div>
@@ -529,24 +546,24 @@
                     </div>
                 </div>
 
-            <div class="flex items-center gap-1.5 w-full lg:w-auto overflow-x-auto scrollbar-none pb-0.5">
+            <div class="site-action-toolbar flex items-center gap-1.5 w-full lg:w-auto overflow-x-auto scrollbar-none pb-0.5">
                 <div class="flex bg-slate-100 p-1 rounded-lg shrink-0">
                     <button id="tab-topology" onclick="showTopology()" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-brand-600 shadow-sm whitespace-nowrap">🗺️ แผนผัง</button>
                     <button id="tab-summary" onclick="showSummary()" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap">📊 ประวัติชำรุด</button>
                     <button id="tab-registry" onclick="showAssetRegistry()" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 whitespace-nowrap">🗂️ รายการทรัพย์สิน</button>
                 </div>
-                
+
                 <div class="h-5 w-px bg-slate-200 shrink-0 mx-0.5"></div>
-                
+
                 <button onclick="showActivityLogs()" class="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">📜 Logs</button>
-                <button id="mapEditModeButton" onclick="toggleMapEditMode()" class="px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap shrink-0">📍 <span id="mapEditModeText">กำหนดพิกัดอุปกรณ์</span></button>               
+                <button id="mapEditModeButton" onclick="toggleMapEditMode()" class="px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap shrink-0">📍 <span id="mapEditModeText">กำหนดพิกัดอุปกรณ์</span></button>
                 <button onclick="window.printReport()" class="px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap shrink-0">📝 Report</button>
                 <button onclick="exportAllDataExcel()" class="px-2.5 py-1.5 text-xs font-medium text-green-600 bg-green-50 border border-green-100 rounded-lg hover:bg-green-100 transition-colors whitespace-nowrap shrink-0">📤 Export</button>
-                
+
                 <label id="importButtonLabel" class="hidden px-2.5 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-100 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer whitespace-nowrap shrink-0">
                     📥 Import<input type="file" accept=".xlsx" onchange="importData(event)" class="hidden"/>
                 </label>
-                
+
                 <button id="manageUsersBtn" class="hidden px-2.5 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 border border-purple-100 rounded-lg hover:bg-purple-100 transition-colors whitespace-nowrap shrink-0" onclick="openUserManagement()">⚙️ Users</button>
             </div>
         </div>
@@ -562,7 +579,7 @@
             <div id="map-ko-phaluay" class="map-container hidden relative map-wrapper">
                 <img class="device-img bg-white" src="phaluay.jpg" loading="lazy" decoding="async" usemap="#netmap" width="1736" height="920" alt="Topology" />
                 <map name="netmap">
-            
+
             </map>
                 <div id="overlay-container-ko-phaluay" class="absolute inset-0 pointer-events-none z-10"></div>
             </div>
@@ -583,7 +600,7 @@
                         <area alt="To Power Meter" coords="584,559,689,667" shape="rect" href="#" onclick="toggleBetongView('sub3'); return false;">
                     </map>
                 </div>
-                
+
                 <div id="betong-sub-view-1" class="view-wrapper hidden">
                     <img class="device-img bg-white" src="betong_powerstore_inverter.jpg" usemap="#map-areas-betong-sub" width="1917" height="919" alt="Powerstore Inverter" />
                     <map name="map-areas-betong-sub">
@@ -604,7 +621,7 @@
                         <area alt="Back to Main" coords="17,326,98,400" shape="rect" href="#" onclick="toggleBetongView('main'); return false;">
                     </map>
                 </div>
-                
+
                 <div id="overlay-container-betong" class="absolute inset-0 pointer-events-none z-10"></div>
             </div>
 
@@ -617,7 +634,7 @@
         </div>
 
         <div id="summaryPage" class="hidden space-y-6">
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
                     <div><p class="text-xs text-slate-500 font-bold uppercase mb-1">จำนวนอุปกรณ์ทั้งหมดในระบบ</p><h3 class="text-3xl font-black text-slate-800" id="cardTotal">0</h3></div>
@@ -731,7 +748,7 @@
     <div id="overlay" onclick="closeForm()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000]"></div>
 
     <div id="formModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-6xl max-h-[95vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001] overflow-hidden">
-        
+
         <!-- Modal Header (official style) -->
         <div class="modal-header-official">
             <div class="flex items-center gap-3">
@@ -749,7 +766,7 @@
         <div class="flex-1 overflow-hidden bg-slate-50" style="display:flex; flex-direction:row; min-height:0;">
             <!-- LEFT COLUMN: Form Fields -->
             <div class="flex-1 overflow-y-auto p-7" style="min-width:0;">
-                
+
                 <!-- Warranty/Asset Banner -->
                 <div class="warranty-badge mb-6">
                     <div class="bg-blue-100 rounded-lg p-2 flex-shrink-0">
@@ -1022,7 +1039,7 @@
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeGroupModal()"></div>
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 z-10">
             <h3 id="groupModalTitle" class="text-lg font-bold text-slate-800 mb-4">➕ เพิ่มกลุ่มใหม่</h3>
-            <input type="text" id="groupNameInput" placeholder="ชื่อกลุ่ม เช่น ระบบ SCADA, Network..." 
+            <input type="text" id="groupNameInput" placeholder="ชื่อกลุ่ม เช่น ระบบ SCADA, Network..."
                 class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none mb-4"/>
             <div class="flex gap-2 justify-end">
                 <button onclick="closeGroupModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">ยกเลิก</button>
@@ -1034,7 +1051,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/image-map-resizer@1.0.10/js/imageMapResizer.min.js"></script>
