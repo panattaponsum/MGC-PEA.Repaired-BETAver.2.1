@@ -55,10 +55,9 @@ document.addEventListener("DOMContentLoaded", async function() {
                     document.body.classList.remove('viewer-mode'); 
                 }
                 applySiteAccessOptions();
-                const readableSiteKey = canReadSiteData(currentSiteKey) ? currentSiteKey : getDefaultReadableSiteKey();
-                if (readableSiteKey) switchSite(readableSiteKey);
+                if (getDefaultReadableSiteKey()) showWelcomeSitePage();
                 else showNoSiteAccessMessage();
-                toggleWriteAccess(true);
+                toggleWriteAccess(false);
               
 
                 document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email;
@@ -108,7 +107,8 @@ document.addEventListener("DOMContentLoaded", async function() {
     const locationSelect = document.getElementById("location-select");
     if (locationSelect) {
         locationSelect.addEventListener("change", function() {
-            switchSite(this.value);
+              if (this.value) switchSite(this.value);
+            else showWelcomeSitePage();
         });
        // รอให้ onAuthStateChanged โหลด role/allowedSites ก่อนจึงค่อยเลือกไซต์ เพื่อไม่ให้ข้อมูลหรือรูปภาพแสดงก่อนตรวจสิทธิ์
     }
