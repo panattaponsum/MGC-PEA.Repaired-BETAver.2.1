@@ -55,18 +55,18 @@ window.updateDeviceSummary = async function() {
 
     if (document.getElementById('cardTotal')) document.getElementById('cardTotal').innerText = totalDevices; if (document.getElementById('cardNormal')) document.getElementById('cardNormal').innerText = currentNormalCount; if (document.getElementById('cardBroken')) document.getElementById('cardBroken').innerText = currentBrokenCount;
    summary.sort((a, b) => {
-        const issueSort = Number(b.count > 0) - Number(a.count > 0);
-        if (issueSort !== 0) return issueSort;
+        const countSort = sortOrder === 'asc' ? a.count - b.count : b.count - a.count;
+        if (countSort !== 0) return countSort;
+
 
         const activeIssueSort = Number(b.remaining > 0) - Number(a.remaining > 0);
         if (activeIssueSort !== 0) return activeIssueSort;
 
-        const nameSort = compareTextNatural(a.deviceLabel || a.device, b.deviceLabel || b.device);
-        if (nameSort !== 0) return nameSort;
+       const durationSort = b.latestBrokenDays - a.latestBrokenDays;
+        if (durationSort !== 0) return durationSort;
 
-        const countSort = sortOrder === 'desc' ? b.count - a.count : a.count - b.count;
-        if (countSort !== 0) return countSort;
-        return b.latestBrokenDays - a.latestBrokenDays;
+
+     return compareTextNatural(a.deviceLabel || a.device, b.deviceLabel || b.device);
     });
     const totalPages = Math.max(1, Math.ceil(summary.length / pageSize)); if (currentPage > totalPages) currentPage = totalPages; const startIndex = (currentPage - 1) * pageSize; const pageData = summary.slice(startIndex, startIndex + pageSize);
     const tbody = document.getElementById('summaryBody'); tbody.innerHTML = '';
@@ -153,7 +153,10 @@ window.renderDashboardCharts = async function(siteKey) {
 
     // ถ้าไม่มีข้อมูลเลย ให้แสดงรายการว่างไว้ป้องกันกราฟพัง
     if (allDevicesData.length === 0) allDevicesData = [{ name: 'ไม่มีข้อมูล', broken: 0, fixed: 0, avgDays: 0 }];
-
+    const chartFontFamily = "'TH Kodchasal Bold', 'Kodchasan', sans-serif";
+    const chartTextStyle = { family: chartFontFamily, weight: '700' };
+    Chart.defaults.font.family = chartFontFamily;
+    Chart.defaults.font.weight = '700';
     // --- วาดกราฟ 1 ---
     const top10 = allDevicesData.sort((a, b) => (b.broken + b.fixed) - (a.broken + a.fixed)).slice(0, 10);
     if (window.chart1) window.chart1.destroy();
@@ -166,7 +169,7 @@ window.renderDashboardCharts = async function(siteKey) {
                 { label: 'ซ่อมแล้ว', data: top10.map(d => d.fixed), backgroundColor: '#10b981' }
             ]
         },
-        options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true } } }
+         options: { responsive: true, plugins: { legend: { labels: { font: chartTextStyle } } }, scales: { x: { stacked: true, ticks: { font: chartTextStyle } }, y: { stacked: true, ticks: { font: chartTextStyle } } } }
     });
 
     // --- วาดกราฟ 2 ---
@@ -182,7 +185,7 @@ window.renderDashboardCharts = async function(siteKey) {
                 backgroundColor: '#3b82f6'
             }]
         },
-        options: { indexAxis: 'y', responsive: true, scales: { x: { beginAtZero: true } } }
+         options: { indexAxis: 'y', responsive: true, plugins: { legend: { labels: { font: chartTextStyle } } }, scales: { x: { beginAtZero: true, ticks: { font: chartTextStyle } }, y: { ticks: { font: chartTextStyle } } } }
     });
 };
 window.changePage = function(step) { currentPage += step; if (currentPage < 1) currentPage = 1; window.updateDeviceSummary(); }
