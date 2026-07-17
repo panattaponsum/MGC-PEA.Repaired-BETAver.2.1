@@ -128,7 +128,7 @@ let currentUserPosition = '';
 let currentUserDept = '';
 let currentUserPhone = ''; 
 const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
-/* หัวข้อ: Auth/Permissions - ตรวจสิทธิ์การดูแลไซต์ การรับทราบ และการปิดงานซ่อม */
+/* หัวข้อ: Auth/Permissions - ตรวจสิทธิ์การดูแลไซต์ การ และการปิดงานซ่อม */
 function hasAssignedSiteAccess(siteKey = currentSiteKey) {
     return currentUserAllowedSites.includes(siteKey) || currentUserAllowedSites.includes('all');
 }
@@ -1043,14 +1043,14 @@ window.loadHistory = async function() {
             </div>
             <div class="grid grid-cols-2 gap-y-2 text-sm text-gray-600">
                 <div>วันที่เกิดเหตุ : ${formatThaiDate(r.brokenDate)}</div><div>วันที่ซ่อมแซม : ${formatThaiDate(r.fixedDate)}</div>
-                <div>เลขที่ใบสั่ง : <span class="font-semibold text-blue-700">${escapeHtml(r.orderNumber || '-')}</span></div>
-                <div>ราคาซ่อมแซม : <span class="font-semibold text-orange-600">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
+                <div>เลขที่ใบสั่ง : <span class="font-semibold ">${escapeHtml(r.orderNumber || '-')}</span></div>
+                <div>ราคาซ่อมแซม : <span class="font-semibold ">${r.repairCost ? Number(r.repairCost).toLocaleString() + ' บาท' : '-'}</span></div>
                 <div>หนังสือ มท : <span class="font-semibold">${escapeHtml(r.docMinistry || '-')}</span></div>
                 <div>ลงวันที่ : <span class="font-semibold">${r.docPEA ? formatThaiDate(r.docPEA) : '-'}</span></div>
                 <div class="col-span-2 text-red-600">ระยะเวลาที่เกิดเหตุ: ${duration}</div>
             </div>
-            <div class="mt-3 text-sm text-blue-700 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
-            <div class="mt-1 text-sm text-blue-700"><b>วิธีแก้ไข :</b> ${escapeHtml(r.solution || '-')}</div>
+            <div class="mt-3 text-sm text-gray-600 "><b>รายละเอียดปัญหา :</b> "${escapeHtml(r.description || '-')}"</div>
+            <div class="mt-1 text-sm text-gray-600"><b>วิธีแก้ไข :</b> ${escapeHtml(r.solution || '-')}</div>
             
             ${filesHtml}
             
