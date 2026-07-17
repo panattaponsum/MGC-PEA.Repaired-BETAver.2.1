@@ -57,11 +57,9 @@ document.addEventListener("DOMContentLoaded", async function() {
                 applySiteAccessOptions();
                 if (getDefaultReadableSiteKey()) showWelcomeSitePage();
                 else showNoSiteAccessMessage();
-                toggleWriteAccess(false);
-              
 
                 document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email;
-                document.getElementById('userRoleDisplay').textContent = currentUserRole; 
+                 toggleWriteAccess(true);
 
                 const sessionLogKey = `logged_in_${user.uid}`;
                 if (!sessionStorage.getItem(sessionLogKey)) {
