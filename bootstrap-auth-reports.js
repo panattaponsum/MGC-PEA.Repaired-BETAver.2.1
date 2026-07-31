@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", async function() {
         if (user) {
           
             if (appContent) appContent.classList.remove('hidden');
+            document.body.classList.add('app-shell-active');
+            document.getElementById('appSidebar')?.classList.remove('hidden');
+            document.getElementById('sidebarCollapseButton')?.classList.remove('hidden');
             if (loginPrompt) loginPrompt.classList.add('hidden');
             document.body.classList.remove('auth-hero-active');
             
@@ -77,7 +80,9 @@ document.addEventListener("DOMContentLoaded", async function() {
             
         } else {
             if (appContent) appContent.classList.add('hidden');
-           
+            document.body.classList.remove('app-shell-active', 'sidebar-mobile-open');
+            document.getElementById('appSidebar')?.classList.add('hidden');
+            document.getElementById('sidebarCollapseButton')?.classList.add('hidden');
             if (loginPrompt) loginPrompt.classList.remove('hidden');
             document.body.classList.add('auth-hero-active');
             
