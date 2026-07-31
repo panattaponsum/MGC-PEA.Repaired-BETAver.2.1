@@ -127,20 +127,26 @@ let currentUserFullName = '';
 let currentUserPosition = ''; 
 let currentUserDept = '';
 let currentUserPhone = ''; 
-const ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
+const SUPER_ADMIN_EMAIL = 'panattapon.sum@gmail.com'; 
 /* หัวข้อ: Auth/Permissions - ตรวจสิทธิ์การดูแลไซต์ การ และการปิดงานซ่อม */
+function isAdminRole(role = currentUserRole) {
+    return role === 'admin' || (role === 'superadmin' && currentUser?.email === SUPER_ADMIN_EMAIL);
+}
+function isSuperAdmin() {
+    return currentUserRole === 'superadmin' && currentUser?.email === SUPER_ADMIN_EMAIL;
+}
 function hasAssignedSiteAccess(siteKey = currentSiteKey) {
     return currentUserAllowedSites.includes(siteKey) || currentUserAllowedSites.includes('all');
 }
 function canReadSiteData(siteKey = currentSiteKey) {
     if (!currentUser) return false;
-    if (currentUserRole === 'admin') return true;
+      if (isAdminRole()) return true;
     if (currentUserRole === 'viewer') return false;
     if (currentUserRole === 'editor' || currentUserRole === 'engineer') return hasAssignedSiteAccess(siteKey);
     return false;
 }
 function hasWriteAccess(siteKey = currentSiteKey) {
-    if (currentUserRole === 'admin') return true;
+     if (isAdminRole()) return true;
     return currentUserRole === 'editor' && hasAssignedSiteAccess(siteKey);
 }
 function hasEngineerSiteAccess(siteKey = currentSiteKey) {
@@ -150,14 +156,15 @@ function canAcknowledgeIssue(siteKey = currentSiteKey) {
     return currentUserRole === 'admin' || hasWriteAccess(siteKey) || hasEngineerSiteAccess(siteKey);
 }
 function canEditIssueData(siteKey = currentSiteKey) {
-    return currentUserRole === 'admin' || hasWriteAccess(siteKey) || hasEngineerSiteAccess(siteKey);
+    return isAdminRole() || hasWriteAccess(siteKey) || hasEngineerSiteAccess(siteKey);
 }
 function canMarkFixed(siteKey = currentSiteKey) {
     return currentUserRole === 'admin' || hasEngineerSiteAccess(siteKey);
 }
+function canManageMap() { return isSuperAdmin(); }
 function getReadableSiteKeys() {
     const keys = Object.keys(sites || {});
-    if (currentUserRole === 'admin') return keys;
+    if (isAdminRole()) return keys;
     if (!currentUser || currentUserRole === 'viewer') return [];
     if (currentUserAllowedSites.includes('all')) return keys;
     return keys.filter(key => currentUserAllowedSites.includes(key));
@@ -225,8 +232,8 @@ async function loadSitesConfig() {
 }
 
 window.saveSitesConfig = async function(updatedSites) {
-    if (currentUserRole !== 'admin') {
-        Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin เท่านั้นที่แก้ไขรายชื่อไซต์/อุปกรณ์ได้', 'error');
+    if (!isAdminRole()) {
+        Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Super Admin เท่านั้นที่แก้ไขรายชื่อไซต์/อุปกรณ์ได้', 'error');
         return false;
     }
     if (!window.AppValidation?.validateSitesConfig(updatedSites)) {
@@ -405,7 +412,8 @@ switch (status) { case 'ok': return '<span class="tag tag-warranty-ok">🛡️ �
 
 function toggleWriteAccess(isLoggedIn) {
     const role = isLoggedIn ? currentUserRole : 'viewer';
-    const isAdmin = role === 'admin';
+    const isAdmin = isAdminRole(role);
+    const isSuperAdminUser = isSuperAdmin();
     const isEditor = hasWriteAccess(currentSiteKey);
     const canManageIssues = canEditIssueData(currentSiteKey);
 
@@ -422,8 +430,8 @@ function toggleWriteAccess(isLoggedIn) {
 
     const assetBtn = document.getElementById('saveAssetButton'); if (assetBtn) assetBtn.style.display = isAdmin ? 'inline-block' : 'none';
     const importLabel = document.getElementById('importButtonLabel'); if (importLabel) importLabel.style.display = isEditor ? 'inline-block' : 'none';
-    const mapEditModeButton = document.getElementById('mapEditModeButton'); if (mapEditModeButton) mapEditModeButton.classList.toggle('hidden', !isEditor);
-    const manageUsersBtn = document.getElementById('manageUsersBtn'); if (manageUsersBtn) manageUsersBtn.classList.toggle('hidden', !isAdmin);
+    const mapEditModeButton = document.getElementById('mapEditModeButton'); if (mapEditModeButton) mapEditModeButton.classList.toggle('hidden', !isSuperAdminUser);
+    const manageUsersBtn = document.getElementById('manageUsersBtn'); if (manageUsersBtn) manageUsersBtn.classList.toggle('hidden', !isSuperAdminUser);
     const roleDisplay = document.getElementById('userRoleDisplay');
     if (roleDisplay) {
         if (!isLoggedIn) roleDisplay.style.display = 'none';
@@ -1226,7 +1234,7 @@ document.getElementById('assetModal').style.display = 'none'; if (showMainModal 
 async function loadAssetData() {
     let assetInfo = await getAssetInfo(currentSiteKey, currentDevice);
     const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetIpAddress', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
-    const isAdmin = (currentUserRole === 'admin');
+     const isAdmin = isAdminRole();
 
     inputIds.forEach(id => {
         const el = document.getElementById(id);
@@ -1272,7 +1280,7 @@ async function loadAssetData() {
 }
 
 window.saveAssetData = async function() {
-    if (currentUserRole !== 'admin') { Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์เข้าถึง', text: `เฉพาะ Admin เท่านั้น` }); return; }
+   if (!isAdminRole()) { Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์เข้าถึง', text: `เฉพาะ Admin เท่านั้น` }); return; }
     if (!currentDevice) return;
     Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     let imageUrl = null;
@@ -1318,7 +1326,7 @@ startEl.addEventListener('change', calculateEnd); yearsEl.addEventListener('chan
 }
 
 window.openUserManagement = async function() { 
-    if (currentUserRole !== 'admin') return; 
+     if (!isSuperAdmin()) return;
     showSharedOverlay();
     document.getElementById('userModal').style.display = 'flex';
     await loadUsers(); }
@@ -1329,6 +1337,7 @@ window.closeUserManagement = function() {
 
 
 window.loadUsers = async function() {
+     if (!isSuperAdmin()) return;
     const listContainer = document.getElementById('userListContainer'); 
     listContainer.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">กำลังโหลดข้อมูล...</div>';
     
@@ -1352,7 +1361,7 @@ window.loadUsers = async function() {
             const phone = userData.phone || ''; 
             const allowedSites = userData.allowedSites || []; 
             const isMe = (email === currentUser.email); 
-            const isAdminMain = (email === ADMIN_EMAIL); 
+             const isSuperAdminMain = (email === SUPER_ADMIN_EMAIL);
             const safeId = email.replace(/[@.]/g, ''); 
             
             const div = document.createElement('div'); 
@@ -1363,6 +1372,7 @@ window.loadUsers = async function() {
                 <option value="editor" ${role==='editor'?'selected':''}>Editor</option>
                 <option value="engineer" ${role==='engineer'?'selected':''}>Engineer</option>
                 <option value="admin" ${role==='admin'?'selected':''}>Admin</option>
+                 ${isSuperAdminMain ? `<option value="superadmin" ${role==='superadmin'?'selected':''}>Super Admin</option>` : ''}
             `;
 
             const sitesHtml = Object.keys(sites).map(key => `
@@ -1373,7 +1383,7 @@ window.loadUsers = async function() {
             `).join('');
             
             let deleteBtn = ''; 
-            if (!isAdminMain && !isMe) {
+            if (!isSuperAdminMain && !isMe) {
                 deleteBtn = `
                 <button onclick="deleteUser('${email}')" class="text-slate-400 hover:text-red-500 transition-colors p-1" title="ลบผู้ใช้">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -1435,7 +1445,7 @@ window.loadUsers = async function() {
 }
 
 window.updateUserFull = async function(email, safeId) {
-    if (currentUserRole !== 'admin') return;
+     if (!isSuperAdmin()) return;
     
     const newRole = document.getElementById(`role-${safeId}`).value;
     const newName = document.getElementById(`name-${safeId}`).value.trim();
@@ -1446,8 +1456,13 @@ window.updateUserFull = async function(email, safeId) {
     const allowedSitesCb = document.querySelectorAll(`.site-cb-${safeId}:checked`);
     const newAllowedSites = Array.from(allowedSitesCb).map(cb => cb.value);
 
-    if (email === ADMIN_EMAIL && newRole !== 'admin') { 
-        Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Admin หลักได้', 'error'); 
+     if (newRole === 'superadmin' && email !== SUPER_ADMIN_EMAIL) {
+        Swal.fire('ไม่อนุญาต', 'สิทธิ์ Super Admin สงวนไว้สำหรับบัญชีหลักเท่านั้น', 'error');
+        return;
+    }
+
+    if (email === SUPER_ADMIN_EMAIL && newRole !== 'superadmin') {
+        Swal.fire('ไม่อนุญาต', 'ไม่สามารถลดสิทธิ์ Super Admin หลักได้', 'error');
         return; 
     }
 
@@ -1481,7 +1496,7 @@ window.updateUserFull = async function(email, safeId) {
 };
 
 window.deleteUser = async function(email) {
-    if (currentUserRole !== 'admin') { Swal.fire('ปฏิเสธ', 'คุณไม่มีสิทธิ์ลบผู้ใช้งาน', 'error'); return; }
+    if (!isSuperAdmin()) { Swal.fire('ปฏิเสธ', 'เฉพาะ Super Admin เท่านั้นที่ลบผู้ใช้งานได้', 'error'); return; }
     const result = await Swal.fire({ title: 'ยืนยันการลบ?', text: `คุณต้องการลบผู้ใช้ ${email} ออกจากระบบใช่หรือไม่?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบข้อมูล', cancelButtonText: 'ยกเลิก' });
     if (result.isConfirmed) { try { await db.collection('users').doc(email).delete(); await createLog("USER_MANAGEMENT", `ลบผู้ใช้ ${email} ออกจากระบบ`, "SYSTEM"); Swal.fire({ icon: 'success', title: 'ลบผู้ใช้สำเร็จ', showConfirmButton: false, timer: 1500 }); loadUsers(); } catch (error) { Swal.fire('ผิดพลาด', 'ไม่สามารถลบผู้ใช้ได้: ' + error.message, 'error'); } }
 };
