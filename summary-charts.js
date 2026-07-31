@@ -216,7 +216,7 @@ window.updateDeviceStatusOverlays = async function(siteKey, useCache = false) {
     }
     const devicesStatus = cachedDeviceStatus[siteKey] || {};
     const devicesAlerts = cachedDeviceAlerts[siteKey] || {};
-
+    if (siteKey === currentSiteKey && typeof window.refreshSidebarBadges === 'function') window.refreshSidebarBadges();
     let mapElements = [];
     if (siteKey === 'betong') {
         const visibleView = mapContainer.querySelector('.view-wrapper:not(.hidden)');
