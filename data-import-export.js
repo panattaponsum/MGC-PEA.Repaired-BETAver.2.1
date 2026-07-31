@@ -338,7 +338,7 @@ window.exportAllDataExcel = async function() {
 window.resetFilters = function() { document.getElementById('searchInput').value = ''; document.getElementById('sortOrder').value = 'desc'; document.getElementById('filterStatus').value = 'all'; document.getElementById('fromDate').value = ''; document.getElementById('toDate').value = ''; currentPage = 1; try { window.updateDeviceSummary(); } catch (e) {} }
 
 window.clearAllDevices = async function() {
-if (currentUserRole !== 'admin') return;
+if (!isAdminRole()) return;
 const result = await Swal.fire({ title: '⚠️ ลบข้อมูลทั้งหมด?', text: `คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?`, icon: 'error', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ใช่, ลบทั้งหมด!', cancelButtonText: 'ยกเลิก' });
 if (result.isConfirmed) {
 const docs = await getAllDevicesDocs(currentSiteKey); const batch = db.batch(); 
