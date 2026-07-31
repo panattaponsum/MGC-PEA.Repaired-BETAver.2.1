@@ -308,7 +308,7 @@ function renderRegistryContent(siteData) {
     );
 
     const ungrouped = allDevices.filter(d => !assignedDevices.has(d));
-    const canEdit = currentUserRole === 'admin' || currentUserRole === 'editor';
+    const canEdit = isAdminRole() || currentUserRole === 'editor';
     let html = '';
 
     registryGroups.forEach(group => {
@@ -406,7 +406,7 @@ window.assignDeviceToGroup = async function(devKey, newGroupId, oldGroupId) {
 };
 
 window.openAddGroupModal = function() {
-    if (currentUserRole !== 'admin' && currentUserRole !== 'editor') {
+    if (!isAdminRole() && currentUserRole !== 'editor') {
         Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin หรือ Editor เท่านั้น', 'warning'); return;
     }
     groupModalMode = 'add'; groupModalTargetId = null;
@@ -418,7 +418,7 @@ window.openAddGroupModal = function() {
 };
 
 window.openRenameGroupModal = function(groupId, currentName) {
-    if (currentUserRole !== 'admin' && currentUserRole !== 'editor') {
+  if (!isAdminRole() && currentUserRole !== 'editor') {
         Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Admin หรือ Editor เท่านั้น', 'warning'); return;
     }
     // currentName comes from data-gname attribute (HTML-escaped), decode it
@@ -454,7 +454,7 @@ window.confirmGroupAction = async function() {
 };
 
 window.deleteGroup = async function(groupId) {
-    if (currentUserRole !== 'admin' && currentUserRole !== 'editor') return;
+   if (!isAdminRole() && currentUserRole !== 'editor') return;
     const result = await Swal.fire({ title: 'ลบกลุ่มนี้?', text: 'อุปกรณ์ในกลุ่มจะกลับไปอยู่ในส่วน "อื่นๆ"', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก' });
     if (!result.isConfirmed) return;
     registryGroups = registryGroups.filter(g => g.id !== groupId);
