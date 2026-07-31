@@ -1477,7 +1477,7 @@ window.updateUserFull = async function(email, safeId) {
         }, { merge: true }); 
 
         Swal.fire({ icon: 'success', title: `อัปเดตข้อมูล ${email} แล้ว`, timer: 1500, showConfirmButton: false }); 
-        await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ ${email} (Role: ${newRole}, ชื่อ: ${newName||'-'}, โทร: ${newPhone})`, "SYSTEM"); 
+        await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ (Role: ${newRole}, ชื่อ: ${newName||'-'},"SYSTEM"); 
 
         if(email === currentUser.email) { 
             currentUserFullName = newName; 
