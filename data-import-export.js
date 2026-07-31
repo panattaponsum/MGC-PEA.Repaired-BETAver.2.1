@@ -351,8 +351,9 @@ function setActiveTab(tabId) {
     ['tab-topology','tab-summary','tab-registry'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
-        if (id === tabId) { el.classList.add('bg-white','text-brand-600','shadow-sm'); el.classList.remove('text-slate-600'); }
-        else { el.classList.remove('bg-white','text-brand-600','shadow-sm'); el.classList.add('text-slate-600'); }
+        const active = id === tabId;
+        el.classList.toggle('is-active', active);
+        el.setAttribute('aria-current', active ? 'page' : 'false');
     });
 }
 window.showSummary = function() { 
