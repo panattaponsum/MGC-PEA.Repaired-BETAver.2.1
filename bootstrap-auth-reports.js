@@ -62,7 +62,8 @@ document.addEventListener("DOMContentLoaded", async function() {
                 if (getDefaultReadableSiteKey()) showWelcomeSitePage();
                 else showNoSiteAccessMessage();
 
-                document.getElementById('userNameDisplay').textContent = currentUserFullName ? `${currentUserFullName} (${user.email})` : user.email;
+                document.getElementById('userNameDisplay').textContent = currentUserFullName || user.displayName || 'ผู้ใช้งาน';
+                document.getElementById('userEmailDisplay').textContent = user.email || '';
                  toggleWriteAccess(true);
 
                 const sessionLogKey = `logged_in_${user.uid}`;
