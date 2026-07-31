@@ -469,8 +469,9 @@
          body.map-edit-mode .dynamic-map-marker { cursor: move; }
  /* === RESPONSIVE APPLICATION SIDEBAR === */
         :root { --sidebar-width: 18rem; --app-header-height: 6.4rem; }
-        .app-sidebar {␊
-            position: fixed; inset: var(--app-header-height) auto 0 0; z-index: 90; width: var(--sidebar-width);
+       .app-sidebar {
+            position: absolute; top: var(--app-header-height); left: 0; z-index: 90; width: var(--sidebar-width);
+            min-height: calc(100vh - var(--app-header-height));
             color: #fff; background: linear-gradient(180deg, #53064f 0%, #291254 48%, #13255c 100%);
             border-right: 1px solid rgba(255,255,255,.12); box-shadow: 14px 0 40px rgba(15,23,42,.2);
            transition: transform .25s ease; overflow: hidden;
@@ -484,25 +485,32 @@
         .sidebar-badge { margin-left:auto; min-width:1.45rem; padding:.12rem .4rem; border-radius:999px; background:#ef4444; color:white; font-size:.65rem; text-align:center; box-shadow:0 0 0 3px rgba(239,68,68,.18); }
         .sidebar-badge:empty, .sidebar-badge[data-count="0"] { display:none; }
         .sidebar-site-wrap { margin:.35rem 0 .5rem; padding:.75rem; border:1px solid rgba(255,255,255,.13); border-radius:1rem; background:rgba(255,255,255,.08); }
-        .sidebar-site-select { width:100%; color:#fff; background:rgba(15,23,42,.32); border:1px solid rgba(255,255,255,.18); border-radius:.75rem; padding:.7rem .75rem; font-size:.75rem; outline:none; }
-        .sidebar-site-select option { color:#1e293b; background:#fff; }
+        .sidebar-site-select { display:none; }
+        .sidebar-site-menu summary { display:flex; align-items:center; gap:.5rem; width:100%; color:#fff; background:rgba(15,23,42,.32); border:1px solid rgba(255,255,255,.18); border-radius:.75rem; padding:.7rem .75rem; font-size:.75rem; cursor:pointer; list-style:none; }
+        .sidebar-site-menu summary::-webkit-details-marker { display:none; }
+        .sidebar-site-menu summary::after { content:'⌄'; margin-left:auto; transition:transform .2s ease; }
+        .sidebar-site-menu[open] summary::after { transform:rotate(180deg); }
+        .sidebar-site-options { display:grid; gap:.3rem; padding-top:.5rem; animation:sidebar-site-slide .2s ease-out; }
+        .sidebar-site-option { width:100%; padding:.6rem .7rem; border-radius:.65rem; color:#ddd6fe; font-size:.72rem; line-height:1.35; text-align:left; transition:background .15s ease,color .15s ease; }
+        .sidebar-site-option:hover,.sidebar-site-option.is-selected { color:#fff; background:rgba(255,255,255,.12); }
+        @keyframes sidebar-site-slide { from { opacity:0; transform:translateY(-.4rem); } to { opacity:1; transform:translateY(0); } }
         .sidebar-user-card { margin-top:auto; padding:.85rem; border:1px solid rgba(255,255,255,.14); border-radius:1rem; background:rgba(15,23,42,.28); }
         .sidebar-collapse { position:fixed; left:calc(var(--sidebar-width) - 1rem); top:calc(var(--app-header-height) + 1rem); z-index:95; width:2rem; height:2rem; border-radius:999px; color:#581c87; background:#fbbf24; box-shadow:0 5px 15px rgba(15,23,42,.25); transition:left .25s ease, transform .25s ease; }
         .sidebar-overlay { display:none; position:fixed; inset:var(--app-header-height) 0 0; z-index:80; background:rgba(15,23,42,.62); backdrop-filter:blur(2px); }
         .mobile-menu-button { display:none; }
         @media (min-width: 769px) {
-             body.app-shell-active > main { margin-left:var(--sidebar-width); transition:margin-left .25s ease; }
+            body.app-shell-active > main { width:calc(100% - var(--sidebar-width)); max-width:none; margin-left:var(--sidebar-width); margin-right:0; padding-top:.75rem; transition:margin-left .25s ease,width .25s ease; }
             body.sidebar-collapsed .app-sidebar { transform:translateX(-105%); }
-            body.sidebar-collapsed > main { margin-left:0; }
+            body.sidebar-collapsed > main { width:100%; margin-left:0; }
             body.sidebar-collapsed .sidebar-collapse { left:.75rem; transform:rotate(180deg); }
         }
         @media (max-width: 768px) {
-            .app-sidebar { width:min(86vw, 19rem); transform:translateX(-105%); }
+            .app-sidebar {position:fixed; inset:var(--app-header-height) auto 0 0; width:min(86vw, 19rem); min-height:0; height:auto !important; transform:translateX(-105%); }
             body.sidebar-mobile-open .app-sidebar { transform:translateX(0); }
             body.sidebar-mobile-open .sidebar-overlay { display:block; }
             .sidebar-collapse { display:none; }
             body.app-shell-active .mobile-menu-button { display:grid; place-items:center; }
-            body.app-shell-active > header { position:sticky; top:0; 
+            body.app-shell-active > header { position:sticky; top:0; }
             body.sidebar-mobile-open { overflow:hidden; }
         }
     </style>
@@ -533,6 +541,10 @@
                     <option value="" selected>🏠 หน้าแรก - กรุณาเลือกไซต์</option>
                     <option value="ko-phaluay">📍 ไมโครกริดเกาะพะลวย</option><option value="mae-sariang">📍 ไมโครกริดอำเภอแม่สะเรียง</option><option value="betong">📍 ไมโครกริดอำเภอเบตง</option><option value="phrao">📍 BESS อำเภอพร้าว</option>
                 </select>
+                <details id="sidebarSiteMenu" class="sidebar-site-menu">
+                    <summary><span id="sidebarSiteMenuLabel">🏠 หน้าแรก - กรุณาเลือกไซต์</span></summary>
+                    <div id="sidebarSiteOptions" class="sidebar-site-options" role="listbox" aria-label="เลือกพื้นที่ปฏิบัติงาน"></div>
+                </details>
             </div>
             <nav class="space-y-1" aria-label="การนำทาง">
                 <p class="sidebar-nav-label">ภาพรวมและทรัพย์สิน</p>
