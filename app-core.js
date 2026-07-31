@@ -1530,7 +1530,9 @@ window.updateUserFull = async function(email, safeId) {
             currentUserDept = newDept;
             currentUserPhone = newPhone;
             currentUserAllowedSites = ['editor','engineer'].includes(newRole) ? newAllowedSites : [];
-            document.getElementById('userNameDisplay').textContent = newName ? `${newName} (${email})` : email; 
+            document.getElementById('userNameDisplay').textContent = newName || 'ผู้ใช้งาน';
+            const emailDisplay = document.getElementById('userEmailDisplay');
+            if (emailDisplay) emailDisplay.textContent = email;
             toggleWriteAccess(true); 
         } 
         
