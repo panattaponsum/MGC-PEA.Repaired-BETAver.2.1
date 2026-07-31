@@ -457,6 +457,10 @@ function isApiKeyReferrerBlocked(error) {
 }
 
 function getFirebaseAuthErrorMessage(error) {
+     if (error?.code === 'auth/unauthorized-domain') {
+        return `โดเมน ${window.location.hostname || 'ปัจจุบัน'} ยังไม่ได้รับอนุญาตใน Firebase Authentication\n` +
+            'กรุณาเพิ่มโดเมนนี้ที่ Firebase Console > Authentication > Settings > Authorized domains แล้วลองใหม่';
+    }
     if (!isApiKeyReferrerBlocked(error)) return error?.message || 'ไม่สามารถเข้าสู่ระบบได้';
     const currentOrigin = window.location.origin || 'โดเมนปัจจุบัน';
     return [
@@ -468,14 +472,51 @@ function getFirebaseAuthErrorMessage(error) {
     ].join('\n');
 }
 
-function login() {
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-        .catch(e => Swal.fire({
-            title: 'Login ผิดพลาด',
-            text: getFirebaseAuthErrorMessage(e),
-            icon: 'error',
-            customClass: { popup: 'text-left' }
-        }));
+function shouldRetryLoginWithRedirect(error) {
+    return ['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment']
+        .includes(error?.code);
+}
+
+async function login() {
+    const loginButton = document.getElementById('loginButton');
+    if (loginButton?.disabled) return;
+
+    if (loginButton) {
+        loginButton.disabled = true;
+        loginButton.setAttribute('aria-busy', 'true');
+        loginButton.classList.add('opacity-70', 'cursor-wait');
+    }
+
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+        await auth.signInWithPopup(provider);
+    } catch (error) {
+        // Popup blockers are common in embedded/mobile browsers. Redirect keeps the
+        // login action working without requiring the user to change browser settings.
+        if (shouldRetryLoginWithRedirect(error)) {
+            try {
+                await auth.signInWithRedirect(provider);
+                return;
+            } catch (redirectError) {
+                error = redirectError;
+            }
+        }
+
+        if (error?.code !== 'auth/cancelled-popup-request') {
+            await Swal.fire({
+                title: 'Login ผิดพลาด',
+                text: getFirebaseAuthErrorMessage(error),
+                icon: 'error',
+                customClass: { popup: 'text-left' }
+            });
+        }
+    } finally {
+        if (loginButton) {
+            loginButton.disabled = false;
+            loginButton.removeAttribute('aria-busy');
+            loginButton.classList.remove('opacity-70', 'cursor-wait');
+        }
+    }
 }
 
 window.logout = async function(isAutoLogout = false) {
@@ -1477,7 +1518,11 @@ window.updateUserFull = async function(email, safeId) {
         }, { merge: true }); 
 
         Swal.fire({ icon: 'success', title: `อัปเดตข้อมูล ${email} แล้ว`, timer: 1500, showConfirmButton: false }); 
-        await createLog("USER_MANAGEMENT", `แก้ไขข้อมูลของ (Role: ${newRole}, ชื่อ: ${newName||'-'},"SYSTEM"); 
+       await createLog(
+            "USER_MANAGEMENT",
+            `แก้ไขข้อมูลผู้ใช้ (Role: ${newRole}, ชื่อ: ${newName || '-'})`,
+            "SYSTEM"
+        );
 
         if(email === currentUser.email) { 
             currentUserFullName = newName; 
