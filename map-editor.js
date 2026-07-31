@@ -122,7 +122,7 @@ async function syncDeviceRenameAcrossCollections(siteKey, oldName, newName, mapP
         }))
     ]);
 
-    if (currentUserRole === 'admin') await window.saveSitesConfig(sites);
+     if (isSuperAdmin()) await window.saveSitesConfig(sites);
     if (groupChanged) await saveRegistryGroups();
     await createLog('RENAME_DEVICE', `เปลี่ยนชื่ออุปกรณ์จาก ${oldName} เป็น ${newName}`, siteKey);
 }
@@ -150,7 +150,7 @@ async function persistDeviceRegistryAfterMapDelete(deviceName) {
     delete registryDataMap[deviceName];
     const groupChanged = removeDeviceFromRegistryGroups(deviceName);
     const writes = [];
-    if (currentUserRole === 'admin') writes.push(window.saveSitesConfig(sites));
+      if (isSuperAdmin()) writes.push(window.saveSitesConfig(sites));
     if (groupChanged) writes.push(saveRegistryGroups());
     writes.push(deleteDeviceMapPoint(currentSiteKey, deviceName));
     await Promise.all(writes);
@@ -192,7 +192,7 @@ async function saveDynamicMapPoints(point = null) {
         console.warn('ไม่มีสิทธิ์บันทึกพิกัดกลาง จึงใช้ข้อมูลใน devices เป็นแหล่งข้อมูลหลัก');
     }));
     await Promise.all(writes);
-    if (currentUserRole === 'admin') await window.saveSitesConfig(sites);
+   if (isSuperAdmin()) await window.saveSitesConfig(sites);
 }
 function disableLegacyImageMaps() {
     document.querySelectorAll('.map-container img[usemap]').forEach(img => {
@@ -241,7 +241,7 @@ function clampMapPointPosition(point) {
 }
 async function moveMapPoint(pointId, x, y) {
     const point = getSiteMapPoints().find(p => p.id === pointId);
-    if (!point || !hasWriteAccess(currentSiteKey)) return;
+    if (!point || !canManageMap()) return;
     const movedPoint = clampMapPointPosition({ ...point, x, y });
     dynamicMapPoints[currentSiteKey] = getSiteMapPoints().map(p => p.id === pointId ? movedPoint : p);
     window.updateDeviceStatusOverlays(currentSiteKey, true);
@@ -265,7 +265,7 @@ function makeMapMarker(point, status, alerts) {
     marker.innerHTML = `<span class="dynamic-map-dot"></span>${alerts ? `<span class="device-alert-badge">!</span>` : ''}`;
    let markerDrag = null;
     marker.addEventListener('mousedown', event => {
-        if (!isMapEditMode || !hasWriteAccess(currentSiteKey)) return;
+         if (!isMapEditMode || !canManageMap()) return;
         event.preventDefault();
         event.stopPropagation();
         const container = document.getElementById(`map-${currentSiteKey}`);
@@ -372,7 +372,7 @@ function requestMapPointRedraw(point) {
     });
 }
 async function upsertMapPoint(point) {
-    if (!hasWriteAccess(currentSiteKey)) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor/Admin เท่านั้นที่จัดการพิกัดได้', 'error');
+   if (!canManageMap()) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Super Admin เท่านั้นที่จัดการพิกัดได้', 'error');
     dynamicMapPoints[currentSiteKey] = getSiteMapPoints(currentSiteKey).filter(p => p.id !== point.id);
     dynamicMapPoints[currentSiteKey].push(point);
     window.updateDeviceStatusOverlays(currentSiteKey, true);
@@ -382,6 +382,7 @@ async function upsertMapPoint(point) {
     window.updateDeviceSummary();
 }
 window.openMapPointEditor = async function(pointId = null, clickPos = null) {
+     if (!canManageMap()) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Super Admin เท่านั้นที่จัดการพิกัดได้', 'error');
     const existing = getSiteMapPoints().find(p => p.id === pointId);
     let redrawRequested = false;
     const result = await Swal.fire({
@@ -443,7 +444,7 @@ window.openMapPointEditor = async function(pointId = null, clickPos = null) {
     await upsertMapPoint(point);
 };
 window.toggleMapEditMode = function() {
-    if (!hasWriteAccess(currentSiteKey)) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Editor/Admin เท่านั้นที่จัดการพิกัดได้', 'error');
+  if (!canManageMap()) return Swal.fire('ไม่มีสิทธิ์', 'เฉพาะ Super Admin เท่านั้นที่จัดการพิกัดได้', 'error');
     isMapEditMode = !isMapEditMode;
     document.body.classList.toggle('map-edit-mode', isMapEditMode);
     setBetongImageMapsForEditMode(isMapEditMode);
@@ -469,7 +470,7 @@ function bindDynamicMapClicks() {
        let dragStart = null, draftEl = null, didDrag = false;
         const clearDraft = () => { if (draftEl) draftEl.remove(); draftEl = null; };
         container.addEventListener('mousedown', event => {
-            if (!isMapEditMode || !hasWriteAccess(currentSiteKey) || event.target.closest('.dynamic-map-marker')) return;
+            if (!isMapEditMode || !canManageMap() || event.target.closest('.dynamic-map-marker')) return;
             const img = getCurrentMapImage(container); if (!img) return;
             const rect = img.getBoundingClientRect();
             const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
