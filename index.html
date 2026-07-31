@@ -468,15 +468,14 @@
         body.map-edit-mode .map-container { cursor: crosshair; outline: 3px dashed rgba(37,99,235,0.45); outline-offset: 4px; }
          body.map-edit-mode .dynamic-map-marker { cursor: move; }
  /* === RESPONSIVE APPLICATION SIDEBAR === */
-        :root { --sidebar-width: 18rem; --sidebar-collapsed-width: 5.25rem; }
-        .app-sidebar {
-            position: fixed; inset: 0 auto 0 0; z-index: 220; width: var(--sidebar-width);
+        :root { --sidebar-width: 18rem; --app-header-height: 6.4rem; }
+        .app-sidebar {␊
+            position: fixed; inset: var(--app-header-height) auto 0 0; z-index: 90; width: var(--sidebar-width);
             color: #fff; background: linear-gradient(180deg, #53064f 0%, #291254 48%, #13255c 100%);
             border-right: 1px solid rgba(255,255,255,.12); box-shadow: 14px 0 40px rgba(15,23,42,.2);
-            transition: width .25s ease, transform .25s ease; overflow: hidden;
+           transition: transform .25s ease; overflow: hidden;
         }
-        .sidebar-scroll { height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.22) transparent; }
-        .sidebar-brand { min-height: 6.25rem; background: radial-gradient(circle at 20% 0, rgba(245,158,11,.25), transparent 48%); }
+        .sidebar-scroll { height: 100%; display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.22) transparent; }
         .sidebar-nav-label { color: #c4b5fd; font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; padding: 1rem .9rem .45rem; white-space: nowrap; }
         .sidebar-link { display:flex; align-items:center; gap:.8rem; width:100%; min-height:2.8rem; padding:.65rem .8rem; border-radius:.75rem; color:#ddd6fe; font-size:.82rem; text-align:left; transition:.15s ease; white-space:nowrap; }
         .sidebar-link:hover { color:#fff; background:rgba(255,255,255,.1); transform:translateX(2px); }
@@ -484,17 +483,18 @@
         .sidebar-icon { display:grid; place-items:center; width:2rem; height:2rem; flex:0 0 2rem; border-radius:.6rem; background:rgba(255,255,255,.1); font-size:1rem; }
         .sidebar-badge { margin-left:auto; min-width:1.45rem; padding:.12rem .4rem; border-radius:999px; background:#ef4444; color:white; font-size:.65rem; text-align:center; box-shadow:0 0 0 3px rgba(239,68,68,.18); }
         .sidebar-badge:empty, .sidebar-badge[data-count="0"] { display:none; }
-        .sidebar-site-select { width:100%; color:#1e293b; background:#fff; border-radius:.7rem; padding:.65rem .7rem; font-size:.75rem; outline:none; }
-        .sidebar-collapse { position:fixed; left:calc(var(--sidebar-width) - 1rem); top:1.15rem; z-index:225; width:2rem; height:2rem; border-radius:999px; color:#581c87; background:#fbbf24; box-shadow:0 5px 15px rgba(15,23,42,.25); transition:left .25s ease, transform .25s ease; }
-        .sidebar-overlay { display:none; position:fixed; inset:0; z-index:210; background:rgba(15,23,42,.62); backdrop-filter:blur(2px); }
+        .sidebar-site-wrap { margin:.35rem 0 .5rem; padding:.75rem; border:1px solid rgba(255,255,255,.13); border-radius:1rem; background:rgba(255,255,255,.08); }
+        .sidebar-site-select { width:100%; color:#fff; background:rgba(15,23,42,.32); border:1px solid rgba(255,255,255,.18); border-radius:.75rem; padding:.7rem .75rem; font-size:.75rem; outline:none; }
+        .sidebar-site-select option { color:#1e293b; background:#fff; }
+        .sidebar-user-card { margin-top:auto; padding:.85rem; border:1px solid rgba(255,255,255,.14); border-radius:1rem; background:rgba(15,23,42,.28); }
+        .sidebar-collapse { position:fixed; left:calc(var(--sidebar-width) - 1rem); top:calc(var(--app-header-height) + 1rem); z-index:95; width:2rem; height:2rem; border-radius:999px; color:#581c87; background:#fbbf24; box-shadow:0 5px 15px rgba(15,23,42,.25); transition:left .25s ease, transform .25s ease; }
+        .sidebar-overlay { display:none; position:fixed; inset:var(--app-header-height) 0 0; z-index:80; background:rgba(15,23,42,.62); backdrop-filter:blur(2px); }
         .mobile-menu-button { display:none; }
         @media (min-width: 769px) {
-            body.app-shell-active > main, body.app-shell-active > header { margin-left:var(--sidebar-width); transition:margin-left .25s ease; }
-            body.sidebar-collapsed .app-sidebar { width:var(--sidebar-collapsed-width); }
-            body.sidebar-collapsed > main, body.sidebar-collapsed > header { margin-left:var(--sidebar-collapsed-width); }
-            body.sidebar-collapsed .sidebar-collapse { left:calc(var(--sidebar-collapsed-width) - 1rem); transform:rotate(180deg); }
-            body.sidebar-collapsed .sidebar-copy, body.sidebar-collapsed .sidebar-nav-label, body.sidebar-collapsed .sidebar-badge, body.sidebar-collapsed .sidebar-site-wrap { opacity:0; pointer-events:none; }
-            body.sidebar-collapsed .sidebar-link { justify-content:center; padding-inline:.5rem; }
+             body.app-shell-active > main { margin-left:var(--sidebar-width); transition:margin-left .25s ease; }
+            body.sidebar-collapsed .app-sidebar { transform:translateX(-105%); }
+            body.sidebar-collapsed > main { margin-left:0; }
+            body.sidebar-collapsed .sidebar-collapse { left:.75rem; transform:rotate(180deg); }
         }
         @media (max-width: 768px) {
             .app-sidebar { width:min(86vw, 19rem); transform:translateX(-105%); }
@@ -502,7 +502,7 @@
             body.sidebar-mobile-open .sidebar-overlay { display:block; }
             .sidebar-collapse { display:none; }
             body.app-shell-active .mobile-menu-button { display:grid; place-items:center; }
-            body.app-shell-active > header { position:sticky; top:0; }
+            body.app-shell-active > header { position:sticky; top:0; 
             body.sidebar-mobile-open { overflow:hidden; }
         }
     </style>
@@ -522,32 +522,12 @@
                     <p class="text-[10px] font-medium text-blue-200 mt-0.5 tracking-wide">ระบบบริหารจัดการทรัพย์สินโครงข่ายไฟฟ้าขนาดเล็ก</p>
                 </div>
             </div>
-
-
-            <div id="userInfo" class="header-user-panel hidden flex items-center gap-3 border-t md:border-t-0 md:border-l border-white/20 pt-3  md:pl-4">
-                <div id="logoutTimerDisplay" class="flex items-center gap-1.5 bg-red-500/20 text-red-200 px-3 py-1 rounded-full border border-red-400/30 text-xs font-mono font-bold">
-                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-400"></span></span>
-                    <span id="timerMinutes">60</span>:<span id="timerSeconds">00</span>
-                </div>
-
-               <div class="text-right hidden sm:block min-w-0 max-w-[18rem]">
-                    <div id="userNameDisplay" class="text-sm font-bold text-white leading-tight truncate"></div>
-                    <div id="userRoleDisplay" class="text-[10px] mt-1 font-bold uppercase px-2 py-0.5 rounded-full bg-white/15 text-amber-300 inline-block border border-white/20 leading-none">VIEWER</div>
-
-                <button id="logoutButton" class="p-2 text-white/50 hover:text-red-300 hover:bg-white/10 rounded-lg transition-colors" title="ออกจากระบบ">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                </button>
-            </div>
         </div>
     </header>
  <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
     <aside id="appSidebar" class="app-sidebar hidden" aria-label="เมนูหลัก">
-        <div class="sidebar-scroll p-3">
-            <div class="sidebar-brand flex items-center gap-3 px-2 border-b border-white/10 mb-2">
-                <img src="11-waddee.png" alt="PEA" class="w-12 h-12 object-contain flex-shrink-0" />
-                <div class="sidebar-copy min-w-0"><div class="text-sm font-black text-white">Microgrid AM</div><div class="text-[10px] text-amber-300">PEA Asset Management</div></div>
-            </div>
-            <div class="sidebar-site-wrap px-1 pb-2">
+       <div class="sidebar-scroll p-3">
+            <div class="sidebar-site-wrap">
                 <label for="location-select" class="block text-[10px] text-violet-200 mb-1.5">พื้นที่ปฏิบัติงาน</label>
                 <select id="location-select" class="sidebar-site-select">
                     <option value="" selected>🏠 หน้าแรก - กรุณาเลือกไซต์</option>
@@ -568,6 +548,23 @@
                 <button id="mapEditModeButton" onclick="toggleMapEditMode(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📍</span><span id="mapEditModeText" class="sidebar-copy">กำหนดพิกัดอุปกรณ์</span></button>
                 <button id="manageUsersBtn" onclick="openUserManagement(); closeMobileSidebar()" class="sidebar-link hidden"><span class="sidebar-icon">⚙️</span><span class="sidebar-copy">จัดการผู้ใช้งาน</span></button>
             </nav>
+            <div id="userInfo" class="sidebar-user-card hidden">
+                <div class="flex items-start gap-3">
+                    <div class="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-amber-400/20 text-lg">👤</div>
+                    <div class="min-w-0 flex-1">
+                        <div id="userNameDisplay" class="truncate text-sm font-bold text-white"></div>
+                        <div id="userEmailDisplay" class="mt-0.5 truncate text-[10px] font-medium text-violet-200"></div>
+                        <div id="userRoleDisplay" class="mt-2 inline-block text-[10px] font-bold uppercase">VIEWER</div>
+                    </div>
+                    <button id="logoutButton" class="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-red-300" title="ออกจากระบบ" aria-label="ออกจากระบบ">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    </button>
+                </div>
+                <div id="logoutTimerDisplay" class="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-red-400/20 bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-200">
+                    <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-red-400"></span></span>
+                    ออกจากระบบใน <span id="timerMinutes">60</span>:<span id="timerSeconds">00</span>
+                </div>
+            </div>
         </div>
     </aside>
     <button id="sidebarCollapseButton" class="sidebar-collapse hidden" aria-label="พับเมนูด้านข้าง" aria-controls="appSidebar">‹</button>
