@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             try {
                 const userSnap = await db.collection('users').doc(user.email).get();
                 if (!userSnap.exists) {
-                    let initialRole = (user.email === ADMIN_EMAIL) ? 'admin' : 'viewer';
+                     let initialRole = (user.email === SUPER_ADMIN_EMAIL) ? 'superadmin' : 'viewer';
                     await db.collection('users').doc(user.email).set({
                         email: user.email,
                         role: initialRole,
@@ -44,7 +44,8 @@ document.addEventListener("DOMContentLoaded", async function() {
                     currentUserPhone = userSnap.data().phone || '';
                 }
 
-                if (user.email === ADMIN_EMAIL) currentUserRole = 'admin';
+                 if (user.email === SUPER_ADMIN_EMAIL) currentUserRole = 'superadmin';
+                else if (currentUserRole === 'superadmin') currentUserRole = 'viewer';
                  await loadSitesConfig();
                  await loadDynamicMapPoints();
                 disableLegacyImageMaps();
