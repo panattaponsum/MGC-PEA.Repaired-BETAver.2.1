@@ -484,6 +484,7 @@ function switchSite(siteKey) {
     currentPage = 1;
     const locationSelect = document.getElementById('location-select');
     if (locationSelect && locationSelect.value !== siteKey) locationSelect.value = siteKey;
+    if (typeof window.syncSidebarSiteMenu === 'function') window.syncSidebarSiteMenu();
     document.getElementById('locationTitle').textContent = `🔎 ${siteData.name}`; 
     document.querySelectorAll('.map-container').forEach(el => el.classList.add('hidden')); 
     document.getElementById(`map-${siteKey}`).classList.remove('hidden'); 
