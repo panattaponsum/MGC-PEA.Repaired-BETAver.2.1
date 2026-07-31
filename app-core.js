@@ -186,6 +186,7 @@ function applySiteAccessOptions() {
         option.hidden = !allowed;
         option.disabled = !allowed;
     });
+     if (typeof window.syncSidebarSiteMenu === 'function') window.syncSidebarSiteMenu();
 }
 function showWelcomeSitePage() {
     document.body.classList.add('home-site-mode');
@@ -194,6 +195,7 @@ function showWelcomeSitePage() {
     if (welcomeMap) welcomeMap.classList.remove('hidden');
     const locationSelect = document.getElementById('location-select');
     if (locationSelect) locationSelect.value = '';
+    if (typeof window.syncSidebarSiteMenu === 'function') window.syncSidebarSiteMenu();
     const title = document.getElementById('locationTitle');
     if (title) title.textContent = '🏠 หน้าแรก - กรุณาเลือกไซต์ที่คุณมีสิทธิ์เข้าถึง';
     updateAssetDisplays(null);
