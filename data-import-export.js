@@ -348,7 +348,7 @@ await batch.commit(); window.updateDeviceSummary(); window.updateDeviceStatusOve
 }
 
 function setActiveTab(tabId) {
-    ['tab-topology','tab-summary','tab-registry'].forEach(id => {
+    ['tab-topology','tab-summary','tab-registry','tab-report','tab-logs','manageUsersBtn'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         const active = id === tabId;
@@ -356,24 +356,21 @@ function setActiveTab(tabId) {
         el.setAttribute('aria-current', active ? 'page' : 'false');
     });
 }
+window.showAppPage = function(pageId, tabId) {
+    ['topologyPage', 'summaryPage', 'assetRegistryPage', 'reportPage', 'logPage', 'userPage'].forEach(id => {
+        document.getElementById(id)?.classList.toggle('hidden', id !== pageId);
+    });
+    setActiveTab(tabId);
+};
 window.showSummary = function() { 
-    document.getElementById('topologyPage').classList.add('hidden'); 
-    document.getElementById('assetRegistryPage').classList.add('hidden'); 
-    document.getElementById('summaryPage').classList.remove('hidden'); 
-    setActiveTab('tab-summary');
+    showAppPage('summaryPage', 'tab-summary');
     window.updateDeviceSummary(); scheduleOverlayRefresh(currentSiteKey, true); 
 };
 window.showTopology = function() { 
-    document.getElementById('summaryPage').classList.add('hidden'); 
-    document.getElementById('assetRegistryPage').classList.add('hidden'); 
-    document.getElementById('topologyPage').classList.remove('hidden'); 
-    setActiveTab('tab-topology');
+    showAppPage('topologyPage', 'tab-topology');
     if (typeof imageMapResize === 'function') { imageMapResize(); } window.updateDeviceStatusOverlays(currentSiteKey); 
 };
 window.showAssetRegistry = function() {
-    document.getElementById('topologyPage').classList.add('hidden');
-    document.getElementById('summaryPage').classList.add('hidden');
-    document.getElementById('assetRegistryPage').classList.remove('hidden');
-    setActiveTab('tab-registry');
+    showAppPage('assetRegistryPage', 'tab-registry');
     loadAssetRegistry();
 };
