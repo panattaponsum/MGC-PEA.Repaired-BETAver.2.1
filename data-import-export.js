@@ -73,7 +73,7 @@ async function processAndSaveImport(assetsToImport, recordsToImport, importedGro
                 await groupDocRef.set({ groups: mergedGroups });
                 // อัปเดต registryGroups ในหน่วยความจำด้วย
                 registryGroups = mergedGroups;
-            } catch(e) { console.warn('Could not restore groups:', e); }
+            } catch(e) { console.warn('Could not restore groups: - data-import-export.js:76', e); }
         }
 
         window.updateDeviceSummary(); 
@@ -348,7 +348,7 @@ await batch.commit(); window.updateDeviceSummary(); window.updateDeviceStatusOve
 }
 
 const APP_PAGE_IDS = ['topologyPage', 'summaryPage', 'assetRegistryPage', 'userModal', 'logModal', 'reportModal'];
-const APP_FLEX_PAGE_IDS = ['userModal', 'logModal', 'reportModal'];
+const APP_FLEX_PAGE_IDS = [];
 
 function setActiveTab(tabId) {
     ['tab-topology','tab-summary','tab-registry','tab-report','tab-log','manageUsersBtn'].forEach(id => {
