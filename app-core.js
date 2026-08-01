@@ -227,7 +227,7 @@ async function loadSitesConfig() {
         }
     } catch (error) {
          if (error?.code !== 'permission-denied') {
-            console.warn('ใช้ config จากไฟล์ เนื่องจากโหลด app_config/sites ไม่สำเร็จ:', error);
+            console.warn('ใช้ config จากไฟล์ เนื่องจากโหลด app_config/sites ไม่สำเร็จ: - app-core.js:230', error);
         }
     }
     return sites;
@@ -431,7 +431,7 @@ function toggleWriteAccess(isLoggedIn) {
     });
 
     const assetBtn = document.getElementById('saveAssetButton'); if (assetBtn) assetBtn.style.display = isAdmin ? 'inline-block' : 'none';
-    const importLabel = document.getElementById('importButtonLabel'); if (importLabel) importLabel.style.display = isEditor ? 'inline-block' : 'none';
+    const importLabel = document.getElementById('importButtonLabel'); if (importLabel) importLabel.style.display = isEditor ? 'flex' : 'none';
     const mapEditModeButton = document.getElementById('mapEditModeButton'); if (mapEditModeButton) mapEditModeButton.classList.toggle('hidden', !isSuperAdminUser);
     const manageUsersBtn = document.getElementById('manageUsersBtn'); if (manageUsersBtn) manageUsersBtn.classList.toggle('hidden', !isSuperAdminUser);
     const roleDisplay = document.getElementById('userRoleDisplay');
@@ -1162,7 +1162,7 @@ const doc = new Docx(zip, {
         Swal.fire('สำเร็จ', 'ดาวน์โหลดใบปะหน้าเรียบร้อยแล้ว', 'success');
 
     } catch (error) {
-        console.error("Error generating Word doc:", error);
+        console.error("Error generating Word doc: - app-core.js:1165", error);
         Swal.fire('ผิดพลาด', 'ไม่สามารถสร้างไฟล์ Word ได้ (กรุณาตรวจสอบว่านำไฟล์ แบบฟอร์มแจ้งอุปกรณ์ชำรุด.docx อัปโหลดไว้ที่เดียวกับเว็บแล้วหรือยัง)', 'error');
     }
 }
@@ -1181,13 +1181,13 @@ window.deleteRecord = async function(ts) {
     const dateRef = formatThaiDate(recordToDelete.brokenDate) || formatThaiDate(recordToDelete.fixedDate) || "ไม่ระบุวันที่";
     
     if (recordToDelete.brokenFileUrl) {
-        try { await firebase.storage().refFromURL(recordToDelete.brokenFileUrl).delete(); } catch(e) { console.warn("Failed to delete brokenFile:", e); }
+        try { await firebase.storage().refFromURL(recordToDelete.brokenFileUrl).delete(); } catch(e) { console.warn("Failed to delete brokenFile: - app-core.js:1184", e); }
     }
      if (recordToDelete.ministryFileUrl) {
-        try { await firebase.storage().refFromURL(recordToDelete.ministryFileUrl).delete(); } catch(e) { console.warn("Failed to delete ministryFile:", e); }
+        try { await firebase.storage().refFromURL(recordToDelete.ministryFileUrl).delete(); } catch(e) { console.warn("Failed to delete ministryFile: - app-core.js:1187", e); }
     }
     if (recordToDelete.fixedFileUrl) {
-        try { await firebase.storage().refFromURL(recordToDelete.fixedFileUrl).delete(); } catch(e) { console.warn("Failed to delete fixedFile:", e); }
+        try { await firebase.storage().refFromURL(recordToDelete.fixedFileUrl).delete(); } catch(e) { console.warn("Failed to delete fixedFile: - app-core.js:1190", e); }
     }
 
     records.splice(idx, 1);
