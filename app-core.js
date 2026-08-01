@@ -555,9 +555,7 @@ window.showActivityLogs = async function(direction = 'first') {
     const pageDisplay = document.getElementById('currentLogPageDisplay');
     
     if (!modal || !tableBody) return;
-    modal.classList.remove('hidden'); 
-    modal.classList.add('flex');
-    setPageBlur(true);
+    window.showAppPage('logModal', 'tab-log');
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-bold">กำลังโหลดข้อมูล...</td></tr>';
 
     if (direction === 'first') {
@@ -624,23 +622,12 @@ window.changeLogPage = function(direction) {
     showActivityLogs(direction);
 };
 window.openLogModal = function() {
-    const modal = document.getElementById('logModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-
-    setPageBlur(true);
+    window.showAppPage('logModal', 'tab-log');
 };
 
 window.closeLogModal = function() {
-    const modal = document.getElementById('logModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+    window.showTopology();
 
-    refreshPageBlurState();
-    
     const siteFilter = document.getElementById('logSiteFilter');
     const actionFilter = document.getElementById('logActionFilter');
     
@@ -692,7 +679,7 @@ function isModalVisible(id) {
 }
 
 function refreshPageBlurState() {
-    const modalIds = ['formModal', 'assetModal', 'userModal', 'logModal', 'reportModal', 'groupModal'];
+    const modalIds = ['formModal', 'assetModal', 'groupModal'];
     setPageBlur(modalIds.some(isModalVisible));
 }
 
@@ -704,7 +691,7 @@ function showSharedOverlay() {
 
 function hideSharedOverlayIfNoModal() {
     const overlay = document.getElementById('overlay');
-    const sharedModalOpen = ['formModal', 'assetModal', 'userModal'].some(isModalVisible);
+    const sharedModalOpen = ['formModal', 'assetModal'].some(isModalVisible);
     if (overlay && !sharedModalOpen) overlay.style.display = 'none';
     refreshPageBlurState();
 }
@@ -1368,14 +1355,12 @@ function calculateYears() { if (startEl.value && endEl.value) { const startDate 
 startEl.addEventListener('change', calculateEnd); yearsEl.addEventListener('change', calculateEnd); endEl.addEventListener('change', calculateYears); endEl.addEventListener('change', updateAssetWarrantyStatusField);
 }
 
-window.openUserManagement = async function() { 
+window.openUserManagement = async function() {
      if (!isSuperAdmin()) return;
-    showSharedOverlay();
-    document.getElementById('userModal').style.display = 'flex';
+    window.showAppPage('userModal', 'manageUsersBtn');
     await loadUsers(); }
-window.closeUserManagement = function() { 
-    document.getElementById('userModal').style.display = 'none'; 
-    hideSharedOverlayIfNoModal(); 
+window.closeUserManagement = function() {
+    window.showTopology();
 }
 
 

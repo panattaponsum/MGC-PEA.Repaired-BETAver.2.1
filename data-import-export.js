@@ -347,8 +347,11 @@ await batch.commit(); window.updateDeviceSummary(); window.updateDeviceStatusOve
 }
 }
 
+const APP_PAGE_IDS = ['topologyPage', 'summaryPage', 'assetRegistryPage', 'userModal', 'logModal', 'reportModal'];
+const APP_FLEX_PAGE_IDS = ['userModal', 'logModal', 'reportModal'];
+
 function setActiveTab(tabId) {
-    ['tab-topology','tab-summary','tab-registry'].forEach(id => {
+    ['tab-topology','tab-summary','tab-registry','tab-report','tab-log','manageUsersBtn'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         const active = id === tabId;
@@ -356,24 +359,27 @@ function setActiveTab(tabId) {
         el.setAttribute('aria-current', active ? 'page' : 'false');
     });
 }
-window.showSummary = function() { 
-    document.getElementById('topologyPage').classList.add('hidden'); 
-    document.getElementById('assetRegistryPage').classList.add('hidden'); 
-    document.getElementById('summaryPage').classList.remove('hidden'); 
-    setActiveTab('tab-summary');
-    window.updateDeviceSummary(); scheduleOverlayRefresh(currentSiteKey, true); 
+
+window.showAppPage = function(pageId, tabId) {
+    APP_PAGE_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const isTarget = id === pageId;
+        el.classList.toggle('hidden', !isTarget);
+        if (APP_FLEX_PAGE_IDS.includes(id)) el.classList.toggle('flex', isTarget);
+    });
+    setActiveTab(tabId);
 };
-window.showTopology = function() { 
-    document.getElementById('summaryPage').classList.add('hidden'); 
-    document.getElementById('assetRegistryPage').classList.add('hidden'); 
-    document.getElementById('topologyPage').classList.remove('hidden'); 
-    setActiveTab('tab-topology');
-    if (typeof imageMapResize === 'function') { imageMapResize(); } window.updateDeviceStatusOverlays(currentSiteKey); 
+
+window.showSummary = function() {
+    window.showAppPage('summaryPage', 'tab-summary');
+    window.updateDeviceSummary(); scheduleOverlayRefresh(currentSiteKey, true);
+};
+window.showTopology = function() {
+    window.showAppPage('topologyPage', 'tab-topology');
+    if (typeof imageMapResize === 'function') { imageMapResize(); } window.updateDeviceStatusOverlays(currentSiteKey);
 };
 window.showAssetRegistry = function() {
-    document.getElementById('topologyPage').classList.add('hidden');
-    document.getElementById('summaryPage').classList.add('hidden');
-    document.getElementById('assetRegistryPage').classList.remove('hidden');
-    setActiveTab('tab-registry');
+    window.showAppPage('assetRegistryPage', 'tab-registry');
     loadAssetRegistry();
 };

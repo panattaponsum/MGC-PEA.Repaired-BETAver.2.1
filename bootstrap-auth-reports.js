@@ -290,25 +290,16 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     if (!hasRecords) { Swal.fire('ไม่มีข้อมูล', 'ไม่มีประวัติการชำรุดในสถานที่นี้เลย', 'info'); return; }
     html += '</div>';
     document.getElementById('reportSelectionContainer').innerHTML = html;
-    const reportModal = document.getElementById('reportModal');
-    reportModal.classList.remove('hidden');
-    reportModal.classList.add('flex');
-    setPageBlur(true);
+    window.showAppPage('reportModal', 'tab-report');
     window.tempReportDataMap = dataMap;
 };
 
 
 function openReportModal() {
-  const modal = document.getElementById('reportModal');
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  setPageBlur(true);
+  window.showAppPage('reportModal', 'tab-report');
 }
 function closeReportModal() {
-  const modal = document.getElementById('reportModal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-  refreshPageBlurState();
+  window.showTopology();
 }
 window.selectAllReport = function(isChecked) { document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked); };
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };
