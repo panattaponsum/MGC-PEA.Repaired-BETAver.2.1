@@ -1092,13 +1092,13 @@ window.loadHistory = async function() {
             
             ${filesHtml}
             
-            <div class="mt-3 flex justify-end space-x-2">
-                ${((r.status === 'down' || r.status === 'abnormal') && !r.fixedDate && !r.acknowledgedAt && canAcknowledgeIssue(currentSiteKey)) ? `<button class="btn btn-ghost text-amber-700 hover:bg-amber-50 py-1" onclick="acknowledgeRecord('${r.ts}')">🛠️ รับทราบ</button>` : ''}
+            <div class="mt-3 flex flex-wrap justify-end gap-2">
+                ${((r.status === 'down' || r.status === 'abnormal') && !r.fixedDate && !r.acknowledgedAt && canAcknowledgeIssue(currentSiteKey)) ? `<button class="btn btn-ghost text-xs whitespace-nowrap text-amber-700 hover:bg-amber-50 py-1" onclick="acknowledgeRecord('${r.ts}')">🛠️ รับทราบ</button>` : ''}
                 ${currentUserRole !== 'viewer' ? `
-                    <button class="btn btn-ghost text-blue-600 hover:bg-blue-50 py-1" onclick="generateWordCoverLetter('${currentDevice}', '${r.ts}')">📝 สร้างใบแจ้งชำรุด</button>
+                    <button class="btn btn-ghost text-xs whitespace-nowrap text-blue-600 hover:bg-blue-50 py-1" onclick="generateWordCoverLetter('${currentDevice}', '${r.ts}')">📝 สร้างใบแจ้ง</button>
                 ` : ''}
-                <button class="btn btn-ghost text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไขข้อมูล</button>
-                <button class="btn btn-ghost text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบข้อมูล</button>
+                <button class="btn btn-ghost text-xs whitespace-nowrap text-yellow-600 hover:bg-yellow-50 py-1" onclick="editRecord('${r.ts}')" ${canEdit}>✏️ แก้ไขข้อมูล</button>
+                <button class="btn btn-ghost text-xs whitespace-nowrap text-red-600 hover:bg-red-50 py-1" onclick="deleteRecord('${r.ts}')" ${canEdit}>🗑️ ลบข้อมูล</button>
             </div>
         `;
         container.appendChild(div);
