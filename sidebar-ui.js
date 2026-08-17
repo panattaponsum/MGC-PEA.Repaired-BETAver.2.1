@@ -84,6 +84,6 @@
         window.closeMobileSidebar();
     }
 });
-        sidebar.querySelectorAll('#tab-topology, #tab-summary, #tab-registry').forEach(button => button.addEventListener('click', window.closeMobileSidebar));
+        sidebar.querySelectorAll('#tab-topology, #tab-summary, #tab-registry, #tab-report, #tab-logs, #manageUsersBtn').forEach(button => button.addEventListener('click', window.closeMobileSidebar));
     });
 })();

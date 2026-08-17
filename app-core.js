@@ -546,7 +546,7 @@ let lastLogDoc = null;
 let logPageStack = []; 
 
 window.showActivityLogs = async function(direction = 'first') {
-    const modal = document.getElementById('logModal'); 
+    const page = document.getElementById('logPage');
     const tableBody = document.getElementById('logTableBody');
     const siteFilter = document.getElementById('logSiteFilter').value; 
     const actionFilter = document.getElementById('logActionFilter').value;
@@ -554,8 +554,8 @@ window.showActivityLogs = async function(direction = 'first') {
     const nextBtn = document.getElementById('nextLogBtn');
     const pageDisplay = document.getElementById('currentLogPageDisplay');
     
-    if (!modal || !tableBody) return;
-    window.showAppPage('logModal', 'tab-log');
+    if (!page || !tableBody) return;
+    showAppPage('logPage', 'tab-logs');
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-bold">กำลังโหลดข้อมูล...</td></tr>';
 
     if (direction === 'first') {
@@ -622,12 +622,12 @@ window.changeLogPage = function(direction) {
     showActivityLogs(direction);
 };
 window.openLogModal = function() {
-    window.showAppPage('logModal', 'tab-log');
+    showActivityLogs('first');
 };
 
 window.closeLogModal = function() {
-    window.showTopology();
-
+    showTopology();
+    
     const siteFilter = document.getElementById('logSiteFilter');
     const actionFilter = document.getElementById('logActionFilter');
     
@@ -1357,10 +1357,10 @@ startEl.addEventListener('change', calculateEnd); yearsEl.addEventListener('chan
 
 window.openUserManagement = async function() {
      if (!isSuperAdmin()) return;
-    window.showAppPage('userModal', 'manageUsersBtn');
+    showAppPage('userPage', 'manageUsersBtn');
     await loadUsers(); }
-window.closeUserManagement = function() {
-    window.showTopology();
+window.closeUserManagement = function() { 
+    showTopology();
 }
 
 

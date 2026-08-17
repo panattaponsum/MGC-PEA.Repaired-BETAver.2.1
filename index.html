@@ -598,7 +598,7 @@
                 <button onclick="exportAllDataExcel(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📤</span><span class="sidebar-copy">ส่งออก Excel</span></button>
                 <label id="importButtonLabel" class="sidebar-link hidden cursor-pointer"><span class="sidebar-icon">📥</span><span class="sidebar-copy">นำเข้าข้อมูล</span><input type="file" accept=".xlsx" onchange="importData(event)" class="hidden" /></label>
                 <p class="sidebar-nav-label">การดูแลระบบ</p>
-                <button id="tab-log" onclick="showActivityLogs(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📜</span><span class="sidebar-copy">บันทึกกิจกรรม</span></button>
+                <button id="tab-logs" onclick="showActivityLogs(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📜</span><span class="sidebar-copy">บันทึกกิจกรรม</span></button>
                 <button id="mapEditModeButton" onclick="toggleMapEditMode(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📍</span><span id="mapEditModeText" class="sidebar-copy">กำหนดพิกัดอุปกรณ์</span></button>
                 <button id="manageUsersBtn" onclick="openUserManagement(); closeMobileSidebar()" class="sidebar-link hidden"><span class="sidebar-icon">⚙️</span><span class="sidebar-copy">จัดการผู้ใช้งาน</span></button>
             </nav>
@@ -883,6 +883,15 @@
                         <button id="prevLogBtn" onclick="changeLogPage('prev')" class="px-4 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 disabled:opacity-50">⬅️ ก่อนหน้า</button>
                         <button id="nextLogBtn" onclick="changeLogPage('next')" class="px-4 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 disabled:opacity-50">ถัดไป ➡️</button>
                     </div>
+        <div id="reportPage" class="hidden space-y-4">
+            <div class="modal-header-official rounded-xl">
+                <div class="flex items-center gap-3"><div class="bg-blue-400/20 border border-blue-400/40 rounded-lg p-2">🖨️</div><div><h3 class="text-base font-bold text-white leading-none">เลือกรายการเพื่อออกรายงาน Word</h3><p class="text-[11px] text-blue-200 mt-0.5">Report Generator</p></div></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden">
+                <div class="p-6" id="reportSelectionContainer"><p class="text-center py-10 text-slate-400">กำลังโหลดข้อมูล...</p></div>
+                <div class="modal-footer-official">
+                    <div class="flex flex-wrap gap-2"><button class="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(true)">✅ เลือกทั้งหมด</button><button class="px-4 py-2 text-sm font-bold text-slate-500 bg-white border border-slate-300 rounded-lg hover:bg-slate-100" onclick="selectAllReport(false)">🔳 เอาออกทั้งหมด</button></div>
+                    <button class="btn-primary" onclick="generateSelectedReport()">📄 สร้าง Report</button>
                 </div>
             </div>
         </div>
@@ -908,6 +917,17 @@
                     สร้าง Report
                 </button>
             </div>
+        <div id="logPage" class="hidden space-y-4">
+            <div class="modal-header-official rounded-xl flex-wrap gap-4">
+                <div class="flex items-center gap-3"><div class="bg-indigo-400/20 border border-indigo-400/40 rounded-lg p-2">📜</div><div><h3 class="text-base font-bold text-white leading-none">System Activity Logs</h3><p class="text-[11px] text-blue-200 mt-0.5">บันทึกการใช้งานระบบ</p></div></div>
+                <div class="flex flex-wrap items-center gap-3"><select id="logSiteFilter" class="px-3 py-1.5 border border-white/20 rounded-lg text-sm bg-white/10 text-white" onchange="showActivityLogs('first')"><option value="all" class="text-slate-800">All Sites (Global)</option><option value="ko-phaluay" class="text-slate-800">KO-PHALUAY</option><option value="mae-sariang" class="text-slate-800">MAE-SARIANG</option><option value="betong" class="text-slate-800">BETONG</option><option value="phrao" class="text-slate-800">PHRAO</option></select><select id="logActionFilter" class="px-3 py-1.5 border border-white/20 rounded-lg text-sm bg-white/10 text-white" onchange="showActivityLogs('first')"><option value="all" class="text-slate-800">All Actions</option><option value="AUTH" class="text-slate-800">🔐 Access</option><option value="UPDATE_STATUS" class="text-slate-800">🔄 Status</option><option value="ADD_RECORD" class="text-slate-800">➕ Add</option><option value="EDIT_RECORD" class="text-slate-800">✏️ Edit</option><option value="DELETE_RECORD" class="text-slate-800">❌ Delete</option><option value="IMPORT_DATA" class="text-slate-800">📥 Import</option><option value="EXPORT_DATA" class="text-slate-800">📤 Export</option><option value="ACKNOWLEDGE_ISSUE" class="text-slate-800">🛠️ Acknowledge</option></select></div>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden"><div class="overflow-x-auto p-4"><table class="w-full text-left border-collapse whitespace-nowrap"><thead><tr class="bg-slate-100 text-slate-600 text-[11px] uppercase tracking-wider font-bold border-b border-slate-200"><th class="p-3 text-center">วัน-เวลา</th><th class="p-3 text-center">ชื่อ-สกุล ผู้ดำเนินการ</th><th class="p-3 text-center">สถานที่</th><th class="p-3 text-center">ประเภท</th><th class="p-3 w-full">รายละเอียด</th></tr></thead><tbody id="logTableBody" class="divide-y divide-slate-100 text-sm"></tbody></table></div><div class="px-6 py-3 border-t border-slate-100 bg-slate-50 flex justify-between items-center"><div class="text-sm font-bold text-slate-500">หน้าปัจจุบัน: <span id="currentLogPageDisplay" class="text-indigo-600">1</span></div><div class="flex gap-2"><button id="prevLogBtn" onclick="changeLogPage('prev')" class="px-4 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 disabled:opacity-50">⬅️ ก่อนหน้า</button><button id="nextLogBtn" onclick="changeLogPage('next')" class="px-4 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 disabled:opacity-50">ถัดไป ➡️</button></div></div></div>
+        </div>
+
+        <div id="userPage" class="hidden space-y-4">
+            <div class="modal-header-official rounded-xl"><div class="flex items-center gap-3"><div class="bg-purple-400/20 border border-purple-400/40 rounded-lg p-2">⚙️</div><div><h3 class="text-base font-bold text-white leading-none">จัดการสิทธิ์ผู้ใช้งาน</h3><p class="text-[11px] text-blue-200 mt-0.5">User Management · ตั้งค่า ชื่อ, ตำแหน่ง, สังกัด และระดับสิทธิ์</p></div></div></div>
+            <div class="p-5 bg-slate-50 rounded-xl border border-slate-200 card-shadow"><div id="userListContainer" class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"></div></div>
         </div>
 
         </div><!-- end appContent -->
