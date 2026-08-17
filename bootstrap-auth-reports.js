@@ -238,8 +238,6 @@ window.addEventListener('resize', function() {
 
 window.printReport = async function() {
     const siteData = sites[currentSiteKey];
-    showAppPage('reportPage', 'tab-report');
-    document.getElementById('reportSelectionContainer').innerHTML = '<p class="text-center py-10 text-slate-400">กำลังโหลดข้อมูล...</p>';
     Swal.fire({ title: 'กำลังโหลดข้อมูลประวัติ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
     const dataMap = await getMergedDeviceDataMap(currentSiteKey);
     Swal.close();
@@ -289,21 +287,19 @@ records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
         html += `</div></div>`;
     }
 
-    if (!hasRecords) {
-        document.getElementById('reportSelectionContainer').innerHTML = '<div class="text-center py-12 text-slate-400"><div class="text-4xl mb-3">📭</div><p class="font-semibold">ไม่มีประวัติการชำรุดในสถานที่นี้</p></div>';
-        return;
-    }
+    if (!hasRecords) { Swal.fire('ไม่มีข้อมูล', 'ไม่มีประวัติการชำรุดในสถานที่นี้เลย', 'info'); return; }
     html += '</div>';
     document.getElementById('reportSelectionContainer').innerHTML = html;
+    window.showAppPage('reportModal', 'tab-report');
     window.tempReportDataMap = dataMap;
 };
 
 
 function openReportModal() {
-  window.printReport();
+  window.showAppPage('reportModal', 'tab-report');
 }
 function closeReportModal() {
-  showTopology();
+  window.showTopology();
 }
 window.selectAllReport = function(isChecked) { document.querySelectorAll('#reportSelectionContainer input[type="checkbox"]').forEach(cb => cb.checked = isChecked); };
 window.toggleDeviceGroup = function(cb, safeDevId) { document.querySelectorAll(`#group-${safeDevId} .record-checkbox`).forEach(childCb => childCb.checked = cb.checked); };

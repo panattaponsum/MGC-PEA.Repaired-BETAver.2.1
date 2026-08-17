@@ -351,7 +351,7 @@ const APP_PAGE_IDS = ['topologyPage', 'summaryPage', 'assetRegistryPage', 'userM
 const APP_FLEX_PAGE_IDS = [];
 
 function setActiveTab(tabId) {
-    ['tab-topology','tab-summary','tab-registry','tab-report','tab-logs','manageUsersBtn'].forEach(id => {
+    ['tab-topology','tab-summary','tab-registry','tab-report','tab-log','manageUsersBtn'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         const active = id === tabId;
@@ -359,21 +359,27 @@ function setActiveTab(tabId) {
         el.setAttribute('aria-current', active ? 'page' : 'false');
     });
 }
+
 window.showAppPage = function(pageId, tabId) {
-    ['topologyPage', 'summaryPage', 'assetRegistryPage', 'reportPage', 'logPage', 'userPage'].forEach(id => {
-        document.getElementById(id)?.classList.toggle('hidden', id !== pageId);
+    APP_PAGE_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const isTarget = id === pageId;
+        el.classList.toggle('hidden', !isTarget);
+        if (APP_FLEX_PAGE_IDS.includes(id)) el.classList.toggle('flex', isTarget);
     });
     setActiveTab(tabId);
 };
-window.showSummary = function() { 
-    showAppPage('summaryPage', 'tab-summary');
-    window.updateDeviceSummary(); scheduleOverlayRefresh(currentSiteKey, true); 
+
+window.showSummary = function() {
+    window.showAppPage('summaryPage', 'tab-summary');
+    window.updateDeviceSummary(); scheduleOverlayRefresh(currentSiteKey, true);
 };
-window.showTopology = function() { 
-    showAppPage('topologyPage', 'tab-topology');
-    if (typeof imageMapResize === 'function') { imageMapResize(); } window.updateDeviceStatusOverlays(currentSiteKey); 
+window.showTopology = function() {
+    window.showAppPage('topologyPage', 'tab-topology');
+    if (typeof imageMapResize === 'function') { imageMapResize(); } window.updateDeviceStatusOverlays(currentSiteKey);
 };
 window.showAssetRegistry = function() {
-    showAppPage('assetRegistryPage', 'tab-registry');
+    window.showAppPage('assetRegistryPage', 'tab-registry');
     loadAssetRegistry();
 };
