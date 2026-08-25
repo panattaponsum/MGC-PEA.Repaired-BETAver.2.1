@@ -3,6 +3,8 @@
 let dynamicMapPoints = {};
 let isMapEditMode = false;
 let mapRedrawPointId = null;
+const mapImageResizeObservers = new WeakMap();
+const mapImageRedrawFrames = new Map();
 function getMapConfigRef() { return db.collection('app_config').doc('map_points'); }
 function getCurrentMapImage(container) {
     if (!container) return null;
@@ -12,6 +14,30 @@ function getCurrentMapImage(container) {
 function getMapViewId(container) {
     const view = container?.querySelector('.view-wrapper:not(.hidden)');
     return view?.id || 'main';
+}
+function sizeDynamicMapLayer(layer, img) {
+    // The overlay must use the image's rendered box, not the scrolling wrapper's box.
+    // At browser zoom levels those two boxes may have different dimensions.
+    layer.style.setProperty('--map-layer-left', `${img.offsetLeft}px`);
+    layer.style.setProperty('--map-layer-top', `${img.offsetTop}px`);
+    layer.style.setProperty('--map-layer-width', `${img.offsetWidth}px`);
+    layer.style.setProperty('--map-layer-height', `${img.offsetHeight}px`);
+}
+function watchMapImageSize(siteKey, img) {
+    if (!img || mapImageResizeObservers.has(img)) return;
+    const redraw = () => {
+        cancelAnimationFrame(mapImageRedrawFrames.get(siteKey));
+        mapImageRedrawFrames.set(siteKey, requestAnimationFrame(() => {
+            const container = document.getElementById(`map-${siteKey}`);
+            if (container && getCurrentMapImage(container) === img) window.renderDynamicMapPoints(siteKey);
+        }));
+    };
+    if (typeof ResizeObserver === 'function') {
+        const observer = new ResizeObserver(redraw);
+        observer.observe(img);
+        mapImageResizeObservers.set(img, observer);
+    }
+    img.addEventListener('load', redraw, { once: true });
 }
 const BETONG_NAV_HOTSPOTS = {
     'betong-main-view': [
@@ -315,6 +341,8 @@ window.renderDynamicMapPoints = function(siteKey = currentSiteKey) {
     if (!img || currentUserRole === 'viewer') return;
     const layer = document.createElement('div');
     layer.className = 'dynamic-map-layer';
+    sizeDynamicMapLayer(layer, img);
+    watchMapImageSize(siteKey, img);
     const viewId = getMapViewId(container);
     const statuses = cachedDeviceStatus[siteKey] || {};
     const alerts = cachedDeviceAlerts[siteKey] || {};

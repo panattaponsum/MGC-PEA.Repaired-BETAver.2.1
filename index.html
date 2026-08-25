@@ -374,13 +374,15 @@
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         .map-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .map-wrapper img { min-width: 900px; max-width: 100%; height: auto; border-radius: 0.75rem; }
+        .map-wrapper img { display: block; min-width: 900px; max-width: 100%; height: auto; border-radius: 0.75rem; }
         .map-wrapper { position: relative; }
         .map-wrapper .view-wrapper { position: relative; }
         .dynamic-map-layer {
             position: absolute;
-            inset: 0;
-            min-width: 900px;
+            left: var(--map-layer-left, 0px);
+            top: var(--map-layer-top, 0px);
+            width: var(--map-layer-width, 100%);
+            height: var(--map-layer-height, 100%);
             pointer-events: none;
             z-index: 80;
         }
