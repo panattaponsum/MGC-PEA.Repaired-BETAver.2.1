@@ -1326,7 +1326,14 @@ window.saveAssetData = async function() {
     } catch(e) { Swal.fire('อัปโหลดรูปภาพล้มเหลว', e.message, 'error'); return; }
      const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
     if (imageUrl) assetInfo.imageUrl = imageUrl;
-    try { await saveAssetInfo(currentSiteKey, currentDevice, assetInfo); Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success'); updateAssetDisplays(assetInfo); window.updateDeviceSummary(); closeAssetModal(true); } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
+    try {
+        await saveAssetInfo(currentSiteKey, currentDevice, assetInfo);
+        await createLog("UPDATE_ASSET", `บันทึกข้อมูลทรัพย์สินของ ${currentDevice}`);
+        Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success');
+        updateAssetDisplays(assetInfo);
+        window.updateDeviceSummary();
+        closeAssetModal(true);
+    } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
 }
 
 function updateAssetWarrantyStatusField() {

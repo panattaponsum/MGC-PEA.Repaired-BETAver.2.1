@@ -444,10 +444,10 @@
     width: var(--sidebar-width);
     height: calc(100dvh - var(--app-header-height));
     min-height: 0;
-    color: #fff;
-    background: linear-gradient(180deg, #53064f 0%, #291254 48%, #13255c 100%);
-    border-right: 1px solid rgba(255,255,255,.12);
-    box-shadow: 14px 0 40px rgba(15,23,42,.2);
+    color: #0f172a;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 14px 0 32px rgba(15,23,42,.08);
     transition: transform .25s ease;
     overflow: hidden;
 }
@@ -467,35 +467,38 @@
     overflow-x: hidden;
     overscroll-behavior: contain;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,.22) transparent;
+    scrollbar-color: #cbd5e1 transparent;
 }
-        .sidebar-nav-label { color: #c4b5fd; font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; padding: 1rem .9rem .45rem; white-space: nowrap; }
-        .sidebar-link { display:flex; align-items:center; gap:.8rem; width:100%; min-height:2.8rem; padding:.65rem .8rem; border-radius:.75rem; color:#ddd6fe; font-size:.82rem; text-align:left; transition:.15s ease; white-space:nowrap; }
-        .sidebar-link:hover { color:#fff; background:rgba(255,255,255,.1); transform:translateX(2px); }
-        .sidebar-link.is-active { color:#fff; background:linear-gradient(135deg,rgba(245,158,11,.28),rgba(255,255,255,.12)); box-shadow:inset 3px 0 #fbbf24; }
-        .sidebar-icon { display:grid; place-items:center; width:2rem; height:2rem; flex:0 0 2rem; border-radius:.6rem; background:rgba(255,255,255,.1); font-size:1rem; }
+        .sidebar-nav-label { color: #475569; font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; padding: 1rem .9rem .45rem; white-space: nowrap; }
+        .sidebar-link { display:flex; align-items:center; gap:.8rem; width:100%; min-height:2.8rem; padding:.65rem .8rem; border-radius:.75rem; color:#0f172a; font-size:.82rem; text-align:left; transition:.15s ease; white-space:nowrap; }
+        .sidebar-link:hover { color:#0f172a; background:#f1f5f9; transform:translateX(2px); }
+        .sidebar-link.is-active { color:#0f172a; background:#e2e8f0; box-shadow:inset 3px 0 #64748b; }
+        .sidebar-icon { display:grid; place-items:center; width:2rem; height:2rem; flex:0 0 2rem; border-radius:.6rem; background:#e2e8f0; font-size:1rem; }
         .sidebar-badge { margin-left:auto; min-width:1.45rem; padding:.12rem .4rem; border-radius:999px; background:#ef4444; color:white; font-size:.65rem; text-align:center; box-shadow:0 0 0 3px rgba(239,68,68,.18); }
         .sidebar-badge:empty, .sidebar-badge[data-count="0"] { display:none; }
-        .sidebar-site-wrap { margin:.35rem 0 .5rem; padding:.75rem; border:1px solid rgba(255,255,255,.13); border-radius:1rem; background:rgba(255,255,255,.08); }
+        .sidebar-site-wrap { margin:.35rem 0 .5rem; padding:.75rem; border:1px solid #e2e8f0; border-radius:1rem; background:#fff; }
         .sidebar-site-select { display:none; }
-        .sidebar-site-menu summary { display:flex; align-items:center; gap:.5rem; width:100%; color:#fff; background:rgba(15,23,42,.32); border:1px solid rgba(255,255,255,.18); border-radius:.75rem; padding:.7rem .75rem; font-size:.75rem; cursor:pointer; list-style:none; }
+        .sidebar-site-menu summary { display:flex; align-items:center; gap:.5rem; width:100%; color:#0f172a; background:#f8fafc; border:1px solid #cbd5e1; border-radius:.75rem; padding:.7rem .75rem; font-size:.75rem; cursor:pointer; list-style:none; }
         .sidebar-site-menu summary::-webkit-details-marker { display:none; }
         .sidebar-site-menu summary::after { content:'⌄'; margin-left:auto; transition:transform .2s ease; }
         .sidebar-site-menu[open] summary::after { transform:rotate(180deg); }
         .sidebar-site-options { display:grid; gap:.3rem; padding-top:.5rem; animation:sidebar-site-slide .2s ease-out; }
-        .sidebar-site-option { width:100%; padding:.6rem .7rem; border-radius:.65rem; color:#ddd6fe; font-size:.72rem; line-height:1.35; text-align:left; transition:background .15s ease,color .15s ease; }
-        .sidebar-site-option:hover,.sidebar-site-option.is-selected { color:#fff; background:rgba(255,255,255,.12); }
+        .sidebar-site-option { width:100%; padding:.6rem .7rem; border-radius:.65rem; color:#0f172a; font-size:.72rem; line-height:1.35; text-align:left; transition:background .15s ease,color .15s ease; }
+        .sidebar-site-option:hover,.sidebar-site-option.is-selected { color:#0f172a; background:#e2e8f0; }
         @keyframes sidebar-site-slide { from { opacity:0; transform:translateY(-.4rem); } to { opacity:1; transform:translateY(0); } }
        .sidebar-user-card {
     flex: 0 0 auto;
     margin-top: .75rem;
     padding: .85rem;
-    border: 1px solid rgba(255,255,255,.14);
+    border: 1px solid #e2e8f0;
     border-radius: 1rem;
-    background: rgba(15,23,42,.28);
-    box-shadow: 0 -10px 24px rgba(15,23,42,.18);
+    background: #fff;
+    box-shadow: 0 -10px 24px rgba(15,23,42,.06);
 }
-        .sidebar-collapse { position:fixed; left:calc(var(--sidebar-width) - 1rem); top:calc(var(--app-header-height) + 1rem); z-index:95; width:2rem; height:2rem; border-radius:999px; color:#581c87; background:#fbbf24; box-shadow:0 5px 15px rgba(15,23,42,.25); transition:left .25s ease, transform .25s ease; }
+        .sidebar-user-card #userNameDisplay, .sidebar-user-card #userEmailDisplay { color:#0f172a !important; }
+        .sidebar-user-card #logoutButton { color:#475569 !important; }
+        .sidebar-user-card #logoutButton:hover { background:#f1f5f9 !important; color:#dc2626 !important; }
+        .sidebar-collapse { position:fixed; left:calc(var(--sidebar-width) - 1rem); top:calc(var(--app-header-height) + 1rem); z-index:95; width:2rem; height:2rem; border:1px solid #cbd5e1; border-radius:999px; color:#0f172a; background:#fff; box-shadow:0 5px 15px rgba(15,23,42,.12); transition:left .25s ease, transform .25s ease; }
         .sidebar-overlay { display:none; position:fixed; inset:var(--app-header-height) 0 0; z-index:80; background:rgba(15,23,42,.62); backdrop-filter:blur(2px); }
         .mobile-menu-button { display:none; }
         @media (min-width: 769px) {
@@ -840,7 +843,7 @@
                             <option value="all">All Sites (Global)</option><option value="ko-phaluay">KO-PHALUAY</option><option value="mae-sariang">MAE-SARIANG</option><option value="betong">BETONG</option><option value="phrao">PHRAO</option>
                         </select>
                         <select id="logActionFilter" class="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none cursor-pointer" onchange="showActivityLogs('first')">
-                            <option value="all">All Actions</option><option value="AUTH">🔐 Access</option><option value="UPDATE_STATUS">🔄 Status</option><option value="ADD_RECORD">➕ Add</option><option value="EDIT_RECORD">✏️ Edit</option><option value="DELETE_RECORD">❌ Delete</option><option value="IMPORT_DATA">📥 Import</option><option value="EXPORT_DATA">📤 Export</option><option value="ACKNOWLEDGE_ISSUE">🛠️ Acknowledge</option>
+                            <option value="all">All Actions</option><option value="AUTH">🔐 Access</option><option value="UPDATE_STATUS">🔄 Status</option><option value="UPDATE_ASSET">📋 Asset</option><option value="ADD_RECORD">➕ Add</option><option value="EDIT_RECORD">✏️ Edit</option><option value="DELETE_RECORD">❌ Delete</option><option value="IMPORT_DATA">📥 Import</option><option value="EXPORT_DATA">📤 Export</option><option value="ACKNOWLEDGE_ISSUE">🛠️ Acknowledge</option>
                         </select>
                     </div>
                 </div>
