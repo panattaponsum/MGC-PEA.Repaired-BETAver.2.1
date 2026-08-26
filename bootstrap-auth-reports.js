@@ -475,7 +475,6 @@ async function buildReportDocumentHtml(siteData, bodyHtml) {
     tr { page-break-inside: avoid; }
     thead { display: table-header-group; }
    .header-table { width: 100%; border-bottom: 3px solid #6a1b9a; margin-bottom: 12pt; table-layout: fixed; }
-   .logo { width: 54pt; height: 54pt; max-width: 54pt; max-height: 54pt; border-radius: 50%; object-fit: contain; }
     .title { text-align: center; }
     .title-main { font-size: 14pt; font-weight: 700; color: #6a1b9a; }
    .title-sub { font-size: 11pt; }
@@ -517,7 +516,7 @@ async function buildReportDocumentHtml(siteData, bodyHtml) {
 <div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
     <table class="header-table">
         <tr>
-            <td style="width:25%;">${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" width="72" height="72" alt="PEA">` : ''}</td>
+            <td style="width:25%;">${logoDataUrl ? `<img src="${logoDataUrl}" width="53" height="53" alt="PEA" style="width:40pt; height:40pt; max-width:40pt; max-height:40pt; mso-width-source:userset; mso-height-source:userset; object-fit:contain;">` : ''}</td>
             <td class="title" style="width:50%;"><div class="title-main">MICROGRIDASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
             <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
         </tr>
