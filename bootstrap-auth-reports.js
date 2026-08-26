@@ -426,15 +426,33 @@ window.generateSelectedReport = async function () {
     }
 
     closeReportModal();
-   const reportHtml = buildReportDocumentHtml(siteData, bodyHtml);
+   const reportHtml = await buildReportDocumentHtml(siteData, bodyHtml);
     const fileName = `รายงานสรุปการแจ้งปัญหา_${siteData.name.replace(/[\\/:*?"<>|]/g, '_')}_${new Date().toISOString().slice(0, 10)}.doc`;
     const blob = new Blob(['\ufeff', reportHtml], { type: 'application/msword;charset=utf-8' });
     saveAs(blob, fileName);
 };
 
-function buildReportDocumentHtml(siteData, bodyHtml) {
+async function getReportLogoDataUrl() {
+    try {
+        const response = await fetch('provincial-electricity-authority.png');
+        if (!response.ok) throw new Error(`Unable to load logo: ${response.status}`);
+        const blob = await response.blob();
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.warn('Unable to embed the report logo.', error);
+        return '';
+    }
+}
+
+async function buildReportDocumentHtml(siteData, bodyHtml) {
      const reportDate = formatThaiDate(new Date());
     const reportTime = new Date().toLocaleTimeString('th-TH');
+    const logoDataUrl = await getReportLogoDataUrl();
     return `
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
@@ -499,8 +517,8 @@ function buildReportDocumentHtml(siteData, bodyHtml) {
 <div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
     <table class="header-table">
         <tr>
-            <td style="width:25%;"><img class="logo" src="provincial-electricity-authority.png" width="72" height="72" alt="PEA"></td>
-            <td class="title" style="width:50%;"><div class="title-main">ASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
+            <td style="width:25%;">${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" width="72" height="72" alt="PEA">` : ''}</td>
+            <td class="title" style="width:50%;"><div class="title-main">MICROGRIDASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
             <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
         </tr>
     </table>
