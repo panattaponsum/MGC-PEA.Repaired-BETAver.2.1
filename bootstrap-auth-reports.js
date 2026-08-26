@@ -454,7 +454,7 @@ async function buildReportDocumentHtml(siteData, bodyHtml) {
     const reportTime = new Date().toLocaleTimeString('th-TH');
     const logoDataUrl = await getReportLogoDataUrl();
     return `
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:v="urn:schemas-microsoft-com:vml" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 <meta charset="UTF-8">
 <title>PEA_REPORT_${escapeReportHtml(siteData.name)}</title>
@@ -516,7 +516,7 @@ async function buildReportDocumentHtml(siteData, bodyHtml) {
 <div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
     <table class="header-table">
         <tr>
-            <td style="width:25%;">${logoDataUrl ? `<img src="${logoDataUrl}" width="53" height="53" alt="PEA" style="width:40pt; height:40pt; max-width:40pt; max-height:40pt; mso-width-source:userset; mso-height-source:userset; object-fit:contain;">` : ''}</td>
+            <td style="width:25%;">${logoDataUrl ? `<!--[if gte vml 1]><v:shape id="pea-report-logo" type="#_x0000_t75" style="width:40pt;height:40pt;visibility:visible;mso-wrap-style:square" o:preferrelative="t" filled="f" stroked="f"><v:imagedata src="${logoDataUrl}" o:title="PEA"/></v:shape><![endif]-->` : ''}</td>
             <td class="title" style="width:50%;"><div class="title-main">MICROGRIDASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
             <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
         </tr>
