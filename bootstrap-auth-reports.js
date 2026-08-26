@@ -414,11 +414,10 @@ window.generateSelectedReport = async function () {
                     <div class="doc-line"><b>หนังสือ มท</b> ${escapeReportHtml(r.docMinistry)}</div>
                      <div><b>ลงวันที่:</b> ${r.docPEA ? escapeReportHtml(formatThaiDate(r.docPEA)) : '-'}</div>
                     <div><b>สถานะซ่อม:</b> ${r.fixedDate ? 'ซ่อมแล้ว' : ((r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? 'กำลังซ่อมแซม' : 'รอดำเนินการ')}</div>
-                    <div><b>ชื่อ-สกุล ผู้รับทราบ :</b> ${escapeReportHtml(r.acknowledgedBy)}</div>
-                    <div><b>วันที่-เวลา :</b> ${r.acknowledgedAt ? escapeReportHtml(formatThaiDateTime(r.acknowledgedAt)) : '-'}</div>
                 </td>
                 <td class="center">
                     <div class="user-block"><b>ชื่อ-สกุล ผู้แจ้งเหตุ</b><br>${escapeReportHtml(r.brokenUser)}<div class="user-sub">(${escapeReportHtml(`${r.brokenUserPos || ''} ${r.brokenUserDept || ''}`.trim())})</div></div>
+                    <div class="user-block"><b>ชื่อ-สกุล ผู้รับทราบ</b><br>${escapeReportHtml(r.acknowledgedBy)}<div class="user-sub">(${escapeReportHtml(`${r.acknowledgedByPos || ''} ${r.acknowledgedByDept || ''}`.trim())})</div></div>
                     <div class="user-block"><b>ชื่อ-สกุล ผู้แจ้งซ่อมแซม</b><br>${escapeReportHtml(r.fixedUser)}<div class="user-sub">(${escapeReportHtml(`${r.fixedUserPos || ''} ${r.fixedUserDept || ''}`.trim())})</div></div>
                 </td>
             </tr>`;

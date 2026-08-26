@@ -1210,7 +1210,14 @@ window.acknowledgeRecord = async function(ts) {
     if (r.fixedDate || (r.status !== 'down' && r.status !== 'abnormal')) return;
     if (r.acknowledgedAt) { Swal.fire('รับทราบแล้ว', 'รายการนี้ถูกกดรับทราบแล้ว', 'info'); return; }
     const userName = currentUserFullName || (currentUser && currentUser.email) || 'ไม่ระบุ';
-    records[i] = { ...r, acknowledgedAt: Date.now(), acknowledgedBy: userName, acknowledgedByRole: currentUserRole };
+    records[i] = {
+        ...r,
+        acknowledgedAt: Date.now(),
+        acknowledgedBy: userName,
+        acknowledgedByPos: currentUserPosition || '',
+        acknowledgedByDept: currentUserDept || '',
+        acknowledgedByRole: currentUserRole
+    };
     await saveDeviceRecords(currentSiteKey, currentDevice, records);
     await createLog('ACKNOWLEDGE_ISSUE', `รับทราบอุปกรณ์ ${currentDevice} มีสถานะเป็น ${r.status === 'down' ? 'ชำรุด' : 'ผิดปกติ'}`);
     await loadHistory();
