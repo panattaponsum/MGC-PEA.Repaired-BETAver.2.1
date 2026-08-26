@@ -426,20 +426,22 @@ window.generateSelectedReport = async function () {
     }
 
     closeReportModal();
-   const reportHtml = await buildReportDocumentHtml(siteData, bodyHtml);
-    const fileName = `รายงานสรุปการแจ้งปัญหา_${siteData.name.replace(/[\\/:*?"<>|]/g, '_')}_${new Date().toISOString().slice(0, 10)}.doc`;
-    const blob = new Blob(['\ufeff', reportHtml], { type: 'application/msword;charset=utf-8' });
+    const logoBase64 = await getReportLogoBase64();
+    const reportHtml = buildReportDocumentHtml(siteData, bodyHtml, logoBase64 ? 'pea-report-logo.png' : '');
+    const reportMhtml = buildReportMhtml(reportHtml, logoBase64);
+    const fileName = `รายงานสรุปการแจ้งปัญหา_${siteData.name.replace(/[\\/:*?"<>|]/g, '_')}_${new Date().toISOString().slice(0, 10)}.mht`;
+    const blob = new Blob(['\ufeff', reportMhtml], { type: 'multipart/related;charset=utf-8' });
     saveAs(blob, fileName);
 };
 
-async function getReportLogoDataUrl() {
+async function getReportLogoBase64() {
     try {
         const response = await fetch('provincial-electricity-authority.png');
         if (!response.ok) throw new Error(`Unable to load logo: ${response.status}`);
         const blob = await response.blob();
         return await new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
+            reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
             reader.onerror = () => reject(reader.error);
             reader.readAsDataURL(blob);
         });
@@ -449,10 +451,38 @@ async function getReportLogoDataUrl() {
     }
 }
 
-async function buildReportDocumentHtml(siteData, bodyHtml) {
+function buildReportMhtml(reportHtml, logoBase64) {
+    const boundary = '----=_NextPart_PEA_Report_987654321';
+    const sections = [
+        'MIME-Version: 1.0',
+        'Content-Type: multipart/related; boundary="' + boundary + '"; type="text/html"',
+        '',
+        '--' + boundary,
+        'Content-Type: text/html; charset="utf-8"',
+        'Content-Location: report.html',
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        reportHtml
+    ];
+
+    if (logoBase64) {
+        sections.push(
+            '--' + boundary,
+            'Content-Type: image/png',
+            'Content-Transfer-Encoding: base64',
+            'Content-Location: pea-report-logo.png',
+            '',
+            logoBase64.match(/.{1,76}/g).join('\r\n')
+        );
+    }
+
+    sections.push('--' + boundary + '--', '');
+    return sections.join('\r\n');
+}
+
+function buildReportDocumentHtml(siteData, bodyHtml, logoSource = '') {
      const reportDate = formatThaiDate(new Date());
     const reportTime = new Date().toLocaleTimeString('th-TH');
-    const logoDataUrl = await getReportLogoDataUrl();
     return `
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:v="urn:schemas-microsoft-com:vml" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
@@ -516,7 +546,7 @@ async function buildReportDocumentHtml(siteData, bodyHtml) {
 <div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
     <table class="header-table">
         <tr>
-            <td style="width:25%;">${logoDataUrl ? `<!--[if gte vml 1]><v:shape id="pea-report-logo" type="#_x0000_t75" style="width:40pt;height:40pt;visibility:visible;mso-wrap-style:square" o:preferrelative="t" filled="f" stroked="f"><v:imagedata src="${logoDataUrl}" o:title="PEA"/></v:shape><![endif]-->` : ''}</td>
+            <td style="width:25%;">${logoSource ? `<!--[if gte vml 1]><v:shape id="pea-report-logo" type="#_x0000_t75" style="width:40pt;height:40pt;visibility:visible;mso-wrap-style:square" o:preferrelative="t" filled="f" stroked="f"><v:imagedata src="${logoSource}" o:title="PEA"/></v:shape><![endif]--><!--[if !vml]><img src="${logoSource}" width="53" height="53" alt="PEA" style="width:40pt;height:40pt;"><![endif]-->` : ''}</td>
             <td class="title" style="width:50%;"><div class="title-main">MICROGRIDASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
             <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
         </tr>
