@@ -23,6 +23,8 @@
     </script>
 
     <style>
+        /* ขนาดพื้นฐานสำหรับการใช้งานที่ browser zoom 100% */
+        html { font-size: 18px; }
         @font-face {
             font-family: 'TH SarabunPSK';
             src: url('THSarabunPSK.ttf') format('truetype');
@@ -866,13 +868,20 @@
             </div>
             <div class="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <table class="w-full table-fixed text-left border-collapse">
+                        <colgroup>
+                            <col style="width: 16%">
+                            <col style="width: 22%">
+                            <col style="width: 13%">
+                            <col style="width: 13%">
+                            <col style="width: 36%">
+                        </colgroup>
                         <thead>
-                            <tr class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider font-bold border-b border-slate-200">
-                                <th class="p-3 text-center">วัน-เวลา</th><th class="p-3 text-center">ชื่อ-สกุล ผู้ดำเนินการ</th><th class="p-3 text-center">สถานที่</th><th class="p-3 text-center">ประเภท</th><th class="p-3 w-full">รายละเอียด</th>
+                            <tr class="bg-slate-50 text-slate-600 text-sm uppercase tracking-wider font-bold border-b border-slate-200">
+                                <th class="p-3 text-center">วัน-เวลา</th><th class="p-3 text-center">ชื่อ-สกุล ผู้ดำเนินการ</th><th class="p-3 text-center">สถานที่</th><th class="p-3 text-center">ประเภท</th><th class="p-3 text-center">รายละเอียด</th>
                             </tr>
                         </thead>
-                        <tbody id="logTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                        <tbody id="logTableBody" class="divide-y divide-slate-100 text-base"></tbody>
                     </table>
                 </div>
                 <div class="px-6 py-3 border-t border-slate-200 bg-white flex justify-between items-center">
