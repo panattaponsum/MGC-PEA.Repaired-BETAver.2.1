@@ -500,7 +500,7 @@ function buildReportDocumentHtml(siteData, bodyHtml, logoSource = '') {
 <style>
     @page WordSection1 { size: 21cm 29.7cm; margin: 3.2cm 1.2cm 2.8cm 1.2cm; mso-header: h1; mso-footer: f1; mso-header-margin: 0.8cm; mso-footer-margin: 0.8cm; }
     div.WordSection1 { page: WordSection1; }
-    body { font-family: 'PSPimpdeed', sans-serif; font-size: 11pt; margin: 0; color: #222; }
+    body { font-family: 'TH SarabunPSK', sans-serif; font-size: 11pt; margin: 0; color: #222; }
     table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     tr { page-break-inside: avoid; }
     thead { display: table-header-group; }

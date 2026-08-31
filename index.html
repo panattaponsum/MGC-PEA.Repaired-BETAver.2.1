@@ -12,7 +12,7 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['PSPimpdeed', 'sans-serif'] },
+                    fontFamily: { sans: ['TH SarabunPSK', 'sans-serif'] },
                     colors: {
                         brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' },
                         status: { ok: '#10b981', warn: '#f59e0b', bad: '#ef4444' }
@@ -24,12 +24,19 @@
 
     <style>
         @font-face {
-            font-family: 'PSPimpdeed';
-            src: url('pspimpdeedIISM.ttf') format('truetype');
+            font-family: 'TH SarabunPSK';
+            src: url('THSarabunPSK.ttf') format('truetype');
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'TH SarabunPSK';
+            src: url('THSarabunPSK-Bold.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 700;
             font-display: swap;
         }
         html, body, button, input, select, textarea, .swal2-popup {
-            font-family: 'PSPimpdeed', sans-serif !important;
+            font-family: 'TH SarabunPSK', sans-serif !important;
             font-weight: normal;
         }
         body { background-color: #f1f5f9; }
