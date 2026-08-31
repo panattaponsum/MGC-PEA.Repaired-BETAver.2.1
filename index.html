@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>กองเทคโนโลยีโครงข่ายไฟฟ้า - Microgrid Asset Management</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Kodchasan:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,7 +12,7 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['TH Kodchasal Bold', 'Kodchasan', 'sans-serif'] },
+                    fontFamily: { sans: ['PSPimpdeed', 'sans-serif'] },
                     colors: {
                         brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' },
                         status: { ok: '#10b981', warn: '#f59e0b', bad: '#ef4444' }
@@ -24,7 +23,15 @@
     </script>
 
     <style>
-        html, body, button, input, select, textarea, .swal2-popup { font-family: 'TH Kodchasal Bold', 'Kodchasan', sans-serif !important; font-weight: 700; }
+        @font-face {
+            font-family: 'PSPimpdeed';
+            src: url('pspimpdeedIISM.ttf') format('truetype');
+            font-display: swap;
+        }
+        html, body, button, input, select, textarea, .swal2-popup {
+            font-family: 'PSPimpdeed', sans-serif !important;
+            font-weight: normal;
+        }
         body { background-color: #f1f5f9; }
           /* === LOGIN + WELCOME EXPERIENCE === */
         body.auth-hero-active { background: #74045f; min-height: 100vh; }
@@ -566,8 +573,8 @@
                 <button id="tab-registry" onclick="showAssetRegistry()" class="sidebar-link"><span class="sidebar-icon">🗂️</span><span class="sidebar-copy">รายการทรัพย์สิน</span></button>
                 <p class="sidebar-nav-label">รายงานและข้อมูล</p>
                 <button id="tab-report" onclick="window.printReport(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📝</span><span class="sidebar-copy">สร้างรายงาน</span></button>
-                <button onclick="exportAllDataExcel(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📤</span><span class="sidebar-copy">ส่งออก Excel</span></button>
-                <label id="importButtonLabel" class="sidebar-link hidden cursor-pointer"><span class="sidebar-icon">📥</span><span class="sidebar-copy">นำเข้าข้อมูล</span><input type="file" accept=".xlsx" onchange="importData(event)" class="hidden" /></label>
+                <button onclick="exportAllDataExcel(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📤</span><span class="sidebar-copy">Export Excel</span></button>
+                <label id="importButtonLabel" class="sidebar-link hidden cursor-pointer"><span class="sidebar-icon">📥</span><span class="sidebar-copy">Import Excel</span><input type="file" accept=".xlsx" onchange="importData(event)" class="hidden" /></label>
                 <p class="sidebar-nav-label">การดูแลระบบ</p>
                 <button id="tab-log" onclick="showActivityLogs(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📜</span><span class="sidebar-copy">บันทึกกิจกรรม</span></button>
                 <button id="mapEditModeButton" onclick="toggleMapEditMode(); closeMobileSidebar()" class="sidebar-link"><span class="sidebar-icon">📍</span><span id="mapEditModeText" class="sidebar-copy">กำหนดพิกัดอุปกรณ์</span></button>
