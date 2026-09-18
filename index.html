@@ -121,14 +121,14 @@
             flex-shrink: 0;
         }
         .form-section-title {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
             letter-spacing: 0.03em;
             text-transform: uppercase;
         }
         .form-field label {
             display: block;
-            font-size: 12px;
+            font-size: 16px;
             font-weight: 700;
             color: #64748b;
             margin-bottom: 5px;
@@ -452,7 +452,7 @@
         body.map-edit-mode .map-container { cursor: crosshair; outline: 3px dashed rgba(37,99,235,0.45); outline-offset: 4px; }
          body.map-edit-mode .dynamic-map-marker { cursor: move; }
  /* === RESPONSIVE APPLICATION SIDEBAR === */
-        :root { --sidebar-width: 14rem; --app-header-height: 5rem; }
+        :root { --sidebar-width: 15rem; --app-header-height: 5rem; }
        .app-sidebar {
     position: fixed;
     top: var(--app-header-height);
@@ -487,22 +487,22 @@
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
 }
-        .sidebar-nav-label { color: #475569; font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; padding: 1rem .9rem .45rem; white-space: nowrap; }
-        .sidebar-link { display:flex; align-items:center; gap:.8rem; width:100%; min-height:2.8rem; padding:.65rem .8rem; border-radius:.75rem; color:#0f172a; font-size:.82rem; text-align:left; transition:.15s ease; white-space:nowrap; }
-        .sidebar-link:hover { color:#0f172a; background:#f1f5f9; transform:translateX(2px); }
-        .sidebar-link.is-active { color:#0f172a; background:#e2e8f0; box-shadow:inset 3px 0 #64748b; }
-        .sidebar-icon { display:grid; place-items:center; width:2rem; height:2rem; flex:0 0 2rem; border-radius:.6rem; background:#e2e8f0; font-size:1rem; }
+        .sidebar-nav-label { color: #000; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; padding: 1rem .9rem .45rem; white-space: nowrap; }
+        .sidebar-link { display:flex; align-items:center; gap:.8rem; width:100%; min-height:2.8rem; padding:.65rem .8rem; border-radius:.75rem; color:#000; font-size:15px; text-align:left; transition:.15s ease; white-space:nowrap; }
+        .sidebar-link:hover { color:#000; background:#f1f5f9; transform:translateX(2px); }
+        .sidebar-link.is-active { color:#000; background:#e2e8f0; box-shadow:inset 3px 0 #64748b; }
+        .sidebar-icon { display:grid; place-items:center; width:2rem; height:2rem; flex:0 0 2rem; border-radius:.6rem; background:#e2e8f0; font-size:15px; }
         .sidebar-badge { margin-left:auto; min-width:1.45rem; padding:.12rem .4rem; border-radius:999px; background:#ef4444; color:white; font-size:.65rem; text-align:center; box-shadow:0 0 0 3px rgba(239,68,68,.18); }
         .sidebar-badge:empty, .sidebar-badge[data-count="0"] { display:none; }
         .sidebar-site-wrap { margin:.35rem 0 .5rem; padding:.75rem; border:1px solid #e2e8f0; border-radius:1rem; background:#fff; }
         .sidebar-site-select { display:none; }
-        .sidebar-site-menu summary { display:flex; align-items:center; gap:.5rem; width:100%; color:#0f172a; background:#f8fafc; border:1px solid #cbd5e1; border-radius:.75rem; padding:.7rem .75rem; font-size:.75rem; cursor:pointer; list-style:none; }
+        .sidebar-site-menu summary { display:flex; align-items:center; gap:.5rem; width:100%; color:#000; background:#f8fafc; border:1px solid #cbd5e1; border-radius:.75rem; padding:.7rem .75rem; font-size:15px; cursor:pointer; list-style:none; }
         .sidebar-site-menu summary::-webkit-details-marker { display:none; }
         .sidebar-site-menu summary::after { content:'⌄'; margin-left:auto; transition:transform .2s ease; }
         .sidebar-site-menu[open] summary::after { transform:rotate(180deg); }
         .sidebar-site-options { display:grid; gap:.3rem; padding-top:.5rem; animation:sidebar-site-slide .2s ease-out; }
-        .sidebar-site-option { width:100%; padding:.6rem .7rem; border-radius:.65rem; color:#0f172a; font-size:.72rem; line-height:1.35; text-align:left; transition:background .15s ease,color .15s ease; }
-        .sidebar-site-option:hover,.sidebar-site-option.is-selected { color:#0f172a; background:#e2e8f0; }
+        .sidebar-site-option { width:100%; padding:.6rem .7rem; border-radius:.65rem; color:#000; font-size:15px; line-height:1.35; text-align:left; transition:background .15s ease,color .15s ease; }
+        .sidebar-site-option:hover,.sidebar-site-option.is-selected { color:#000; background:#e2e8f0; }
         @keyframes sidebar-site-slide { from { opacity:0; transform:translateY(-.4rem); } to { opacity:1; transform:translateY(0); } }
        .sidebar-user-card {
     flex: 0 0 auto;
@@ -565,7 +565,7 @@
    <div class="sidebar-scroll p-3">
       <div class="sidebar-menu-scroll">
         <div class="sidebar-site-wrap">
-                <label for="location-select" class="block text-sm text-violet-200 mb-1.5">พื้นที่ปฏิบัติงาน</label>
+                <label for="location-select" class="block text-[15px] text-black mb-1.5">พื้นที่ปฏิบัติงาน</label>
                 <select id="location-select" class="sidebar-site-select">
                     <option value="" selected>🏠 หน้าแรก - กรุณาเลือกไซต์</option>
                     <option value="ko-phaluay">📍 ไมโครกริดเกาะพะลวย</option>
@@ -597,15 +597,15 @@
                 <div class="flex items-start gap-3">
                     <div class="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-amber-400/20 text-lg">👤</div>
                     <div class="min-w-0 flex-1">
-                        <div id="userNameDisplay" class="truncate text-sm font-bold text-white"></div>
-                        <div id="userEmailDisplay" class="mt-0.5 truncate text-[14px] font-medium text-violet-200"></div>
-                        <div id="userRoleDisplay" class="mt-2 inline-block text-[10px] font-bold uppercase">VIEWER</div>
+                        <div id="userNameDisplay" class="truncate text-[15px] font-bold text-black"></div>
+                        <div id="userEmailDisplay" class="mt-0.5 truncate text-[15px] font-medium text-black"></div>
+                        <div id="userRoleDisplay" class="mt-2 inline-block text-[15px] font-bold uppercase text-black">VIEWER</div>
                     </div>
                     <button id="logoutButton" class="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-red-300" title="ออกจากระบบ" aria-label="ออกจากระบบ">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     </button>
                 </div>
-                <div id="logoutTimerDisplay" class="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-red-400/20 bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-200">
+                <div id="logoutTimerDisplay" class="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-red-400/20 bg-red-500/15 px-3 py-1.5 text-xs font-bold text-bg-white/90">
                     <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-red-400"></span></span>
                     ออกจากระบบใน <span id="timerMinutes">60</span>:<span id="timerSeconds">00</span>
                 </div>
