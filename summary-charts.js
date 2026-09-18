@@ -75,14 +75,14 @@ window.updateDeviceSummary = async function() {
     else {
         pageData.forEach(s => {
             let statusBadge = '';
-            if (s.status === 'ชำรุด / ผิดปกติ') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-red-50 text-red-600 border border-red-100"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>ชำรุด / ผิดปกติ</span>`;
-            else if (s.status === 'ชำรุด') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-red-50 text-red-600 border border-red-100"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>ชำรุด</span>`;
-            else if (s.status === 'ผิดปกติ') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-100"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>ผิดปกติ</span>`;
-            else statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-100"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>ปกติ</span>`;
+            if (s.status === 'ชำรุด / ผิดปกติ') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-black uppercase tracking-wider bg-red-50 text-red-600 border border-red-100"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>ชำรุด / ผิดปกติ</span>`;
+            else if (s.status === 'ชำรุด') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-black uppercase tracking-wider bg-red-50 text-red-600 border border-red-100"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>ชำรุด</span>`;
+            else if (s.status === 'ผิดปกติ') statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-100"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>ผิดปกติ</span>`;
+            else statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-black uppercase tracking-wider bg-green-50 text-green-600 border border-green-100"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>ปกติ</span>`;
 
             const alertBadgeHtml = s.unacknowledgedCount > 0 ? `<span class="history-alert-badge" title="มีรายการชำรุด/ผิดปกติที่ยังไม่รับทราบ ${s.unacknowledgedCount} รายการ">✕</span>` : '';
-            const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer'; 
-             tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">${alertBadgeHtml}${escapeHtml(s.deviceLabel || s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-xs text-slate-500">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-xs text-slate-500">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-xs font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-xs text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
+            const tr = document.createElement('tr'); tr.className = 'hover:bg-slate-50 border-b border-slate-100 transition-colors group cursor-pointer';
+             tr.innerHTML = `<td class="p-4"><div class="font-bold text-slate-700 group-hover:text-blue-600 transition-colors flex items-center">${alertBadgeHtml}${escapeHtml(s.deviceLabel || s.device)}</div></td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-base font-bold ${s.count > 0 ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}">${s.count} / ${s.remaining}</span></td> <td class="p-4 text-center text-base text-slate-500">${formatThaiDate(s.brokenDate)}</td><td class="p-4 text-center text-base text-slate-500">${formatThaiDate(s.fixedDate)}</td><td class="p-4 text-center">${statusBadge}</td><td class="p-4 text-center"><span class="text-base font-bold ${(s.status !== 'ปกติ') ? 'text-red-500' : 'text-slate-600'}">${s.latestBrokenDuration}</span></td><td class="p-4"><p class="text-base text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestDescription)}">${escapeHtml(s.latestDescription || '-')}</p></td><td class="p-4"><p class="text-base text-slate-500 truncate max-w-[150px]" title="${escapeHtml(s.latestSolution)}">${escapeHtml(s.latestSolution || '-')}</p></td>`;
             tr.onclick = () => window.openForm(s.device); tbody.appendChild(tr);
         });
     }
@@ -154,7 +154,7 @@ window.renderDashboardCharts = async function(siteKey) {
     // ถ้าไม่มีข้อมูลเลย ให้แสดงรายการว่างไว้ป้องกันกราฟพัง
     if (allDevicesData.length === 0) allDevicesData = [{ name: 'ไม่มีข้อมูล', broken: 0, fixed: 0, avgDays: 0 }];
     const chartFontFamily = "'TH SarabunPSK', sans-serif";
-    const chartTextStyle = { family: chartFontFamily, weight: '700' };
+    const chartTextStyle = { family: chartFontFamily, weight: '700', size: 14 };
     Chart.defaults.font.family = chartFontFamily;
     Chart.defaults.font.weight = '700';
     // --- วาดกราฟ 1 ---
@@ -169,7 +169,7 @@ window.renderDashboardCharts = async function(siteKey) {
                 { label: 'ซ่อมแล้ว', data: top10.map(d => d.fixed), backgroundColor: '#10b981' }
             ]
         },
-         options: { responsive: true, plugins: { legend: { labels: { font: chartTextStyle } } }, scales: { x: { stacked: true, ticks: { font: chartTextStyle } }, y: { stacked: true, ticks: { font: chartTextStyle } } } }
+         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: chartTextStyle } } }, scales: { x: { stacked: true, ticks: { font: chartTextStyle } }, y: { stacked: true, ticks: { font: chartTextStyle } } } }
     });
 
     // --- วาดกราฟ 2 ---
@@ -185,7 +185,7 @@ window.renderDashboardCharts = async function(siteKey) {
                 backgroundColor: '#3b82f6'
             }]
         },
-         options: { indexAxis: 'y', responsive: true, plugins: { legend: { labels: { font: chartTextStyle } } }, scales: { x: { beginAtZero: true, ticks: { font: chartTextStyle } }, y: { ticks: { font: chartTextStyle } } } }
+         options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: chartTextStyle } } }, scales: { x: { beginAtZero: true, ticks: { font: chartTextStyle } }, y: { ticks: { font: chartTextStyle } } } }
     });
 };
 window.changePage = function(step) { currentPage += step; if (currentPage < 1) currentPage = 1; window.updateDeviceSummary(); }

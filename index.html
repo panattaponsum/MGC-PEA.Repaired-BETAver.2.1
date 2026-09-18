@@ -24,7 +24,7 @@
 
     <style>
         /* ขนาดพื้นฐานสำหรับการใช้งานที่ browser zoom 100% */
-        html { font-size: 18px; }
+        html { font-size: 16px; }
         @font-face {
             font-family: 'TH SarabunPSK';
             src: url('THSarabunPSK.ttf') format('truetype');
@@ -77,7 +77,7 @@
         .header-logo {
             width: clamp(6.5rem, 11vw, 9.25rem);
             height: auto;
-            max-height: 5.35rem;
+            max-height: 4rem;
             object-fit: contain;
             object-position: center;
             filter: drop-shadow(0 0 5px rgba(255,255,255,0.9)) drop-shadow(0 0 10px rgba(245,158,11,0.42));
@@ -117,18 +117,18 @@
             width: 32px; height: 32px;
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 15px;
+            font-size: 16px;
             flex-shrink: 0;
         }
         .form-section-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             letter-spacing: 0.03em;
             text-transform: uppercase;
         }
         .form-field label {
             display: block;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
             color: #64748b;
             margin-bottom: 5px;
@@ -140,7 +140,7 @@
             padding: 9px 12px;
             border: 1.5px solid #e2e8f0;
             border-radius: 8px;
-            font-size: 13.5px;
+            font-size: 16px;
             color: #74045f;
             background: #fff;
             transition: border-color 0.15s, box-shadow 0.15s;
@@ -158,7 +158,7 @@
         }
         .form-field input[type="file"] {
             padding: 7px 10px;
-            font-size: 12px;
+            font-size: 14px;
             background: #f8fafc;
         }
         .modal-header-official {
@@ -197,7 +197,7 @@
             padding: 10px 24px;
             border-radius: 9px;
             font-weight: 700;
-            font-size: 13.5px;
+            font-size: 14px;
             box-shadow: 0 4px 12px rgba(37,99,235,0.35);
             border: none;
             cursor: pointer;
@@ -452,7 +452,7 @@
         body.map-edit-mode .map-container { cursor: crosshair; outline: 3px dashed rgba(37,99,235,0.45); outline-offset: 4px; }
          body.map-edit-mode .dynamic-map-marker { cursor: move; }
  /* === RESPONSIVE APPLICATION SIDEBAR === */
-        :root { --sidebar-width: 18rem; --app-header-height: 6.4rem; }
+        :root { --sidebar-width: 14rem; --app-header-height: 5rem; }
        .app-sidebar {
     position: fixed;
     top: var(--app-header-height);
@@ -487,7 +487,7 @@
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
 }
-        .sidebar-nav-label { color: #475569; font-size: .65rem; letter-spacing: .14em; text-transform: uppercase; padding: 1rem .9rem .45rem; white-space: nowrap; }
+        .sidebar-nav-label { color: #475569; font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; padding: 1rem .9rem .45rem; white-space: nowrap; }
         .sidebar-link { display:flex; align-items:center; gap:.8rem; width:100%; min-height:2.8rem; padding:.65rem .8rem; border-radius:.75rem; color:#0f172a; font-size:.82rem; text-align:left; transition:.15s ease; white-space:nowrap; }
         .sidebar-link:hover { color:#0f172a; background:#f1f5f9; transform:translateX(2px); }
         .sidebar-link.is-active { color:#0f172a; background:#e2e8f0; box-shadow:inset 3px 0 #64748b; }
@@ -545,7 +545,7 @@
 </head>
 <body class="text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
 
-    <header class="glass-header sticky top-0 z-[100] py-2">
+    <header class="glass-header sticky top-0 z-[100] pt-2 pb-0">
         <div class="w-full px-4 md:px-6 flex items-center justify-between gap-3">
             <button id="mobileMenuButton" class="mobile-menu-button h-10 w-10 rounded-xl bg-white/10 text-white border border-white/20 flex-shrink-0" aria-label="Menu" aria-controls="appSidebar" aria-expanded="false">☰</button>
             <div class="flex items-center gap-3 md:gap-5 min-w-0">
@@ -553,9 +553,9 @@
                      <img src="provincial-electricity-authority.png" alt="PEA" class="header-logo" />
                 </div>
                 <div class="header-brand-panel border-l border-white/20 pl-4">
-                    <p class="text-[10px] font-bold text-amber-300 uppercase tracking-[0.12em] leading-none mb-1">กองเทคโนโลยีโครงข่ายไฟฟ้า · การไฟฟ้าส่วนภูมิภาค</p>
+                    <p class="text-[14px] font-bold text-amber-300 uppercase tracking-[0.12em] leading-none mb-1">กองเทคโนโลยีโครงข่ายไฟฟ้า · การไฟฟ้าส่วนภูมิภาค</p>
                     <h1 class="text-lg font-bold tracking-tight text-white leading-tight">Microgrid <span class="text-amber-300">Asset Management</span></h1>
-                    <p class="text-[10px] font-medium text-blue-200 mt-0.5 tracking-wide">ระบบบริหารจัดการทรัพย์สินโครงข่ายไฟฟ้าขนาดเล็ก</p>
+                    <p class="text-[14px] font-medium text-blue-200 mt-0.5 tracking-[0.12em]">ระบบบริหารจัดการทรัพย์สินโครงข่ายไฟฟ้าขนาดเล็ก</p>
                 </div>
             </div>
         </div>
@@ -565,10 +565,13 @@
    <div class="sidebar-scroll p-3">
       <div class="sidebar-menu-scroll">
         <div class="sidebar-site-wrap">
-                <label for="location-select" class="block text-[10px] text-violet-200 mb-1.5">พื้นที่ปฏิบัติงาน</label>
+                <label for="location-select" class="block text-sm text-violet-200 mb-1.5">พื้นที่ปฏิบัติงาน</label>
                 <select id="location-select" class="sidebar-site-select">
                     <option value="" selected>🏠 หน้าแรก - กรุณาเลือกไซต์</option>
-                    <option value="ko-phaluay">📍 ไมโครกริดเกาะพะลวย</option><option value="mae-sariang">📍 ไมโครกริดอำเภอแม่สะเรียง</option><option value="betong">📍 ไมโครกริดอำเภอเบตง</option><option value="phrao">📍 BESS อำเภอพร้าว</option>
+                    <option value="ko-phaluay">📍 ไมโครกริดเกาะพะลวย</option>
+                    <option value="mae-sariang">📍 ไมโครกริดอำเภอแม่สะเรียง</option>
+                    <option value="betong">📍 ไมโครกริดอำเภอเบตง</option>
+                    <option value="phrao">📍 BESS อำเภอพร้าว</option>
                 </select>
                 <details id="sidebarSiteMenu" class="sidebar-site-menu">
                     <summary><span id="sidebarSiteMenuLabel">🏠 หน้าแรก - กรุณาเลือกไซต์</span></summary>
@@ -595,7 +598,7 @@
                     <div class="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-amber-400/20 text-lg">👤</div>
                     <div class="min-w-0 flex-1">
                         <div id="userNameDisplay" class="truncate text-sm font-bold text-white"></div>
-                        <div id="userEmailDisplay" class="mt-0.5 truncate text-[10px] font-medium text-violet-200"></div>
+                        <div id="userEmailDisplay" class="mt-0.5 truncate text-[14px] font-medium text-violet-200"></div>
                         <div id="userRoleDisplay" class="mt-2 inline-block text-[10px] font-bold uppercase">VIEWER</div>
                     </div>
                     <button id="logoutButton" class="rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-red-300" title="ออกจากระบบ" aria-label="ออกจากระบบ">
@@ -645,7 +648,7 @@
         <div id="loginPrompt" class="py-14 text-center">
             <div class="login-stage max-w-2xl mx-auto px-6">
                 <img src="11-waddee.png" alt="PEA" class="h-32 w-32 object-contain" />
-                <h2 class="mt-7 whitespace-nowrap text-2xl font-black tracking-tight text-white md:text-4xl">Microgrid Asset Management (MAM)</h2>
+                <h2 class="mt-7 whitespace-nowrap text-2xl font-black tracking-tight text-white md:text-6xl">Microgrid Asset Management (MAM)</h2>
                 <div id="authContainer" class="mt-12 flex items-center justify-center">
                     <button id="loginButton" class="login-button-premium flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-black text-white transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>
@@ -726,34 +729,33 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
-                    <div><p class="text-xs text-slate-500 font-bold uppercase mb-1">จำนวนอุปกรณ์ทั้งหมดในระบบ</p><h3 class="text-3xl font-black text-slate-800" id="cardTotal">0</h3></div>
+                    <div><p class="text-slate-500 font-bold uppercase mb-1">จำนวนอุปกรณ์ทั้งหมดในระบบ</p><h3 class="text-3xl font-black text-slate-800" id="cardTotal">0</h3></div>
                     <div class="p-3 bg-slate-50 rounded-xl text-2xl border border-slate-100">📦</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
-                    <div><p class="text-xs text-slate-500 font-bold uppercase mb-1">สถานะปกติ</p><h3 class="text-3xl font-black text-emerald-600" id="cardNormal">0</h3></div>
+                    <div><p class="text-slate-500 font-bold uppercase mb-1">สถานะปกติ</p><h3 class="text-3xl font-black text-emerald-600" id="cardNormal">0</h3></div>
                     <div class="p-3 bg-emerald-50 rounded-xl text-2xl border border-emerald-100">✅</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow flex items-center justify-between">
-                    <div><p class="text-xs text-slate-500 font-bold uppercase mb-1">สถานะมีปัญหา</p><h3 class="text-3xl font-black text-red-600" id="cardBroken">0</h3></div>
+                    <div><p class="text-slate-500 font-bold uppercase mb-1">สถานะมีปัญหา</p><h3 class="text-3xl font-black text-red-600" id="cardBroken">0</h3></div>
                     <div class="p-3 bg-red-50 rounded-xl text-2xl border border-red-100">🚨</div>
                 </div>
             </div>
 
             <div class="bg-white p-5 rounded-xl border border-slate-200 card-shadow">
-                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg> คัดกรองข้อมูล</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                     <div class="lg:col-span-2">
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">ค้นหาอุปกรณ์</label>
+                        <label class="block font-semibold text-slate-500 mb-1">ค้นหาอุปกรณ์</label>
                         <input id="searchInput" type="search" placeholder="พิมพ์ชื่ออุปกรณ์..." oninput="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"/>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">เรียงลำดับ</label>
+                        <label class="block font-semibold text-slate-500 mb-1">เรียงลำดับ</label>
                         <select id="sortOrder" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none cursor-pointer">
                             <option value="desc">📉 มีปัญหา มาก⮕น้อย</option><option value="asc">📈 มีปัญหา น้อย⮕มาก</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">สถานะ (Status)</label>
+                        <label class="block font-semibold text-slate-500 mb-1">สถานะ (Status)</label>
                         <select id="filterStatus" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none cursor-pointer">
                             <option value="all">ทั้งหมด</option>
                             <option value="currently-down">🚨 กำลังชำรุด</option>
@@ -763,11 +765,11 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">ตั้งแต่ (From)</label>
+                        <label class="block font-semibold text-slate-500 mb-1">ตั้งแต่ (From)</label>
                         <input id="fromDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none"/>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">ถึง (To)</label>
+                        <label class="block font-semibold text-slate-500 mb-1">ถึง (To)</label>
                         <input id="toDate" type="date" onchange="updateDeviceSummary()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 outline-none"/>
                     </div>
                 </div>
@@ -777,7 +779,7 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse whitespace-nowrap" id="summaryTable">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider font-bold border-b border-slate-200">
+                            <tr class="bg-slate-50 text-slate-600 text-base uppercase tracking-wider font-bold border-b border-slate-200">
                                 <th class="px-4 py-3">🛠️ รายชื่ออุปกรณ์</th>
                                 <th class="px-4 py-3 text-center">จำนวนปัญหา (รวม/ค้าง)</th>
                                 <th class="px-4 py-3 text-center">วันที่เกิดเหตุ</th>
@@ -788,7 +790,7 @@
                                 <th class="px-4 py-3">รายละเอียด (ซ่อม)</th>
                             </tr>
                         </thead>
-                        <tbody id="summaryBody" class="divide-y divide-slate-100 text-sm">
+                        <tbody id="summaryBody" class="divide-y divide-slate-100 text-base">
                             </tbody>
                     </table>
                 </div>
@@ -798,11 +800,11 @@
          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
         <h3 class="text-sm font-bold text-slate-700 mb-4">สถานะการซ่อมแซม (Top 10 อุปกรณ์ชำรุด)</h3>
-        <canvas id="topDefectsStackedChart"></canvas>
+        <div style="height:400px;"><canvas id="topDefectsStackedChart"></canvas></div>
     </div>
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
         <h3 class="text-sm font-bold text-slate-700 mb-4">ระยะเวลาเฉลี่ยในการซ่อมแซม (วัน)</h3>
-        <canvas id="avgRepairTimeChart"></canvas>
+        <div style="height:400px;"><canvas id="avgRepairTimeChart"></canvas></div>
     </div>
 </div>
              </div>
@@ -922,7 +924,7 @@
 
     <div id="overlay" onclick="closeForm()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000]"></div>
 
-    <div id="formModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-6xl max-h-[95vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001] overflow-hidden">
+    <div id="formModal" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[70vh] bg-white rounded-2xl shadow-2xl flex-col z-[1001] overflow-hidden">
 
         <!-- Modal Header (official style) -->
         <div class="modal-header-official">
@@ -998,7 +1000,7 @@
                             <textarea id="description" rows="3" style="resize:vertical;"></textarea>
                         </div>
                      <div class="form-field">
-                            <label>แนบรูปภาพ หรือ ไฟล์แจ้งเสีย (ไม่เกิน 5MB)</label>
+                            <label>แนบรูปภาพ (ไม่เกิน 5MB)</label>
                             <input type="file" id="brokenFile" accept="image/*,.pdf"/>
                             <div id="brokenFileLink" class="text-xs mt-1.5 text-blue-600 font-medium"></div>
                         </div>
@@ -1037,7 +1039,7 @@
                             <textarea id="solution" rows="3" style="resize:vertical;"></textarea>
                         </div>
                         <div class="sm:col-span-2 form-field">
-                            <label>แนบรูปภาพ หรือ ไฟล์หลังซ่อม (ไม่เกิน 5MB)</label>
+                            <label>แนบรูปภาพ (ไม่เกิน 5MB)</label>
                             <input type="file" id="fixedFile" accept="image/*,.pdf"/>
                             <div id="fixedFileLink" class="text-xs mt-1.5 text-emerald-600 font-medium"></div>
                         </div>
