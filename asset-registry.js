@@ -133,7 +133,7 @@ function getDeviceStats(devKey) {
 
 const TABLE_HEADER = `
 <thead class="bg-slate-100 sticky top-0 z-10">
-    <tr class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+    <tr class="text-[15px] font-bold text-slate-500 uppercase tracking-wide">
 
         <th class="px-3 py-2.5 text-center whitespace-nowrap">
             ชื่ออุปกรณ์
@@ -189,12 +189,12 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
             const ws = getWarrantyStatus(a.warrantyEnd);
 
             return ws === 'ok'
-                ? `<span class="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold border border-green-200 whitespace-nowrap">✅ ในประกัน</span>`
+                ? `<span class="text-[15px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold border border-green-200 whitespace-nowrap">✅ ในประกัน</span>`
                 : ws === 'warn'
-                ? `<span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold border border-amber-200 whitespace-nowrap">⚠️ ใกล้หมด</span>`
-                : `<span class="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-bold border border-red-200 whitespace-nowrap">❌ หมดประกัน</span>`;
+                ? `<span class="text-[15px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold border border-amber-200 whitespace-nowrap">⚠️ ใกล้หมด</span>`
+                : `<span class="text-[15px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-bold border border-red-200 whitespace-nowrap">❌ หมดประกัน</span>`;
         })()
-        : `<span class="text-[9px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full border border-slate-200 whitespace-nowrap">— ไม่มีข้อมูล</span>`;
+        : `<span class="text-[15px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-full border border-slate-200 whitespace-nowrap">— ไม่มีข้อมูล</span>`;
 
     const safeDevKey = devKey
         .replace(/\\/g, '\\\\')
@@ -214,7 +214,7 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
     const moveSelect = registryGroups.length > 0
         ? `
         <select onchange="assignDeviceToGroup('${safeDevKey}', this.value, '${safeGroupId}')"
-             class="text-[10px] border border-slate-200 rounded-lg px-1.5 py-1 bg-white text-slate-600 cursor-pointer w-full max-w-[9rem] truncate focus:ring-1 focus:ring-indigo-400 outline-none">
+             class="text-[15px] border border-slate-200 rounded-lg px-1.5 py-1 bg-white text-slate-600 cursor-pointer w-full max-w-[9rem] truncate focus:ring-1 focus:ring-indigo-400 outline-none">
             <option value="">— เลือกกลุ่ม —</option>
 
             ${groupOptions}
@@ -226,35 +226,35 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
 
         </select>
         `
-        : '<span class="text-[10px] text-slate-300">ยังไม่มีกลุ่ม</span>';
+        : '<span class="text-[15px] text-slate-300">ยังไม่มีกลุ่ม</span>';
 
   return `
 <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
 
-    <td class="px-3 py-2.5 text-sm font-semibold text-slate-800 whitespace-nowrap text-center">
+    <td class="px-3 py-2.5 text-[15px] font-semibold text-slate-800 whitespace-nowrap text-center">
          ${escapeHtml(getDeviceDisplayNameById(devKey))}
     </td>
 
-    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+    <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.serial)}
     </td>
 
-    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+    <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.model)}
     </td>
 
-    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+    <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.peaNo)}
     </td>
-     <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+     <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.ipAddress)}
     </td>
 
-    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+    <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.manufacturer)}
     </td>
 
-    <td class="px-3 py-2.5 text-[11px] text-slate-600 whitespace-nowrap text-center">
+    <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.location)}
     </td>
 
