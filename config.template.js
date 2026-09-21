@@ -1,13 +1,14 @@
 /* หัวข้อ: Config - เก็บรายชื่อไซต์ รายการอุปกรณ์ และค่า default ที่แก้ไขได้ง่ายโดยไม่แตะ logic หลัก */
+/* ค่า __PLACEHOLDER__ ด้านล่างถูกแทนที่ด้วยค่าจริงจาก .env ผ่าน scripts/generate-config.sh (local) หรือ GitHub Actions secrets (deploy) */
 window.AppConfig = window.AppConfig || {};
 window.AppConfig.firebaseConfig = {
-    apiKey: "AIzaSyCe-qS_uKPYASKJHHL0JuV4eCCzajbpzRY",
-    authDomain: "microgrid-th.firebaseapp.com",
-    projectId: "microgrid-th",
-    storageBucket: "microgrid-th.firebasestorage.app",
-    messagingSenderId: "88058740399",
-    appId: "1:88058740399:web:bbb38da765672dc4969e5a",
-    measurementId: "G-L45B835SV4"
+    apiKey: "__FIREBASE_API_KEY__",
+    authDomain: "__FIREBASE_AUTH_DOMAIN__",
+    projectId: "__FIREBASE_PROJECT_ID__",
+    storageBucket: "__FIREBASE_STORAGE_BUCKET__",
+    messagingSenderId: "__FIREBASE_MESSAGING_SENDER_ID__",
+    appId: "__FIREBASE_APP_ID__",
+    measurementId: "__FIREBASE_MEASUREMENT_ID__"
 };
 
 window.AppConfig.defaultSites = {
