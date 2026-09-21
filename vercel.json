@@ -1,0 +1,5 @@
+{
+  "installCommand": "echo 'no install needed'",
+  "buildCommand": "bash scripts/generate-config.sh",
+  "outputDirectory": "."
+}
