@@ -209,6 +209,23 @@
             box-shadow: 0 6px 16px rgba(37,99,235,0.45);
             transform: translateY(-1px);
         }
+        .btn-secondary {
+            background: #fff;
+            color: #2563eb;
+            padding: 10px 20px;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 14px;
+            border: 1.5px solid #bfdbfe;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex; align-items: center; gap: 6px;
+            white-space: nowrap;
+        }
+        .btn-secondary:hover {
+            background: #eff6ff;
+            border-color: #93c5fd;
+        }
         .warranty-badge {
             display: flex; align-items: center; gap: 10px;
             background: linear-gradient(135deg, #eff6ff, #dbeafe);
@@ -540,6 +557,51 @@
             body.app-shell-active .mobile-menu-button { display:grid; place-items:center; }
             body.app-shell-active > header { position:sticky; top:0; }
             body.sidebar-mobile-open { overflow:hidden; }
+        }
+
+        /* Responsive: formModal / assetModal on tablet & mobile */
+        @media (max-width: 1024px) {
+            #formModal, #assetModal {
+                width: 94vw;
+                max-height: 92vh;
+            }
+            #formModal .modal-body-row {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            #formModal .modal-body-row .sidebar-history-panel {
+                width: 100% !important;
+                max-height: 40vh;
+                border-left: none;
+                border-top: 1.5px solid #e2e8f0;
+                border-radius: 0;
+            }
+        }
+        @media (max-width: 640px) {
+            .modal-header-official {
+                padding: 14px 16px;
+            }
+            .modal-header-official h3 {
+                font-size: 14px;
+            }
+            .modal-footer-official {
+                padding: 12px 16px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .modal-footer-official > .flex-1 {
+                flex: 0 0 100%;
+                order: 3;
+                height: 0;
+            }
+            #formModal .modal-body-row > div:first-child,
+            #assetModal > div.p-6 {
+                padding: 16px;
+            }
+            .btn-primary, .btn-secondary {
+                padding: 9px 16px;
+                font-size: 13px;
+            }
         }
     </style>
 </head>
@@ -940,21 +1002,9 @@
             <button class="modal-close-btn" onclick="closeForm()">✕</button>
         </div>
 
-        <div class="flex-1 overflow-hidden bg-slate-50" style="display:flex; flex-direction:row; min-height:0;">
+        <div class="modal-body-row flex-1 overflow-hidden bg-slate-50" style="display:flex; flex-direction:row; min-height:0;">
             <!-- LEFT COLUMN: Form Fields -->
             <div class="flex-1 overflow-y-auto p-7" style="min-width:0;">
-
-                <!-- Warranty/Asset Banner -->
-                <div class="warranty-badge mb-6">
-                    <div class="bg-blue-100 rounded-lg p-2 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div id="warrantyStatusDisplay" class="text-sm font-bold text-blue-900">-</div>
-                        <div id="assetInfoDisplay" class="text-xs text-blue-600 mt-0.5">-</div>
-                    </div>
-                    <button class="text-xs font-bold px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors whitespace-nowrap flex-shrink-0" onclick="openAssetModal()">📋 รายการทรัพย์สิน</button>
-                </div>
 
                 <!-- SECTION 1: Incident Info -->
                 <div class="mb-6">
@@ -1071,10 +1121,13 @@
                 โหมดแก้ไขรายการเดิม
             </div>
             <div class="flex-1"></div>
-            <button class="btn-primary" onclick="saveData()" id="saveDataButton">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                บันทึกข้อมูล
-            </button>
+            <div class="flex items-center gap-2 flex-wrap justify-end">
+                <button class="btn-secondary" onclick="openAssetModal()">📋 รายการทรัพย์สิน</button>
+                <button class="btn-primary" onclick="saveData()" id="saveDataButton">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                    บันทึกข้อมูล
+                </button>
+            </div>
         </div>
     </div>
 

@@ -231,7 +231,8 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
   return `
 <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
 
-    <td class="px-3 py-2.5 text-[15px] font-semibold text-slate-800 whitespace-nowrap text-center">
+    <td class="px-3 py-2.5 text-[15px] font-semibold text-slate-800 whitespace-nowrap text-center cursor-pointer hover:underline hover:text-indigo-600"
+        onclick="openAssetDetailFromRegistry('${safeDevKey}')">
          ${escapeHtml(getDeviceDisplayNameById(devKey))}
     </td>
 

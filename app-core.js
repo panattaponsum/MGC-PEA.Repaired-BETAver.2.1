@@ -118,6 +118,7 @@ function parseThaiDateTimeToTS(val) {
 let currentSiteKey = "ko-phaluay";
 let siteSwitchVersion = 0;
 let currentDevice = null, editIndex = -1, chartInstance = null;
+let assetModalStandalone = false;
 let currentPage = 1;
 const pageSize = 7; 
 let currentUser = null;
@@ -198,7 +199,6 @@ function showWelcomeSitePage() {
     if (typeof window.syncSidebarSiteMenu === 'function') window.syncSidebarSiteMenu();
     const title = document.getElementById('locationTitle');
     if (title) title.textContent = '🏠 หน้าแรก - กรุณาเลือกไซต์ที่คุณมีสิทธิ์เข้าถึง';
-    updateAssetDisplays(null);
 }
 function showNoSiteAccessMessage() {
     document.body.classList.add('home-site-mode');
@@ -209,7 +209,6 @@ function showNoSiteAccessMessage() {
     if (title) title.textContent = '🔒 ไม่มีสิทธิ์ดูข้อมูลไซต์';
     const history = document.getElementById('historySection');
     if (history) history.innerHTML = '<p class="text-center py-4 text-gray-400">ไม่มีสิทธิ์ดูข้อมูลประวัติชำรุด</p>';
-    updateAssetDisplays(null);
 }
 /* หัวข้อ: Config - โหลดค่ารายชื่อไซต์/อุปกรณ์จากไฟล์ config.js และรองรับ override จาก Firestore */
 let sites = window.AppConfig?.defaultSites || {};
@@ -771,7 +770,7 @@ function parseDeviceSelection(deviceName) {
 
 window.openForm = async function(deviceName) {
     const { mainDevice, subDevice } = parseDeviceSelection(deviceName);
-    currentDevice = mainDevice; editIndex = -1;
+    currentDevice = mainDevice; editIndex = -1; assetModalStandalone = false;
     document.getElementById('formTitle').textContent = `บันทึกข้อมูล: ${getDisplayDeviceSelection(deviceName)}`;
     const othersContainer = document.getElementById('othersDeviceContainer');
     const othersSelect = document.getElementById('othersDeviceSelect');
@@ -792,15 +791,13 @@ window.openForm = async function(deviceName) {
 
      showSharedOverlay();
     document.getElementById('formModal').style.display = 'flex';
-    document.getElementById('editHint').classList.add('hidden'); 
-    document.getElementById('warrantyStatusDisplay').innerHTML = 'กำลังโหลด...'; 
-    document.getElementById('assetInfoDisplay').innerHTML = '';
-    clearForm(); await loadHistory(); 
+    document.getElementById('editHint').classList.add('hidden');
+    clearForm(); await loadHistory();
 }
 
 window.closeForm = function() {
     document.getElementById('formModal').style.display = 'none';
-    document.getElementById('assetModal').style.display = 'none'; hideSharedOverlayIfNoModal(); }
+    document.getElementById('assetModal').style.display = 'none'; assetModalStandalone = false; hideSharedOverlayIfNoModal(); }
 
 function clearForm() {
     if (!currentUser) document.getElementById('userName').value = 'ผู้เยี่ยมชม (อ่านอย่างเดียว)';
@@ -975,16 +972,6 @@ await createLog("UPDATE_STATUS", `อุปกรณ์ ${currentDevice} มี�
 return true;
 };
 
-function updateAssetDisplays(assetInfo) {
-const statusEl = document.getElementById('warrantyStatusDisplay'); const infoEl = document.getElementById('assetInfoDisplay');
-if (assetInfo && assetInfo.warrantyEnd) {
-statusEl.innerHTML = getWarrantyStatusHTML(getWarrantyStatus(assetInfo.warrantyEnd));
-let infoParts = [];
-if (assetInfo.model) infoParts.push(`รุ่น: ${escapeHtml(assetInfo.model)}`); if (assetInfo.serial) infoParts.push(`S/N: ${escapeHtml(assetInfo.serial)}`); if (assetInfo.peaNo) infoParts.push(`PEA No. : ${escapeHtml(assetInfo.peaNo)}`); if (assetInfo.ipAddress) infoParts.push(`IP: ${escapeHtml(assetInfo.ipAddress)}`);
-infoEl.innerHTML = infoParts.join(' | ') || 'ลงทะเบียนแล้ว';
-} else { statusEl.innerHTML = '<span class="tag tag-warranty-bad">🚫 ยังไม่ลงทะเบียน</span>'; infoEl.innerHTML = '"ดู/แก้ไขข้อมูลทรัพย์สิน"'; }
-}
-
 window.loadHistory = async function() {
     const container = document.getElementById('historySection'); 
     container.innerHTML = '';
@@ -1004,8 +991,6 @@ window.loadHistory = async function() {
         container.innerHTML = '<p>Error loading data</p>'; 
         return; 
     }
-
-    updateAssetDisplays(assetInfo);
 
     if (document.getElementById('filterBrokenHistory')?.checked) {
         records = records.filter(r => (r.status === 'down' || r.status === 'abnormal') && (!r.fixedDate || r.fixedDate === '' || r.fixedDate === '-' || r.fixedDate === 'null'));
@@ -1258,14 +1243,23 @@ window.editRecord = async function(ts) {
 window.openAssetModal = async function() {
 if (!currentDevice || !canReadAssetDetails(currentSiteKey)) { Swal.fire('ไม่มีสิทธิ์', 'คุณไม่มีสิทธิ์ดูข้อมูลรายการทรัพย์สินของไซต์นี้', 'error'); return; }
     document.getElementById('assetFormTitle').textContent = `📋 ข้อมูลทรัพย์สิน: ${currentDevice}`;
-    document.getElementById('formModal').style.display = 'none'; 
-    document.getElementById('assetModal').style.display = 'flex'; 
-    setPageBlur(true); 
+    document.getElementById('formModal').style.display = 'none';
+    document.getElementById('assetModal').style.display = 'flex';
+    setPageBlur(true);
     await loadAssetData();
 }
 
+window.openAssetDetailFromRegistry = async function(devKey) {
+    currentDevice = devKey;
+    assetModalStandalone = true;
+    showSharedOverlay();
+    await window.openAssetModal();
+}
+
 window.closeAssetModal = function(showMainModal = true) {
-document.getElementById('assetModal').style.display = 'none'; if (showMainModal && currentDevice) document.getElementById('formModal').style.display = 'flex'; 
+document.getElementById('assetModal').style.display = 'none'; if (showMainModal && currentDevice && !assetModalStandalone) document.getElementById('formModal').style.display = 'flex';
+assetModalStandalone = false;
+hideSharedOverlayIfNoModal();
 }
 
 async function loadAssetData() {
@@ -1337,7 +1331,6 @@ window.saveAssetData = async function() {
         await saveAssetInfo(currentSiteKey, currentDevice, assetInfo);
         await createLog("UPDATE_ASSET", `บันทึกข้อมูลทรัพย์สินของ ${currentDevice}`);
         Swal.fire('บันทึกสำเร็จ', 'ข้อมูลทรัพย์สินถูกบันทึกแล้ว', 'success');
-        updateAssetDisplays(assetInfo);
         window.updateDeviceSummary();
         closeAssetModal(true);
     } catch (e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
