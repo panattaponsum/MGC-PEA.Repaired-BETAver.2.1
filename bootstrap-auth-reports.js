@@ -4,19 +4,19 @@ document.addEventListener("DOMContentLoaded", async function() {
     try { await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION); } catch (e) { console.warn("ตั้งค่า session persistence ไม่สำเร็จ:", e); }
 
     auth.onAuthStateChanged(async user => {
-        
+
         const appContent = document.getElementById('appContent');
         const loginPrompt = document.getElementById('loginPrompt');
-        
+
         if (user) {
-          
+
             if (appContent) appContent.classList.remove('hidden');
             document.body.classList.add('app-shell-active');
             document.getElementById('appSidebar')?.classList.remove('hidden');
             document.getElementById('sidebarCollapseButton')?.classList.remove('hidden');
             if (loginPrompt) loginPrompt.classList.add('hidden');
             document.body.classList.remove('auth-hero-active');
-            
+
             currentUser = user;
             document.getElementById('userInfo').classList.remove('hidden');
             document.getElementById('loginButton').classList.add('hidden');
@@ -54,9 +54,9 @@ document.addEventListener("DOMContentLoaded", async function() {
                 disableLegacyImageMaps();
                 bindDynamicMapClicks();
                 if (currentUserRole === 'viewer') {
-                    document.body.classList.add('viewer-mode'); 
+                    document.body.classList.add('viewer-mode');
                 } else {
-                    document.body.classList.remove('viewer-mode'); 
+                    document.body.classList.remove('viewer-mode');
                 }
                 applySiteAccessOptions();
                 if (getDefaultReadableSiteKey()) showWelcomeSitePage();
@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 currentUserRole = 'viewer';
                 document.body.classList.add('viewer-mode');
             }
-            
+
         } else {
             if (appContent) appContent.classList.add('hidden');
             document.body.classList.remove('app-shell-active', 'sidebar-mobile-open');
@@ -86,27 +86,27 @@ document.addEventListener("DOMContentLoaded", async function() {
             document.getElementById('sidebarCollapseButton')?.classList.add('hidden');
             if (loginPrompt) loginPrompt.classList.remove('hidden');
             document.body.classList.add('auth-hero-active');
-            
+
             if (currentUser) sessionStorage.removeItem(`logged_in_${currentUser.uid}`);
             currentUser = null;
             currentUserRole = 'viewer';
             currentUserAllowedSites = [];
             currentUserFullName = '';
             currentUserPhone = '';
-            
-            document.body.classList.remove('viewer-mode'); 
+
+            document.body.classList.remove('viewer-mode');
             document.getElementById('userInfo').classList.add('hidden');
             document.getElementById('loginButton').classList.remove('hidden');
-            
+
             toggleWriteAccess(false);
             stopAutoLogoutTimer(true);
         }
     });
 
-  
+
     document.getElementById('loginButton').addEventListener('click', login);
     document.getElementById('logoutButton').addEventListener('click', logout);
-   
+
     setupWarrantyCalculators();
 
     const locationSelect = document.getElementById("location-select");
@@ -120,8 +120,8 @@ document.addEventListener("DOMContentLoaded", async function() {
 });
 
 
-let countdownInterval; 
-const LOGOUT_TIME_LIMIT = 60 * 60 * 1000; 
+let countdownInterval;
+const LOGOUT_TIME_LIMIT = 60 * 60 * 1000;
 
 function getLogoutExpirationKey() {
     return currentUser ? `logoutExpiration_${currentUser.uid}` : 'logoutExpiration';
@@ -142,11 +142,11 @@ window.startAutoLogoutTimer = function() {
             logout(true);
             return;
         }
-        const minElem = document.getElementById('timerMinutes'); 
+        const minElem = document.getElementById('timerMinutes');
         const secElem = document.getElementById('timerSeconds');
-        if (minElem && secElem) { 
-            minElem.textContent = Math.floor(timeLeft / 60).toString().padStart(2, '0'); 
-            secElem.textContent = (timeLeft % 60).toString().padStart(2, '0'); 
+        if (minElem && secElem) {
+            minElem.textContent = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            secElem.textContent = (timeLeft % 60).toString().padStart(2, '0');
         }
     }, 1000);
 };
@@ -250,7 +250,7 @@ window.printReport = async function() {
         const docData = dataMap[dev] || {};
         const records = docData.records || [];
         if (records.length === 0) continue;
-        
+
         hasRecords = true;
         const safeDevId = dev.replace(/[^a-zA-Z0-9]/g, '_');
 
@@ -263,7 +263,7 @@ window.printReport = async function() {
 
 records.sort((a, b) => a.ts - b.ts).forEach((r, idx) => {
     const statusText = r.status === 'down' ? 'ชำรุด' : (r.status === 'abnormal' ? 'ผิดปกติ' : '✅ ปกติ');
-    const repairingText = (r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? ' • กำลังซ่อมแซม' : ''; 
+    const repairingText = (r.acknowledgedAt && (r.status === 'down' || r.status === 'abnormal') && !r.fixedDate) ? ' • กำลังซ่อมแซม' : '';
     let subDeviceStr = r.subDevice ? ` <span class="text-blue-600 font-bold">[${r.subDevice}]</span>` : '';
     const desc = r.description || '-';
 
@@ -318,18 +318,18 @@ function buildReportImageHtml(url) {
     const safeUrl = escapeReportHtml(url);
     return `<div class="img"><img src="${safeUrl}" width="150" height="90" alt="รูปประกอบ"></div>`;
 }
-/* หัวข้อ: Reports - สร้างรายงาน Word จากรายการที่เลือก */
+/* หัวข้อ: Reports - สร้างรายงาน PDF (ผ่านระบบพิมพ์ของเบราว์เซอร์) จากรายการที่เลือก */
 window.generateSelectedReport = async function () {
     const siteData = sites[currentSiteKey];
     const selectedCheckboxes = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
-    
+
     if (selectedCheckboxes.length === 0) {
         Swal.fire('ระบุข้อมูล', 'กรุณาเลือกรายการอย่างน้อย 1 รายการ', 'warning');
         return;
     }
 
     const dataMap = window.tempReportDataMap;
-    const groupedData = {}; 
+    const groupedData = {};
     selectedCheckboxes.forEach(v => {
         const [devName, ts] = v.split('|');
         const docData = dataMap[devName] || {};
@@ -339,15 +339,15 @@ window.generateSelectedReport = async function () {
         if (targetRec) {
             const assetInfo = docData.assetInfo || {};
             const subName = targetRec.subDevice || "";
-            
+
             let groupKey;
             let displayTitle;
-            
+
             if (devName === "Other") {
-                groupKey = `Other_${subName}`; 
+                groupKey = `Other_${subName}`;
                 displayTitle = subName ? `Other [${subName}]` : "Other";
             } else {
-                groupKey = devName; 
+                groupKey = devName;
                 displayTitle = devName;
             }
 
@@ -365,7 +365,7 @@ window.generateSelectedReport = async function () {
     let bodyHtml = '';
     let deviceNo = 1;
 
-    
+
     for (const key in groupedData) {
         const group = groupedData[key];
         const asset = group.assetInfo;
@@ -376,10 +376,10 @@ window.generateSelectedReport = async function () {
            <div class="device-header"><div class="device-title">${deviceNo++}. ${escapeReportHtml(group.title)}</div>
                 <div class="device-spec">
                      S/N : ${escapeReportHtml(asset.serial)} |
-                     Model : ${escapeReportHtml(asset.model)} | 
+                     Model : ${escapeReportHtml(asset.model)} |
                      PEA No. : ${escapeReportHtml(asset.peaNo)} |
-                     IP : ${escapeReportHtml(asset.ipAddress || '-')} | 
-                     Price : ${escapeReportHtml(asset.price)} | 
+                     IP : ${escapeReportHtml(asset.ipAddress || '-')} |
+                     Price : ${escapeReportHtml(asset.price)} |
                     Warranty : ${escapeReportHtml(formatThaiDate(asset.warrantyStart))} → ${escapeReportHtml(formatThaiDate(asset.warrantyEnd))}
                 </div>
             </div>
@@ -426,22 +426,19 @@ window.generateSelectedReport = async function () {
     }
 
     closeReportModal();
-    const logoBase64 = await getReportLogoBase64();
-    const reportHtml = buildReportDocumentHtml(siteData, bodyHtml, logoBase64 ? 'pea-report-logo.png' : '');
-    const reportMhtml = buildReportMhtml(reportHtml, logoBase64);
-    const fileName = `รายงานสรุปการแจ้งปัญหา_${siteData.name.replace(/[\\/:*?"<>|]/g, '_')}_${new Date().toISOString().slice(0, 10)}.mht`;
-    const blob = new Blob(['\ufeff', reportMhtml], { type: 'multipart/related;charset=utf-8' });
-    saveAs(blob, fileName);
+    const logoDataUrl = await getReportLogoDataUrl();
+    const reportHtml = buildReportPrintHtml(siteData, bodyHtml, logoDataUrl);
+    openReportPrintWindow(reportHtml);
 };
 
-async function getReportLogoBase64() {
+async function getReportLogoDataUrl() {
     try {
         const response = await fetch('provincial-electricity-authority.png');
         if (!response.ok) throw new Error(`Unable to load logo: ${response.status}`);
         const blob = await response.blob();
         return await new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+            reader.onload = () => resolve(String(reader.result || ''));
             reader.onerror = () => reject(reader.error);
             reader.readAsDataURL(blob);
         });
@@ -451,72 +448,61 @@ async function getReportLogoBase64() {
     }
 }
 
-function buildReportMhtml(reportHtml, logoBase64) {
-    const boundary = '----=_NextPart_PEA_Report_987654321';
-    const sections = [
-        'MIME-Version: 1.0',
-        'Content-Type: multipart/related; boundary="' + boundary + '"; type="text/html"',
-        '',
-        '--' + boundary,
-        'Content-Type: text/html; charset="utf-8"',
-        'Content-Location: report.html',
-        'Content-Transfer-Encoding: 8bit',
-        '',
-        reportHtml
-    ];
-
-    if (logoBase64) {
-        sections.push(
-            '--' + boundary,
-            'Content-Type: image/png',
-            'Content-Transfer-Encoding: base64',
-            'Content-Location: pea-report-logo.png',
-            '',
-            logoBase64.match(/.{1,76}/g).join('\r\n')
-        );
+function openReportPrintWindow(reportHtml) {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        Swal.fire('ไม่สามารถเปิดหน้าต่างพิมพ์ได้', 'กรุณาอนุญาต pop-up สำหรับเว็บไซต์นี้ แล้วลองอีกครั้ง', 'warning');
+        return;
     }
-
-    sections.push('--' + boundary + '--', '');
-    return sections.join('\r\n');
+    printWindow.document.open();
+    printWindow.document.write(reportHtml);
+    printWindow.document.close();
+    printWindow.onload = function () {
+        printWindow.focus();
+        printWindow.print();
+    };
 }
 
-function buildReportDocumentHtml(siteData, bodyHtml, logoSource = '') {
-     const reportDate = formatThaiDate(new Date());
+function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
+    const reportDate = formatThaiDate(new Date());
     const reportTime = new Date().toLocaleTimeString('th-TH');
     return `
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:v="urn:schemas-microsoft-com:vml" xmlns="http://www.w3.org/TR/REC-html40">
+<!DOCTYPE html>
+<html lang="th">
 <head>
 <meta charset="UTF-8">
 <title>PEA_REPORT_${escapeReportHtml(siteData.name)}</title>
-<!--[if gte mso 9]>
-<xml>
-    <w:WordDocument>
-        <w:View>Print</w:View>
-        <w:Zoom>100</w:Zoom>
-        <w:DoNotOptimizeForBrowser/>
-    </w:WordDocument>
-</xml>
-<![endif]-->
 <style>
-    @page WordSection1 { size: 21cm 29.7cm; margin: 3.2cm 1.2cm 2.8cm 1.2cm; mso-header: h1; mso-footer: f1; mso-header-margin: 0.8cm; mso-footer-margin: 0.8cm; }
-    div.WordSection1 { page: WordSection1; }
-    body { font-family: 'TH SarabunPSK', sans-serif; font-size: 11pt; margin: 0; color: #222; }
-    table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    @page { size: A4; margin: 3.6cm 1.2cm 1.6cm 1.2cm; }
+    * { box-sizing: border-box; }
+    body { font-family: 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; font-size: 12pt; margin: 0; color: #1e293b; }
+    table { border-collapse: collapse; }
     tr { page-break-inside: avoid; }
     thead { display: table-header-group; }
-   .header-table { width: 100%; border-bottom: 3px solid #6a1b9a; margin-bottom: 12pt; table-layout: fixed; }
-    .title { text-align: center; }
-    .title-main { font-size: 14pt; font-weight: 700; color: #6a1b9a; }
-   .title-sub { font-size: 11pt; }
-    .header-right { font-size: 11pt; text-align: right; }
-    .device-section { margin-bottom: 18pt; }
-    .device-header { background: #f3f0ff; border-left: 4pt solid #6a1b9a; border-top: 1px solid #ddd; border-right: 1px solid #ddd; padding: 6pt; }
-    .device-title { font-weight: 700; font-size: 11pt; }
-    .device-spec { font-size: 11pt; }
-    .device-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-     .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #000; padding: 3pt; font-size: 11pt; line-height: 1.2; }
-    .device-table td { border: 1px solid #000; padding: 3pt; font-size: 11pt; line-height: 1.25; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
-    .thai-distributed { text-align: justify; text-justify: distribute; mso-text-justify: distribute-all-lines; }
+
+    .report-toolbar { position: fixed; top: 10px; right: 10px; z-index: 10; display: flex; gap: 8px; }
+    .report-toolbar button { font-family: inherit; font-size: 11pt; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .report-toolbar .btn-print { background: #2563eb; color: #fff; }
+    .report-toolbar .btn-close { background: #e2e8f0; color: #334155; }
+    @media print { .report-toolbar { display: none !important; } }
+    @media screen { .report-body { padding-top: 3.4cm; } }
+
+    .report-header { position: fixed; top: 0; left: 0; right: 0; height: 3cm; padding: 0 1.2cm 8pt; display: flex; align-items: center; gap: 12pt; border-bottom: 3px solid #6a1b9a; background: #fff; }
+    .report-header .logo { width: 42pt; height: 42pt; object-fit: contain; flex-shrink: 0; }
+    .report-header .title { flex: 1; text-align: center; }
+    .report-header .title-main { font-size: 15pt; font-weight: 700; color: #6a1b9a; }
+    .report-header .title-sub { font-size: 11pt; color: #475569; }
+    .report-header .meta { font-size: 11pt; text-align: right; white-space: nowrap; flex-shrink: 0; }
+
+    .device-section { margin-bottom: 16pt; }
+    .device-header { background: #f3f0ff; border: 1px solid #ddd; border-left: 4pt solid #6a1b9a; padding: 6pt 8pt; }
+    .device-title { font-weight: 700; font-size: 12pt; }
+    .device-spec { font-size: 11pt; color: #334155; }
+    .device-table { width: 100%; table-layout: fixed; border: 1px solid #94a3b8; border-collapse: collapse; }
+    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #4c1370; padding: 6pt 6pt; font-size: 11pt; line-height: 1.2; }
+    .device-table td { border: 1px solid #cbd5e1; padding: 6pt 6pt; font-size: 11pt; line-height: 1.3; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
+    .device-table tbody tr:nth-child(even) td { background: #faf9ff; }
+    .thai-distributed { text-align: justify; }
     .col-no { width: 4%; }
     .col-date { width: 9%; }
     .col-text { width: 23%; }
@@ -524,53 +510,48 @@ function buildReportDocumentHtml(siteData, bodyHtml, logoSource = '') {
     .col-user { width: 16%; }
     .center { text-align: center; }
     .details div, .user-block { margin-bottom: 3pt; }
+    .user-sub { color: #64748b; font-size: 10pt; }
     .img { margin-top: 3pt; text-align: center; }
     .img img { width: 150pt; height: 90pt; max-width: 150pt; max-height: 90pt; object-fit: contain; border: 1px solid #bbb; }
-    .pending { color: red; font-weight: bold; }
+    .pending { color: #dc2626; font-weight: bold; }
     .sub-device { color: #2563eb; font-weight: bold; }
-    .footer-title { text-align: left; font-weight: 700; font-size: 11pt; margin-bottom: 4pt; }
-    .word-header-footer { display: none; mso-hide: all; page-break-inside: avoid; }
-    table#hrdftrtbl { margin: 0cm 0cm 0cm 25cm; mso-hide: all; }
-    .signature { width: 100%; table-layout: fixed; border-collapse: collapse; }
-     .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; line-height: 1.35; }
-    .sig-line { margin-bottom: 3pt; white-space: nowrap; }
+
+    .signature { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 24pt; }
+    .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; line-height: 1.4; }
+    .sig-line { margin-bottom: 6pt; white-space: nowrap; }
     .sig-name { margin-bottom: 2pt; }
 </style>
 </head>
 <body>
-<div class="WordSection1">
-<!--[if gte mso 9]>
-<table id="hrdftrtbl" border="0" cellpadding="0" cellspacing="0">
-<tr>
-<td>
-<div class="word-header-footer" style="mso-element:header; display:none;" id="h1">
-    <table class="header-table">
-        <tr>
-            <td style="width:25%;">${logoSource ? `<!--[if gte vml 1]><v:shape id="pea-report-logo" type="#_x0000_t75" style="width:40pt;height:40pt;visibility:visible;mso-wrap-style:square" o:preferrelative="t" filled="f" stroked="f"><v:imagedata src="${logoSource}" o:title="PEA"/></v:shape><![endif]--><!--[if !vml]><img src="${logoSource}" width="53" height="53" alt="PEA" style="width:40pt;height:40pt;"><![endif]-->` : ''}</td>
-            <td class="title" style="width:50%;"><div class="title-main">MICROGRIDASSET MAINTENANCE REPORT</div><div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div></td>
-            <td class="header-right" style="width:25%;">SITE : ${escapeReportHtml(siteData.name)}<br>DATE : ${escapeReportHtml(reportDate)}<br>TIME : ${escapeReportHtml(reportTime)}</td>
-        </tr>
-    </table>
-</div>
-</td>
-</tr>
-<tr>
-<td>
-<div class="word-header-footer" style="mso-element:footer; display:none;" id="f1">
-    <table class="signature">
-        <tr>
-            <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name"><b>${currentUserFullName || ''}</b></div><div>ผู้จัดทำรายงาน</div></td>
-            <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name">(...................................................)</div><div>ผู้ตรวจสอบ</div></td>
-            <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name">(...................................................)</div><div>ผู้อนุมัติ</div></td>
-        </tr>
-    </table>
-</div>
-</td>
-</tr>
-</table>
-<![endif]-->
-  ${bodyHtml}  
-</div>
+    <div class="report-toolbar">
+        <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ / บันทึกเป็น PDF</button>
+        <button class="btn-close" onclick="window.close()">✕ ปิด</button>
+    </div>
+
+    <div class="report-header">
+        ${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" alt="PEA">` : ''}
+        <div class="title">
+            <div class="title-main">MICROGRID ASSET MAINTENANCE REPORT</div>
+            <div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
+        </div>
+        <div class="meta">
+            SITE : ${escapeReportHtml(siteData.name)}<br>
+            DATE : ${escapeReportHtml(reportDate)}<br>
+            TIME : ${escapeReportHtml(reportTime)}
+        </div>
+    </div>
+
+    <div class="report-body">
+        ${bodyHtml}
+
+        <table class="signature">
+            <tr>
+                <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name"><b>${escapeReportHtml(currentUserFullName || '')}</b></div><div>ผู้จัดทำรายงาน</div></td>
+                <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name">(...................................................)</div><div>ผู้ตรวจสอบ</div></td>
+                <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name">(...................................................)</div><div>ผู้อนุมัติ</div></td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>`;
 }
