@@ -502,11 +502,11 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
 <html lang="th">
 <head>
 <style>
-    @page { size: A4; margin: 3.9cm 1.2cm 1.6cm 1.2cm; }
-    * { box-sizing: border-box; }
-    body { font-family: 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; font-size: 12pt; margin: 0; color: #1e293b; }
+    @page { size: A4; margin: 1.3cm 1.2cm 1.6cm 1.2cm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+    html, body { font-family: 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; font-size: 12pt; margin: 0; color: #1e293b; }
     table { border-collapse: collapse; }
-    tr, .device-section, .signature { page-break-inside: avoid; break-inside: avoid; }
+    .device-table tbody tr, .signature tr, .device-section { page-break-inside: avoid; break-inside: avoid; }
     thead { display: table-header-group; }
 
     .report-toolbar { position: fixed; top: 10px; right: 10px; z-index: 10; display: flex; gap: 8px; }
@@ -514,9 +514,12 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
     .report-toolbar .btn-print { background: #2563eb; color: #fff; }
     .report-toolbar .btn-close { background: #e2e8f0; color: #334155; }
     @media print { .report-toolbar { display: none !important; } }
-    @media screen { .report-body { padding-top: 3.7cm; } }
 
-    .report-header { position: fixed; top: 0; left: 0; right: 0; height: 3.3cm; padding: 6pt 1.2cm 0; display: flex; align-items: center; gap: 14pt; border-bottom: 4px double #6a1b9a; background: #fff; }
+    /* หัวรายงานอยู่ใน <thead> ของตารางครอบทั้งหน้า เพื่อให้กินพื้นที่จริงและซ้ำทุกหน้าได้อย่างแม่นยำ ไม่ใช้ position:fixed เพราะซ้อนทับเนื้อหาได้เมื่อ margin ของหน้าพิมพ์ไม่ตรงกับที่คาดไว้ */
+    .page-frame { width: 100%; border-collapse: collapse; }
+    .page-frame > thead > tr > td { padding: 0 0 10pt; }
+    .page-frame > tbody > tr > td { padding: 0; }
+    .report-header { padding: 0 0 8pt; display: flex; align-items: center; gap: 14pt; border-bottom: 4px double #6a1b9a; background: #fff; }
     .report-header .logo { width: 44pt; height: 44pt; object-fit: contain; flex-shrink: 0; }
     .report-header .title { flex: 1; text-align: center; }
     .report-header .title-main { font-size: 15pt; font-weight: 700; color: #6a1b9a; letter-spacing: 0.03em; }
@@ -558,32 +561,41 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
         <button class="btn-close" onclick="window.close()">✕ ปิด</button>
     </div>
 
-    <div class="report-header">
-        ${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" alt="PEA">` : ''}
-        <div class="title">
-            <div class="title-main">MICROGRID ASSET MAINTENANCE REPORT</div>
-            <div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
-        </div>
-        <div class="meta">
-            <table>
-                <tr><td>SITE</td><td>${escapeReportHtml(siteData.name)}</td></tr>
-                <tr><td>DATE</td><td>${escapeReportHtml(reportDate)}</td></tr>
-                <tr><td>TIME</td><td>${escapeReportHtml(reportTime)}</td></tr>
-            </table>
-        </div>
-    </div>
+    <table class="page-frame">
+        <thead>
+            <tr><td>
+                <div class="report-header">
+                    ${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" alt="PEA">` : ''}
+                    <div class="title">
+                        <div class="title-main">MICROGRID ASSET MAINTENANCE REPORT</div>
+                        <div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
+                    </div>
+                    <div class="meta">
+                        <table>
+                            <tr><td>SITE</td><td>${escapeReportHtml(siteData.name)}</td></tr>
+                            <tr><td>DATE</td><td>${escapeReportHtml(reportDate)}</td></tr>
+                            <tr><td>TIME</td><td>${escapeReportHtml(reportTime)}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </td></tr>
+        </thead>
+        <tbody>
+            <tr><td>
+                <div class="report-body">
+                    ${bodyHtml}
 
-    <div class="report-body">
-        ${bodyHtml}
-
-        <table class="signature">
-            <tr>
-                <td class="sig-box"><div class="sig-line"></div><div class="sig-name"><b>${escapeReportHtml(currentUserFullName || '')}</b></div><div>ผู้จัดทำรายงาน</div></td>
-                <td class="sig-box"><div class="sig-line"></div><div class="sig-name">(...................................................)</div><div>ผู้ตรวจสอบ</div></td>
-                <td class="sig-box"><div class="sig-line"></div><div class="sig-name">(...................................................)</div><div>ผู้อนุมัติ</div></td>
-            </tr>
-        </table>
-    </div>
+                    <table class="signature">
+                        <tr>
+                            <td class="sig-box"><div class="sig-line"></div><div class="sig-name"><b>${escapeReportHtml(currentUserFullName || '')}</b></div><div>ผู้จัดทำรายงาน</div></td>
+                            <td class="sig-box"><div class="sig-line"></div><div class="sig-name">(...................................................)</div><div>ผู้ตรวจสอบ</div></td>
+                            <td class="sig-box"><div class="sig-line"></div><div class="sig-name">(...................................................)</div><div>ผู้อนุมัติ</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </td></tr>
+        </tbody>
+    </table>
 </body>
 </html>`;
 }
