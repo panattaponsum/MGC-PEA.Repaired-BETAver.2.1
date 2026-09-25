@@ -328,15 +328,34 @@ window.generateSelectedReport = async function () {
         return;
     }
 
+    Swal.fire({ title: 'กำลังเตรียมข้อมูลรายงาน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
     const dataMap = window.tempReportDataMap;
     const groupedData = {};
-    selectedCheckboxes.forEach(v => {
+    // เลขที่บันทึกอ้างอิง (เช่น KPL-000001) ใช้รูปแบบเดียวกับ generateAutoId เพื่อไม่ให้เลขซ้ำ/สับสนกับที่อื่นในระบบ
+    let nextAutoNum = null;
+    let autoPrefix = null;
+
+    for (const v of selectedCheckboxes) {
         const [devName, ts] = v.split('|');
         const docData = dataMap[devName] || {};
         const records = docData.records || [];
         const targetRec = records.find(r => String(r.ts) === String(ts));
 
         if (targetRec) {
+            if (!targetRec.customId) {
+                if (nextAutoNum === null) {
+                    const seed = await generateAutoId(currentSiteKey);
+                    const parts = seed.split('-');
+                    autoPrefix = parts[0];
+                    nextAutoNum = parseInt(parts[1], 10);
+                } else {
+                    nextAutoNum += 1;
+                }
+                targetRec.customId = `${autoPrefix}-${String(nextAutoNum).padStart(6, '0')}`;
+                await saveDeviceRecords(currentSiteKey, devName, records);
+            }
+
             const assetInfo = docData.assetInfo || {};
             const subName = targetRec.subDevice || "";
 
@@ -360,7 +379,8 @@ window.generateSelectedReport = async function () {
             }
             groupedData[groupKey].items.push(targetRec);
         }
-    });
+    }
+    Swal.close();
 
     let bodyHtml = '';
     let deviceNo = 1;
@@ -374,7 +394,7 @@ window.generateSelectedReport = async function () {
         bodyHtml += `
         <div class="device-section">
             <div class="device-header">
-                <div class="device-title">${deviceNo++}. ${escapeReportHtml(group.title)}</div>
+                <div class="device-title"><span class="device-no-badge">${deviceNo++}</span>${escapeReportHtml(group.title)}</div>
                 <div class="device-spec">
                     <span><b>S/N</b> ${escapeReportHtml(asset.serial)}</span>
                     <span><b>Model</b> ${escapeReportHtml(asset.model)}</span>
@@ -419,6 +439,7 @@ window.generateSelectedReport = async function () {
                 <td class="thai-distributed">${escapeReportHtml(r.description)} <br>${subDeviceStm} ${imgBroken}</td>
                 <td class="thai-distributed">${escapeReportHtml(r.solution)} ${imgFixed}</td>
                 <td class="details">
+                    <div class="record-id">เลขที่บันทึก&nbsp;${escapeReportHtml(r.customId)}</div>
                     <div><b>ราคาซ่อมแซม:</b> ${r.repairCost ? escapeReportHtml(Number(r.repairCost).toLocaleString()) : '-'}</div>
                     <div><b>เลขที่ใบสั่ง:</b> ${escapeReportHtml(r.orderNumber)}</div>
                     <div class="doc-line"><b>หนังสือ มท</b> ${escapeReportHtml(r.docMinistry)}</div>
@@ -480,8 +501,6 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<title>PEA_REPORT_${escapeReportHtml(siteData.name)}</title>
 <style>
     @page { size: A4; margin: 3.9cm 1.2cm 1.6cm 1.2cm; }
     * { box-sizing: border-box; }
@@ -507,9 +526,10 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
     .report-header .meta td { padding: 2pt 8pt; white-space: nowrap; }
     .report-header .meta td:first-child { font-weight: 700; color: #6a1b9a; border-right: 1px solid #e2e8f0; text-align: right; }
 
-    .device-section { margin-bottom: 16pt; border: 1.3px solid #6a1b9a; }
-    .device-header { background: #f3f0ff; border-bottom: 1.3px solid #6a1b9a; padding: 7pt 10pt; page-break-after: avoid; break-after: avoid-page; }
-    .device-title { font-weight: 700; font-size: 12.5pt; color: #4c1370; margin-bottom: 3pt; }
+    .device-section { margin-bottom: 16pt; border: 1.3px solid #6a1b9a; box-shadow: 0 1px 3px rgba(106,27,154,0.12); }
+    .device-header { background: linear-gradient(135deg, #f3f0ff, #ece5ff); border-bottom: 1.3px solid #6a1b9a; border-left: 5pt solid #6a1b9a; padding: 7pt 10pt; page-break-after: avoid; break-after: avoid-page; }
+    .device-title { display: flex; align-items: center; font-weight: 700; font-size: 12.5pt; color: #4c1370; margin-bottom: 4pt; }
+    .device-no-badge { display: inline-flex; align-items: center; justify-content: center; width: 18pt; height: 18pt; border-radius: 50%; background: #6a1b9a; color: #fff; font-size: 10pt; margin-right: 7pt; flex-shrink: 0; }
     .device-spec { font-size: 10.5pt; color: #334155; display: flex; flex-wrap: wrap; gap: 2pt 16pt; }
     .device-spec b { color: #6a1b9a; margin-right: 3pt; }
     .device-table { width: 100%; table-layout: fixed; }
@@ -519,15 +539,16 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
     .thai-distributed { text-align: justify; }
     .center { text-align: center; }
     .details div, .user-block { margin-bottom: 3pt; }
+    .record-id { display: inline-block; background: #fff7e6; border: 1px solid #f59e0b; color: #92400e; font-weight: 700; padding: 2pt 6pt; border-radius: 3px; margin-bottom: 5pt; font-size: 10pt; letter-spacing: 0.02em; }
     .user-sub { color: #64748b; font-size: 10pt; }
     .img { margin-top: 3pt; text-align: center; }
     .img img { width: 150pt; height: 90pt; max-width: 150pt; max-height: 90pt; object-fit: contain; border: 1px solid #bbb; }
     .pending { color: #dc2626; font-weight: bold; }
     .sub-device { color: #2563eb; font-weight: bold; }
 
-    .signature { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 26pt; }
-    .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; line-height: 1.4; }
-    .sig-line { margin-bottom: 6pt; white-space: nowrap; }
+    .signature { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 28pt; }
+    .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 10pt; line-height: 1.4; }
+    .sig-line { border-bottom: 1px solid #64748b; height: 26pt; margin-bottom: 6pt; }
     .sig-name { margin-bottom: 2pt; }
 </style>
 </head>
@@ -557,9 +578,9 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
 
         <table class="signature">
             <tr>
-                <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name"><b>${escapeReportHtml(currentUserFullName || '')}</b></div><div>ผู้จัดทำรายงาน</div></td>
-                <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name">(...................................................)</div><div>ผู้ตรวจสอบ</div></td>
-                <td class="sig-box"><div class="sig-line">........................................</div><div class="sig-name">(...................................................)</div><div>ผู้อนุมัติ</div></td>
+                <td class="sig-box"><div class="sig-line"></div><div class="sig-name"><b>${escapeReportHtml(currentUserFullName || '')}</b></div><div>ผู้จัดทำรายงาน</div></td>
+                <td class="sig-box"><div class="sig-line"></div><div class="sig-name">(...................................................)</div><div>ผู้ตรวจสอบ</div></td>
+                <td class="sig-box"><div class="sig-line"></div><div class="sig-name">(...................................................)</div><div>ผู้อนุมัติ</div></td>
             </tr>
         </table>
     </div>
