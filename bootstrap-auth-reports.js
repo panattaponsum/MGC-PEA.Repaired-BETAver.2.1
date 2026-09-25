@@ -373,26 +373,36 @@ window.generateSelectedReport = async function () {
 
         bodyHtml += `
         <div class="device-section">
-           <div class="device-header"><div class="device-title">${deviceNo++}. ${escapeReportHtml(group.title)}</div>
+            <div class="device-header">
+                <div class="device-title">${deviceNo++}. ${escapeReportHtml(group.title)}</div>
                 <div class="device-spec">
-                     S/N : ${escapeReportHtml(asset.serial)} |
-                     Model : ${escapeReportHtml(asset.model)} |
-                     PEA No. : ${escapeReportHtml(asset.peaNo)} |
-                     IP : ${escapeReportHtml(asset.ipAddress || '-')} |
-                     Price : ${escapeReportHtml(asset.price)} |
-                    Warranty : ${escapeReportHtml(formatThaiDate(asset.warrantyStart))} → ${escapeReportHtml(formatThaiDate(asset.warrantyEnd))}
+                    <span><b>S/N</b> ${escapeReportHtml(asset.serial)}</span>
+                    <span><b>Model</b> ${escapeReportHtml(asset.model)}</span>
+                    <span><b>PEA No.</b> ${escapeReportHtml(asset.peaNo)}</span>
+                    <span><b>IP</b> ${escapeReportHtml(asset.ipAddress || '-')}</span>
+                    <span><b>ราคา</b> ${escapeReportHtml(asset.price)}</span>
+                    <span><b>รับประกัน</b> ${escapeReportHtml(formatThaiDate(asset.warrantyStart))} – ${escapeReportHtml(formatThaiDate(asset.warrantyEnd))}</span>
                 </div>
             </div>
             <table class="device-table">
+                <colgroup>
+                    <col style="width:4%">
+                    <col style="width:9%">
+                    <col style="width:9%">
+                    <col style="width:23%">
+                    <col style="width:23%">
+                    <col style="width:16%">
+                    <col style="width:16%">
+                </colgroup>
                 <thead>
                     <tr>
-                       <th class="col-no">No.</th>
-                        <th class="col-date">Down Date</th>
-                        <th class="col-date">Fixed Date</th>
-                        <th class="col-text">Description</th>
-                        <th class="col-text">Solution</th>
-                        <th class="col-details">Details</th>
-                        <th class="col-user">User</th>
+                       <th>No.</th>
+                        <th>Down Date</th>
+                        <th>Fixed Date</th>
+                        <th>Description</th>
+                        <th>Solution</th>
+                        <th>Details</th>
+                        <th>User</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -473,11 +483,11 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
 <meta charset="UTF-8">
 <title>PEA_REPORT_${escapeReportHtml(siteData.name)}</title>
 <style>
-    @page { size: A4; margin: 3.6cm 1.2cm 1.6cm 1.2cm; }
+    @page { size: A4; margin: 3.9cm 1.2cm 1.6cm 1.2cm; }
     * { box-sizing: border-box; }
     body { font-family: 'TH SarabunPSK', 'Sarabun', Tahoma, sans-serif; font-size: 12pt; margin: 0; color: #1e293b; }
     table { border-collapse: collapse; }
-    tr { page-break-inside: avoid; }
+    tr, .device-section, .signature { page-break-inside: avoid; break-inside: avoid; }
     thead { display: table-header-group; }
 
     .report-toolbar { position: fixed; top: 10px; right: 10px; z-index: 10; display: flex; gap: 8px; }
@@ -485,29 +495,28 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
     .report-toolbar .btn-print { background: #2563eb; color: #fff; }
     .report-toolbar .btn-close { background: #e2e8f0; color: #334155; }
     @media print { .report-toolbar { display: none !important; } }
-    @media screen { .report-body { padding-top: 3.4cm; } }
+    @media screen { .report-body { padding-top: 3.7cm; } }
 
-    .report-header { position: fixed; top: 0; left: 0; right: 0; height: 3cm; padding: 0 1.2cm 8pt; display: flex; align-items: center; gap: 12pt; border-bottom: 3px solid #6a1b9a; background: #fff; }
-    .report-header .logo { width: 42pt; height: 42pt; object-fit: contain; flex-shrink: 0; }
+    .report-header { position: fixed; top: 0; left: 0; right: 0; height: 3.3cm; padding: 6pt 1.2cm 0; display: flex; align-items: center; gap: 14pt; border-bottom: 4px double #6a1b9a; background: #fff; }
+    .report-header .logo { width: 44pt; height: 44pt; object-fit: contain; flex-shrink: 0; }
     .report-header .title { flex: 1; text-align: center; }
-    .report-header .title-main { font-size: 15pt; font-weight: 700; color: #6a1b9a; }
-    .report-header .title-sub { font-size: 11pt; color: #475569; }
-    .report-header .meta { font-size: 11pt; text-align: right; white-space: nowrap; flex-shrink: 0; }
+    .report-header .title-main { font-size: 15pt; font-weight: 700; color: #6a1b9a; letter-spacing: 0.03em; }
+    .report-header .title-sub { font-size: 11.5pt; color: #475569; margin-top: 2pt; }
+    .report-header .meta { flex-shrink: 0; font-size: 10.5pt; border: 1px solid #cbd5e1; border-radius: 3px; background: #f8fafc; }
+    .report-header .meta table { border-collapse: collapse; }
+    .report-header .meta td { padding: 2pt 8pt; white-space: nowrap; }
+    .report-header .meta td:first-child { font-weight: 700; color: #6a1b9a; border-right: 1px solid #e2e8f0; text-align: right; }
 
-    .device-section { margin-bottom: 16pt; }
-    .device-header { background: #f3f0ff; border: 1px solid #ddd; border-left: 4pt solid #6a1b9a; padding: 6pt 8pt; }
-    .device-title { font-weight: 700; font-size: 12pt; }
-    .device-spec { font-size: 11pt; color: #334155; }
-    .device-table { width: 100%; table-layout: fixed; border: 1px solid #94a3b8; border-collapse: collapse; }
-    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #4c1370; padding: 6pt 6pt; font-size: 11pt; line-height: 1.2; }
-    .device-table td { border: 1px solid #cbd5e1; padding: 6pt 6pt; font-size: 11pt; line-height: 1.3; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
+    .device-section { margin-bottom: 16pt; border: 1.3px solid #6a1b9a; }
+    .device-header { background: #f3f0ff; border-bottom: 1.3px solid #6a1b9a; padding: 7pt 10pt; page-break-after: avoid; break-after: avoid-page; }
+    .device-title { font-weight: 700; font-size: 12.5pt; color: #4c1370; margin-bottom: 3pt; }
+    .device-spec { font-size: 10.5pt; color: #334155; display: flex; flex-wrap: wrap; gap: 2pt 16pt; }
+    .device-spec b { color: #6a1b9a; margin-right: 3pt; }
+    .device-table { width: 100%; table-layout: fixed; }
+    .device-table th { background: #6a1b9a; color: #fff; border: 1px solid #4c1370; padding: 6pt; font-size: 11pt; line-height: 1.2; }
+    .device-table td { border: 1px solid #cbd5e1; padding: 6pt; font-size: 11pt; line-height: 1.3; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
     .device-table tbody tr:nth-child(even) td { background: #faf9ff; }
     .thai-distributed { text-align: justify; }
-    .col-no { width: 4%; }
-    .col-date { width: 9%; }
-    .col-text { width: 23%; }
-    .col-details { width: 16%; }
-    .col-user { width: 16%; }
     .center { text-align: center; }
     .details div, .user-block { margin-bottom: 3pt; }
     .user-sub { color: #64748b; font-size: 10pt; }
@@ -516,7 +525,7 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
     .pending { color: #dc2626; font-weight: bold; }
     .sub-device { color: #2563eb; font-weight: bold; }
 
-    .signature { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 24pt; }
+    .signature { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 26pt; }
     .sig-box { width: 33.33%; text-align: center; font-size: 11pt; vertical-align: top; padding: 0 6pt; line-height: 1.4; }
     .sig-line { margin-bottom: 6pt; white-space: nowrap; }
     .sig-name { margin-bottom: 2pt; }
@@ -535,9 +544,11 @@ function buildReportPrintHtml(siteData, bodyHtml, logoDataUrl = '') {
             <div class="title-sub">การไฟฟ้าส่วนภูมิภาค (Provincial Electricity Authority)</div>
         </div>
         <div class="meta">
-            SITE : ${escapeReportHtml(siteData.name)}<br>
-            DATE : ${escapeReportHtml(reportDate)}<br>
-            TIME : ${escapeReportHtml(reportTime)}
+            <table>
+                <tr><td>SITE</td><td>${escapeReportHtml(siteData.name)}</td></tr>
+                <tr><td>DATE</td><td>${escapeReportHtml(reportDate)}</td></tr>
+                <tr><td>TIME</td><td>${escapeReportHtml(reportTime)}</td></tr>
+            </table>
         </div>
     </div>
 
