@@ -1264,7 +1264,7 @@ hideSharedOverlayIfNoModal();
 
 async function loadAssetData() {
     let assetInfo = await getAssetInfo(currentSiteKey, currentDevice);
-    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetIpAddress', 'assetBackup', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
+    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetIpAddress', 'assetBackupFiles', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
      const isAdmin = isAdminRole();
 
     inputIds.forEach(id => {
@@ -1284,7 +1284,15 @@ async function loadAssetData() {
     document.getElementById('assetPeaNo').value = assetInfo.peaNo || '';
     document.getElementById('assetPrice').value = assetInfo.price || '';
     document.getElementById('assetIpAddress').value = assetInfo.ipAddress || '';
-    document.getElementById('assetBackup').value = assetInfo.backup || '';
+    document.getElementById('assetBackupFiles').value = '';
+    const backupFiles = Array.isArray(assetInfo.backupFiles) ? assetInfo.backupFiles : [];
+    const backupList = document.getElementById('assetBackupFileList');
+    if (backupList) {
+        const legacyBackup = assetInfo.backup ? `<div class="text-slate-500">ข้อมูลเดิม: ${escapeHtml(assetInfo.backup)}</div>` : '';
+        backupList.innerHTML = legacyBackup + (backupFiles.length
+            ? backupFiles.map(file => `<div><a class="text-blue-600 hover:underline" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">📎 ${escapeHtml(file.name || 'ไฟล์สำรอง')}</a></div>`).join('')
+            : '<span class="text-slate-400">ยังไม่มีไฟล์สำรอง</span>');
+    }
     document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
     document.getElementById('assetLocation').value = assetInfo.location || '';
     document.getElementById('assetWarrantyStart').value = safeDate(assetInfo.warrantyStart);
@@ -1316,17 +1324,28 @@ window.saveAssetData = async function() {
     if (!currentDevice) return;
     Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     let imageUrl = null;
+    let backupFiles = [];
+    let existingBackup = '';
     try {
         const existingAsset = await getAssetInfo(currentSiteKey, currentDevice);
         imageUrl = existingAsset.imageUrl || null;
+        existingBackup = existingAsset.backup || '';
+        backupFiles = Array.isArray(existingAsset.backupFiles) ? [...existingAsset.backupFiles] : [];
         const imageFile = document.getElementById('assetImageFile').files[0];
         if (imageFile) {
             const ref = storage.ref().child(`attachments/${currentSiteKey}/${currentDevice}/assetImage/${Date.now()}_${imageFile.name}`);
             await ref.put(imageFile);
             imageUrl = await ref.getDownloadURL();
         }
-    } catch(e) { Swal.fire('อัปโหลดรูปภาพล้มเหลว', e.message, 'error'); return; }
-     const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, backup: document.getElementById('assetBackup').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
+        const filesToUpload = Array.from(document.getElementById('assetBackupFiles').files || []);
+        for (const [fileIndex, file] of filesToUpload.entries()) {
+            const safeName = file.name.replace(/[\\/]/g, '_');
+            const ref = storage.ref().child(`attachments/${currentSiteKey}/${currentDevice}/backup/${Date.now()}_${fileIndex}_${safeName}`);
+            await ref.put(file);
+            backupFiles.push({ name: file.name, url: await ref.getDownloadURL() });
+        }
+    } catch(e) { Swal.fire('อัปโหลดไฟล์ไม่สำเร็จ', e.message, 'error'); return; }
+     const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, backup: existingBackup, backupFiles, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
     if (imageUrl) assetInfo.imageUrl = imageUrl;
     try {
         await saveAssetInfo(currentSiteKey, currentDevice, assetInfo);

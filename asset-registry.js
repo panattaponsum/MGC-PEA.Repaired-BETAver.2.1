@@ -255,8 +255,10 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
         ${v(a.ipAddress)}
     </td>
 
-    <td class="px-3 py-2.5 text-[15px] text-slate-600 text-center max-w-48 truncate" title="${escapeHtml(a.backup || '')}">
-        ${v(a.backup)}
+    <td class="px-3 py-2.5 text-[15px] text-center">
+        ${(Array.isArray(a.backupFiles) && a.backupFiles.length)
+            ? a.backupFiles.map(file => `<a class="block text-blue-600 hover:underline max-w-40 truncate" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(file.name || 'ไฟล์สำรอง')}">📎 ${escapeHtml(file.name || 'ไฟล์สำรอง')}</a>`).join('')
+            : v(a.backup)}
     </td>
 
     <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">

@@ -255,7 +255,8 @@ window.exportAllDataExcel = async function() {
         const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
         let warrantyStatusText = 'N/A';
         switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
-        assetData.push([ groupName, getDeviceDisplayNameById(devName), assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.ipAddress || '-', assetInfo.backup || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
+        const backupNames = Array.isArray(assetInfo.backupFiles) ? assetInfo.backupFiles.map(file => file.name).join(', ') : (assetInfo.backup || '-');
+        assetData.push([ groupName, getDeviceDisplayNameById(devName), assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.ipAddress || '-', backupNames || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
     };
     // เพิ่มตามกลุ่มก่อน
     const assignedDevices = new Set();
