@@ -1264,7 +1264,7 @@ hideSharedOverlayIfNoModal();
 
 async function loadAssetData() {
     let assetInfo = await getAssetInfo(currentSiteKey, currentDevice);
-    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetIpAddress', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
+    const inputIds = ['assetSerial', 'assetModel', 'assetPeaNo', 'assetIpAddress', 'assetBackup', 'assetPrice', 'assetManufacturer', 'assetLocation', 'assetWarrantyStart', 'assetWarrantyEnd'];
      const isAdmin = isAdminRole();
 
     inputIds.forEach(id => {
@@ -1284,6 +1284,7 @@ async function loadAssetData() {
     document.getElementById('assetPeaNo').value = assetInfo.peaNo || '';
     document.getElementById('assetPrice').value = assetInfo.price || '';
     document.getElementById('assetIpAddress').value = assetInfo.ipAddress || '';
+    document.getElementById('assetBackup').value = assetInfo.backup || '';
     document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
     document.getElementById('assetLocation').value = assetInfo.location || '';
     document.getElementById('assetWarrantyStart').value = safeDate(assetInfo.warrantyStart);
@@ -1325,7 +1326,7 @@ window.saveAssetData = async function() {
             imageUrl = await ref.getDownloadURL();
         }
     } catch(e) { Swal.fire('อัปโหลดรูปภาพล้มเหลว', e.message, 'error'); return; }
-     const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
+     const assetInfo = { serial: document.getElementById('assetSerial').value, model: document.getElementById('assetModel').value, peaNo: document.getElementById('assetPeaNo').value, ipAddress: document.getElementById('assetIpAddress').value, backup: document.getElementById('assetBackup').value, price: document.getElementById('assetPrice').value, manufacturer: document.getElementById('assetManufacturer').value, location: document.getElementById('assetLocation').value, warrantyStart: document.getElementById('assetWarrantyStart').value, warrantyEnd: document.getElementById('assetWarrantyEnd').value };
     if (imageUrl) assetInfo.imageUrl = imageUrl;
     try {
         await saveAssetInfo(currentSiteKey, currentDevice, assetInfo);

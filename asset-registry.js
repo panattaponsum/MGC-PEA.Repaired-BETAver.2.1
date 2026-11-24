@@ -155,6 +155,10 @@ const TABLE_HEADER = `
         </th>
 
         <th class="px-3 py-2.5 text-center whitespace-nowrap">
+            Backup
+        </th>
+
+        <th class="px-3 py-2.5 text-center whitespace-nowrap">
             ผู้ผลิต
         </th>
 
@@ -249,6 +253,10 @@ function deviceRowHTML(devKey, isInGroup, groupId) {
     </td>
      <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">
         ${v(a.ipAddress)}
+    </td>
+
+    <td class="px-3 py-2.5 text-[15px] text-slate-600 text-center max-w-48 truncate" title="${escapeHtml(a.backup || '')}">
+        ${v(a.backup)}
     </td>
 
     <td class="px-3 py-2.5 text-[15px] text-slate-600 whitespace-nowrap text-center">

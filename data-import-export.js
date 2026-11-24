@@ -246,7 +246,7 @@ window.exportAllDataExcel = async function() {
     ]];
 
     // ---- ชีทข้อมูลทรัพย์สิน (แยกตามกลุ่ม) ----
-    const ASSET_HEADER = ['กลุ่ม', 'ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'IP Address', 'ราคาซื้อ', 'Manufacturer', 'สถานที่ติดตั้ง', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
+    const ASSET_HEADER = ['กลุ่ม', 'ชื่ออุปกรณ์', 'Serial Number', 'Model', 'PEA No.', 'IP Address', 'Backup', 'ราคาซื้อ', 'Manufacturer', 'สถานที่ติดตั้ง', 'วันที่เริ่มประกัน', 'วันที่หมดประกัน', 'สถานะประกัน'];
     const assetData = [ASSET_HEADER];
 
     // ฟังก์ชันเพิ่มแถวอุปกรณ์
@@ -255,7 +255,7 @@ window.exportAllDataExcel = async function() {
         const warrantyStatus = getWarrantyStatus(assetInfo.warrantyEnd);
         let warrantyStatusText = 'N/A';
         switch(warrantyStatus) { case 'ok': warrantyStatusText = 'รับประกัน'; break; case 'warn': warrantyStatusText = 'ใกล้หมดประกัน'; break; case 'bad': warrantyStatusText = 'หมดประกัน'; break; }
-        assetData.push([ groupName, getDeviceDisplayNameById(devName), assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.ipAddress || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
+        assetData.push([ groupName, getDeviceDisplayNameById(devName), assetInfo.serial || '-', assetInfo.model || '-', assetInfo.peaNo || '-', assetInfo.ipAddress || '-', assetInfo.backup || '-', assetInfo.price || '-', assetInfo.manufacturer || '-', assetInfo.location || '-', formatThaiDate(assetInfo.warrantyStart), formatThaiDate(assetInfo.warrantyEnd), warrantyStatusText ]);
     };
     // เพิ่มตามกลุ่มก่อน
     const assignedDevices = new Set();
