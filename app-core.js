@@ -1290,7 +1290,7 @@ async function loadAssetData() {
     if (backupList) {
         const legacyBackup = assetInfo.backup ? `<div class="text-slate-500">ข้อมูลเดิม: ${escapeHtml(assetInfo.backup)}</div>` : '';
         backupList.innerHTML = legacyBackup + (backupFiles.length
-            ? backupFiles.map(file => `<div><a class="text-blue-600 hover:underline" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer">📎 ${escapeHtml(file.name || 'ไฟล์สำรอง')}</a></div>`).join('')
+            ? backupFiles.map((file, index) => `<div class="flex items-center gap-3"><a class="text-blue-600 hover:underline" href="#" data-url="${escapeHtml(file.url)}" data-filename="${escapeHtml(file.name || 'backup')}" onclick="downloadAssetBackup(this); return false;">Download: ${escapeHtml(file.name || 'ไฟล์สำรอง')}</a>${isAdminRole() ? `<button type="button" class="text-red-600 hover:underline" onclick="removeAssetBackupFile(${index})">ลบ</button>` : ''}</div>`).join('')
             : '<span class="text-slate-400">ยังไม่มีไฟล์สำรอง</span>');
     }
     document.getElementById('assetManufacturer').value = assetInfo.manufacturer || '';
@@ -1318,6 +1318,57 @@ async function loadAssetData() {
         if (imageLink) imageLink.innerHTML = '';
     }
 }
+
+window.downloadAssetBackup = async function(link) {
+    const url = link?.dataset?.url;
+    const filename = link?.dataset?.filename || 'backup';
+    if (!url) return;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blobUrl = URL.createObjectURL(await response.blob());
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (error) {
+        window.open(url, '_blank', 'noopener');
+        Swal.fire('ดาวน์โหลดไม่สำเร็จ', 'เปิดไฟล์ในแท็บใหม่แทน กรุณาลองบันทึกไฟล์จากแท็บนั้น', 'warning');
+    }
+};
+
+window.removeAssetBackupFile = async function(fileIndex) {
+    try {
+        if (!isAdminRole() || !currentSiteKey || !currentDevice) return;
+        const assetInfo = await getAssetInfo(currentSiteKey, currentDevice);
+        const backupFiles = Array.isArray(assetInfo.backupFiles) ? [...assetInfo.backupFiles] : [];
+        const file = backupFiles[fileIndex];
+        if (!file) return;
+        const result = await Swal.fire({
+            title: 'ลบไฟล์สำรอง?',
+            text: file.name || 'ไฟล์สำรอง',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'ลบไฟล์',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#dc2626'
+        });
+        if (!result.isConfirmed) return;
+        await storage.refFromURL(file.url).delete();
+        backupFiles.splice(fileIndex, 1);
+        await saveAssetInfo(currentSiteKey, currentDevice, { ...assetInfo, backupFiles });
+        await createLog('UPDATE_ASSET', `ลบไฟล์สำรองของ ${currentDevice}: ${file.name || ''}`);
+        await loadAssetData();
+        if (typeof window.updateDeviceSummary === 'function') window.updateDeviceSummary();
+        if (typeof window.loadAssetRegistry === 'function' && !document.getElementById('assetRegistryPage')?.classList.contains('hidden')) window.loadAssetRegistry();
+        Swal.fire('ลบไฟล์แล้ว', 'ลบไฟล์สำรองออกจากรายการและที่จัดเก็บแล้ว', 'success');
+    } catch (error) {
+        Swal.fire('ลบไฟล์ไม่สำเร็จ', error.message || 'กรุณาตรวจสอบสิทธิ์ Firebase Storage แล้วลองอีกครั้ง', 'error');
+    }
+};
 
 window.saveAssetData = async function() {
    if (!isAdminRole()) { Swal.fire({ icon: 'error', title: 'ไม่มีสิทธิ์เข้าถึง', text: `เฉพาะ Admin เท่านั้น` }); return; }
